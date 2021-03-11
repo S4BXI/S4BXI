@@ -1,0 +1,125 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_get_matching.so pt2pt_get_matching --cfg=surf/precision:1e-9
+> Received : 
+> Finished run 0
+> Received : 
+> Finished run 1
+> Received : 
+> Finished run 2
+> Received : 
+> Finished run 3
+> Received : 
+> Finished run 4
+> Received : 
+> Finished run 5
+> Received : 
+> Finished run 6
+> Received : 
+> Finished run 7
+> Received : 
+> Finished run 8
+> Received : 
+> Finished run 9
+> Received : 
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xml ./build/libpt2pt_get_matching.so pt2pt_get_matching --cfg=surf/precision:1e-9
+> Received : M
+> Finished run 0
+> Received : Mess
+> Finished run 1
+> Received : Message of run 2
+> Finished run 2
+> Received : Message of run 3
+> Finished run 3
+> Received : Message of run 4
+> Finished run 4
+> Received : Message of run 5
+> Finished run 5
+> Received : Message of run 6
+> Finished run 6
+> Received : Message of run 7
+> Finished run 7
+> Received : Message of run 8
+> Finished run 8
+> Received : Message of run 9
+> Finished run 9
+> Received : Message of run 10
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_fake_memory.xml ./build/libpt2pt_get_matching.so pt2pt_get_matching --cfg=surf/precision:1e-9
+> Received : 
+> Finished run 0
+> Received : 
+> Finished run 1
+> Received : 
+> Finished run 2
+> Received : 
+> Finished run 3
+> Received : 
+> Finished run 4
+> Received : 
+> Finished run 5
+> Received : 
+> Finished run 6
+> Received : 
+> Finished run 7
+> Received : 
+> Finished run 8
+> Received : 
+> Finished run 9
+> Received : 
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_real_memory.xml ./build/libpt2pt_get_matching.so pt2pt_get_matching --cfg=surf/precision:1e-9
+> Received : M
+> Finished run 0
+> Received : Mess
+> Finished run 1
+> Received : Message of run 2
+> Finished run 2
+> Received : Message of run 3
+> Finished run 3
+> Received : Message of run 4
+> Finished run 4
+> Received : Message of run 5
+> Finished run 5
+> Received : Message of run 6
+> Finished run 6
+> Received : Message of run 7
+> Finished run 7
+> Received : Message of run 8
+> Finished run 8
+> Received : Message of run 9
+> Finished run 9
+> Received : Message of run 10
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_no_e2e.xml ./build/libpt2pt_get_matching.so pt2pt_get_matching --cfg=surf/precision:1e-9
+> Received : M
+> Finished run 0
+> Received : Mess
+> Finished run 1
+> Received : Message of run 2
+> Finished run 2
+> Received : Message of run 3
+> Finished run 3
+> Received : Message of run 4
+> Finished run 4
+> Received : Message of run 5
+> Finished run 5
+> Received : Message of run 6
+> Finished run 6
+> Received : Message of run 7
+> Finished run 7
+> Received : Message of run 8
+> Finished run 8
+> Received : Message of run 9
+> Finished run 9
+> Received : Message of run 10
+> Finished run 10

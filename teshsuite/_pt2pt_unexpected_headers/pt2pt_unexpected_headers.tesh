@@ -1,0 +1,20 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xml ./build/libpt2pt_unexpected_headers.so pt2pt_unexpected_headers --cfg=surf/precision:1e-9
+> Target after PUT : overflow 42 - priority 0
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_unexpected_headers.so pt2pt_unexpected_headers --cfg=surf/precision:1e-9
+> Target after PUT : overflow 0 - priority 0
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_real_memory.xml ./build/libpt2pt_unexpected_headers.so pt2pt_unexpected_headers --cfg=surf/precision:1e-9
+> Target after PUT : overflow 42 - priority 0
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_fake_memory.xml ./build/libpt2pt_unexpected_headers.so pt2pt_unexpected_headers --cfg=surf/precision:1e-9
+> Target after PUT : overflow 0 - priority 0
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_no_e2e.xml ./build/libpt2pt_unexpected_headers.so pt2pt_unexpected_headers --cfg=surf/precision:1e-9
+> Target after PUT : overflow 42 - priority 0

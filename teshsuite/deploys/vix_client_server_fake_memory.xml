@@ -1,0 +1,32 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd">
+<platform version="4.1">
+	<actor host="vix10042" function="user_app">
+    	<prop id="use_real_memory" value="false"/>
+	</actor>
+	<actor host="vix10042_NIC" function="nic_initiator">
+    	<prop id="VN" value="3"/>
+	</actor>
+	<actor host="vix10042_NIC" function="nic_target">
+    	<prop id="VN" value="1"/>
+	</actor>
+	<actor host="vix10042_NIC" function="nic_target">
+    	<prop id="VN" value="3"/>
+	</actor>
+	<actor host="vix10042_NIC" function="nic_e2e"/>
+
+	<actor host="vix10169" function="user_app">
+		<argument value="10042"/>
+    	<prop id="use_real_memory" value="false"/>
+	</actor>
+	<actor host="vix10169_NIC" function="nic_initiator">
+    	<prop id="VN" value="1"/>
+	</actor>
+	<actor host="vix10169_NIC" function="nic_initiator">
+    	<prop id="VN" value="3"/>
+	</actor>
+	<actor host="vix10169_NIC" function="nic_target">
+    	<prop id="VN" value="3"/>
+	</actor>
+	<actor host="vix10169_NIC" function="nic_e2e"/>
+</platform>

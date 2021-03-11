@@ -1,0 +1,235 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_put_matching.so pt2pt_put_matching --cfg=surf/precision:1e-9
+> First buffer : 
+> Third buffer : 
+> HDR data : 100
+> Finished run 0
+> First buffer : 
+> Third buffer : 
+> HDR data : 101
+> Finished run 1
+> First buffer : 
+> Third buffer : 
+> HDR data : 102
+> Finished run 2
+> First buffer : 
+> Third buffer : 
+> HDR data : 103
+> Finished run 3
+> First buffer : 
+> Third buffer : 
+> HDR data : 104
+> Finished run 4
+> First buffer : 
+> Third buffer : 
+> HDR data : 105
+> Finished run 5
+> First buffer : 
+> Third buffer : 
+> HDR data : 106
+> Finished run 6
+> First buffer : 
+> Third buffer : 
+> HDR data : 107
+> Finished run 7
+> First buffer : 
+> Third buffer : 
+> HDR data : 108
+> Finished run 8
+> First buffer : 
+> Third buffer : 
+> HDR data : 109
+> Finished run 9
+> First buffer : 
+> Third buffer : 
+> HDR data : 110
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xml ./build/libpt2pt_put_matching.so pt2pt_put_matching --cfg=surf/precision:1e-9
+> First buffer : 
+> Third buffer : M
+> HDR data : 100
+> Finished run 0
+> First buffer : 
+> Third buffer : Mess
+> HDR data : 101
+> Finished run 1
+> First buffer : 
+> Third buffer : Message of run 2
+> HDR data : 102
+> Finished run 2
+> First buffer : 
+> Third buffer : Message of run 3
+> HDR data : 103
+> Finished run 3
+> First buffer : 
+> Third buffer : Message of run 4
+> HDR data : 104
+> Finished run 4
+> First buffer : 
+> Third buffer : Message of run 5
+> HDR data : 105
+> Finished run 5
+> First buffer : 
+> Third buffer : Message of run 6
+> HDR data : 106
+> Finished run 6
+> First buffer : 
+> Third buffer : Message of run 7
+> HDR data : 107
+> Finished run 7
+> First buffer : 
+> Third buffer : Message of run 8
+> HDR data : 108
+> Finished run 8
+> First buffer : 
+> Third buffer : Message of run 9
+> HDR data : 109
+> Finished run 9
+> First buffer : 
+> Third buffer : Message of run 10
+> HDR data : 110
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_fake_memory.xml ./build/libpt2pt_put_matching.so pt2pt_put_matching --cfg=surf/precision:1e-9
+> First buffer : 
+> Third buffer : 
+> HDR data : 100
+> Finished run 0
+> First buffer : 
+> Third buffer : 
+> HDR data : 101
+> Finished run 1
+> First buffer : 
+> Third buffer : 
+> HDR data : 102
+> Finished run 2
+> First buffer : 
+> Third buffer : 
+> HDR data : 103
+> Finished run 3
+> First buffer : 
+> Third buffer : 
+> HDR data : 104
+> Finished run 4
+> First buffer : 
+> Third buffer : 
+> HDR data : 105
+> Finished run 5
+> First buffer : 
+> Third buffer : 
+> HDR data : 106
+> Finished run 6
+> First buffer : 
+> Third buffer : 
+> HDR data : 107
+> Finished run 7
+> First buffer : 
+> Third buffer : 
+> HDR data : 108
+> Finished run 8
+> First buffer : 
+> Third buffer : 
+> HDR data : 109
+> Finished run 9
+> First buffer : 
+> Third buffer : 
+> HDR data : 110
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_real_memory.xml ./build/libpt2pt_put_matching.so pt2pt_put_matching --cfg=surf/precision:1e-9
+> First buffer : 
+> Third buffer : M
+> HDR data : 100
+> Finished run 0
+> First buffer : 
+> Third buffer : Mess
+> HDR data : 101
+> Finished run 1
+> First buffer : 
+> Third buffer : Message of run 2
+> HDR data : 102
+> Finished run 2
+> First buffer : 
+> Third buffer : Message of run 3
+> HDR data : 103
+> Finished run 3
+> First buffer : 
+> Third buffer : Message of run 4
+> HDR data : 104
+> Finished run 4
+> First buffer : 
+> Third buffer : Message of run 5
+> HDR data : 105
+> Finished run 5
+> First buffer : 
+> Third buffer : Message of run 6
+> HDR data : 106
+> Finished run 6
+> First buffer : 
+> Third buffer : Message of run 7
+> HDR data : 107
+> Finished run 7
+> First buffer : 
+> Third buffer : Message of run 8
+> HDR data : 108
+> Finished run 8
+> First buffer : 
+> Third buffer : Message of run 9
+> HDR data : 109
+> Finished run 9
+> First buffer : 
+> Third buffer : Message of run 10
+> HDR data : 110
+> Finished run 10
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_no_e2e.xml ./build/libpt2pt_put_matching.so pt2pt_put_matching --cfg=surf/precision:1e-9
+> First buffer : 
+> Third buffer : M
+> HDR data : 100
+> Finished run 0
+> First buffer : 
+> Third buffer : Mess
+> HDR data : 101
+> Finished run 1
+> First buffer : 
+> Third buffer : Message of run 2
+> HDR data : 102
+> Finished run 2
+> First buffer : 
+> Third buffer : Message of run 3
+> HDR data : 103
+> Finished run 3
+> First buffer : 
+> Third buffer : Message of run 4
+> HDR data : 104
+> Finished run 4
+> First buffer : 
+> Third buffer : Message of run 5
+> HDR data : 105
+> Finished run 5
+> First buffer : 
+> Third buffer : Message of run 6
+> HDR data : 106
+> Finished run 6
+> First buffer : 
+> Third buffer : Message of run 7
+> HDR data : 107
+> Finished run 7
+> First buffer : 
+> Third buffer : Message of run 8
+> HDR data : 108
+> Finished run 8
+> First buffer : 
+> Third buffer : Message of run 9
+> HDR data : 109
+> Finished run 9
+> First buffer : 
+> Third buffer : Message of run 10
+> HDR data : 110
+> Finished run 10

@@ -1,0 +1,23 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_auto_unlink.so pt2pt_auto_unlink --cfg=surf/precision:1e-9
+> LE remaining : 9
+> Sent message 0
+> LE remaining : 8
+> Sent message 1
+> LE remaining : 7
+> Sent message 2
+> LE remaining : 6
+> Sent message 3
+> LE remaining : 5
+> Sent message 4
+> LE remaining : 4
+> Sent message 5
+> LE remaining : 3
+> Sent message 6
+> LE remaining : 2
+> Sent message 7
+> LE remaining : 1
+> Sent message 8
+> LE remaining : 0
+> Sent message 9

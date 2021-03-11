@@ -1,0 +1,125 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xml ./build/libpt2pt_offsets.so pt2pt_offsets --cfg=surf/precision:1e-9
+> --- Local offset test
+> Target after PUT : 42
+> Target after FETCH_ATOMIC : 69
+> Target value fetched in atomic : 42
+> --- Remote offset test
+> Target[0] after PUT : 0
+> Target[1] after PUT : 42
+> Target[2] after PUT : 0
+> --- MANAGE_LOCAL test
+> Target[0] after PUT : 27
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after PUT : 27
+> Target[1] after PUT : 42
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after GET : 27
+> Target[1] after GET : 42
+> Target[2] after GET : 69
+> Target[3] after GET : 999
+> Target value fetched in get : 69
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_offsets.so pt2pt_offsets --cfg=surf/precision:1e-9
+> --- Local offset test
+> Target after PUT : 0
+> Target after FETCH_ATOMIC : 0
+> Target value fetched in atomic : 666
+> --- Remote offset test
+> Target[0] after PUT : 0
+> Target[1] after PUT : 0
+> Target[2] after PUT : 0
+> --- MANAGE_LOCAL test
+> Target[0] after PUT : 999
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after PUT : 999
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after GET : 999
+> Target[1] after GET : 999
+> Target[2] after GET : 69
+> Target[3] after GET : 999
+> Target value fetched in get : 666
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_real_memory.xml ./build/libpt2pt_offsets.so pt2pt_offsets --cfg=surf/precision:1e-9
+> --- Local offset test
+> Target after PUT : 42
+> Target after FETCH_ATOMIC : 69
+> Target value fetched in atomic : 42
+> --- Remote offset test
+> Target[0] after PUT : 0
+> Target[1] after PUT : 42
+> Target[2] after PUT : 0
+> --- MANAGE_LOCAL test
+> Target[0] after PUT : 27
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after PUT : 27
+> Target[1] after PUT : 42
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after GET : 27
+> Target[1] after GET : 42
+> Target[2] after GET : 69
+> Target[3] after GET : 999
+> Target value fetched in get : 69
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_fake_memory.xml ./build/libpt2pt_offsets.so pt2pt_offsets --cfg=surf/precision:1e-9
+> --- Local offset test
+> Target after PUT : 0
+> Target after FETCH_ATOMIC : 0
+> Target value fetched in atomic : 666
+> --- Remote offset test
+> Target[0] after PUT : 0
+> Target[1] after PUT : 0
+> Target[2] after PUT : 0
+> --- MANAGE_LOCAL test
+> Target[0] after PUT : 999
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after PUT : 999
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after GET : 999
+> Target[1] after GET : 999
+> Target[2] after GET : 69
+> Target[3] after GET : 999
+> Target value fetched in get : 666
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_no_e2e.xml ./build/libpt2pt_offsets.so pt2pt_offsets --cfg=surf/precision:1e-9
+> --- Local offset test
+> Target after PUT : 42
+> Target after FETCH_ATOMIC : 69
+> Target value fetched in atomic : 42
+> --- Remote offset test
+> Target[0] after PUT : 0
+> Target[1] after PUT : 42
+> Target[2] after PUT : 0
+> --- MANAGE_LOCAL test
+> Target[0] after PUT : 27
+> Target[1] after PUT : 999
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after PUT : 27
+> Target[1] after PUT : 42
+> Target[2] after PUT : 69
+> Target[3] after PUT : 999
+> Target[0] after GET : 27
+> Target[1] after GET : 42
+> Target[2] after GET : 69
+> Target[3] after GET : 999
+> Target value fetched in get : 69

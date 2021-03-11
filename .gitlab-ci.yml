@@ -1,0 +1,10 @@
+image: simgrid/build-deps
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+test:
+  script:
+    - mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/opt/s4bxi .. && make -j 2 && make install && cd ..
+    - export PATH=$PATH:/opt/simgrid/bin
+    - cd teshsuite && ./run.sh
