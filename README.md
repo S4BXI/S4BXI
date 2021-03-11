@@ -83,9 +83,3 @@ Several options allow the user to make faster simulations, by simplifying the mo
 * __model_pci__ : If `false`, most (but not all, we still need to yield from times to times, which is good for both performance and precision) PCI communication are skipped. That determines wether we model inline messages and PIO / DMA difference. It can be set as a `<prop>` in the main actor of each node (default value is `true`)
 
 * __e2e_off__ : If true, no re-transmit logic is executed. There is no specific prop to set, if you want it `true` simply put no E2E actor in your deploy for the desired node, otherwise it will be `false`
-
-## TODO
-
-* Implement options (at least for PUT, also allow user_data in requests, etc.)
-* Maybe model the fact that PCIe links are dual-simplex and not full duplex ? (maybe unnecessarily complex)
-* Test with complex patterns and many actors
