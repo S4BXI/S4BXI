@@ -1,10 +1,14 @@
 #!/usr/bin/env sh
 
 # Copyright (c) 2014-2021. The SimGrid Team.
+# Copyright (c) 2021 Bull S.A.S
 # All rights reserved.
 
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the license (GNU LGPL) which comes with this package.
+
+# Some modification were made to this script to adapt it to S4BXI
+# instead of SMPI, although most of it works in a similar way
 
 SIMGRID_VERSION="@SIMGRID_VERSION_STRING@"
 SIMGRID_GITHASH="@SIMGRID_GITHASH@"
