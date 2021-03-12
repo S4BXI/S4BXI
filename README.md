@@ -2,6 +2,10 @@
 
 [![ci](https://framagit.org/s4bxi/s4bxi/badges/master/pipeline.svg)](https://framagit.org/s4bxi/s4bxi/pipelines?scope=branches)
 
+> *S4BXI: because your real platform is a real mess, and your simulator a faithful model*
+
+*(Thanks Martin)*
+
 Wrapper / framework above SimGrid's S4U interface, which provides a model of the [Portals4 network API](https://cs.sandia.gov/Portals/). More specifically, it is tuned to model as best as possible Bull's hardware implementation of portals (BXI interconnect)
 
 ## Installation
