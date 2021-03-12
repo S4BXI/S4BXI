@@ -128,3 +128,8 @@ ptl_nid_t BxiActor::getNid()
 {
     return node->nid;
 }
+
+string BxiActor::getSlug()
+{
+    return slug;
+}

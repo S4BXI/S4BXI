@@ -172,7 +172,7 @@ unsigned int s4bxi_alarm(unsigned int __seconds) __THROW
 
 int s4bxi_gethostname(char* __name, size_t __len)
 {
-    const char* name = s4u::Actor::self()->get_host()->get_cname();
+    const char* name = GET_CURRENT_MAIN_ACTOR->getSlug().c_str();
     strncpy(__name, name, __len);
 
     return 0;
