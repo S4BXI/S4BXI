@@ -1,6 +1,6 @@
 # S4BXI
 
-[![ci](https://gitlab.inria.fr/jemmanue/s4bxi/badges/master/pipeline.svg)](https://gitlab.inria.fr/jemmanue/s4bxi/pipelines?scope=branches)
+[![ci](https://framagit.org/s4bxi/s4bxi/badges/master/pipeline.svg)](https://framagit.org/s4bxi/s4bxi/pipelines?scope=branches)
 
 Wrapper / framework above SimGrid's S4U interface, which provides a model of the [Portals4 network API](https://cs.sandia.gov/Portals/). More specifically, it is tuned to model as best as possible Bull's hardware implementation of portals (BXI interconnect)
 

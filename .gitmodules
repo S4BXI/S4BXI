@@ -1,6 +1,3 @@
-[submodule "teshsuite/platforms"]
-	path = teshsuite/platforms
-	url = ../s4bxi-platforms.git
 [submodule "cmake/Modules"]
 	path = cmake/Modules
 	url = ../s4bxi-cmake-modules

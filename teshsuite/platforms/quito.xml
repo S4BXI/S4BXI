@@ -1,0 +1,174 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
+<platform version="4.1">
+	<config>
+		<prop id="network/model" value="CM02" />
+		<prop id="network/loopback-lat" value="0.000000001" />
+		<prop id="network/loopback-bw" value="99000000000" />
+	</config>
+	<zone id="AS0" routing="Floyd">
+		<host id="quito0" speed="10Gf"/>
+		<host id="quito0_NIC" speed="1Gf">
+			<!--
+				I don't like having a NID = 0, it can hide some bugs, and setting
+			 	it manually allows to test this feature (the "nid" parameter)
+			-->
+			<prop id="nid" value="42"/>
+		</host>
+		<host id="quito1" speed="10Gf"/>
+		<host id="quito1_NIC" speed="1Gf"/>
+		<host id="quito2" speed="10Gf"/>
+		<host id="quito2_NIC" speed="1Gf"/>
+		<host id="quito3" speed="10Gf"/>
+		<host id="quito3_NIC" speed="1Gf"/>
+		<host id="quito4" speed="10Gf"/>
+		<host id="quito4_NIC" speed="1Gf"/>
+		<host id="quito5" speed="10Gf"/>
+		<host id="quito5_NIC" speed="1Gf"/>
+		<host id="quito6" speed="10Gf"/>
+		<host id="quito6_NIC" speed="1Gf"/>
+		<host id="quito7" speed="10Gf"/>
+		<host id="quito7_NIC" speed="1Gf"/>
+		<host id="quito8" speed="10Gf"/>
+		<host id="quito8_NIC" speed="1Gf"/>
+		<host id="quito9" speed="10Gf"/>
+		<host id="quito9_NIC" speed="1Gf"/>
+		<host id="quito10" speed="10Gf"/>
+		<host id="quito10_NIC" speed="1Gf"/>
+
+		<router id="wmc10100"/>
+
+		<link id="quito0_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito1_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito2_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito3_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito4_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito5_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito6_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito7_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito8_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito9_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito10_BXI" bandwidth="11.1GBps" latency="500ns"/>
+		<link id="quito0_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito0_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito1_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito1_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito2_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito2_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito3_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito3_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito4_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito4_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito5_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito5_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito6_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito6_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito7_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito7_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito8_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito8_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito9_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito9_PCI" bandwidth="15.75GBps" latency="250ns"/>
+		<link id="quito10_PCI_FAT" bandwidth="11.1GBps" latency="0ns" sharing_policy="FATPIPE"/>
+		<link id="quito10_PCI" bandwidth="15.75GBps" latency="250ns"/>
+
+		<!-- Host0 wiring -->
+		<route src="quito0" dst="quito0_NIC">
+			<link_ctn id="quito0_PCI_FAT" />
+			<link_ctn id="quito0_PCI" />
+		</route>
+		<route src="quito0_NIC" dst="wmc10100">
+			<link_ctn id="quito0_BXI"/>
+		</route>
+
+		<!-- Host1 wiring -->
+		<route src="quito1" dst="quito1_NIC">
+			<link_ctn id="quito1_PCI_FAT" />
+			<link_ctn id="quito1_PCI" />
+		</route>
+		<route src="quito1_NIC" dst="wmc10100">
+			<link_ctn id="quito1_BXI"/>
+		</route>
+
+		<!-- Host2 wiring -->
+		<route src="quito2" dst="quito2_NIC">
+			<link_ctn id="quito2_PCI_FAT" />
+			<link_ctn id="quito2_PCI" />
+		</route>
+		<route src="quito2_NIC" dst="wmc10100">
+			<link_ctn id="quito2_BXI"/>
+		</route>
+
+		<!-- Host3 wiring -->
+		<route src="quito3" dst="quito3_NIC">
+			<link_ctn id="quito3_PCI_FAT" />
+			<link_ctn id="quito3_PCI" />
+		</route>
+		<route src="quito3_NIC" dst="wmc10100">
+			<link_ctn id="quito3_BXI"/>
+		</route>
+
+		<!-- Host4 wiring -->
+		<route src="quito4" dst="quito4_NIC">
+			<link_ctn id="quito4_PCI_FAT" />
+			<link_ctn id="quito4_PCI" />
+		</route>
+		<route src="quito4_NIC" dst="wmc10100">
+			<link_ctn id="quito4_BXI"/>
+		</route>
+
+		<!-- Host5 wiring -->
+		<route src="quito5" dst="quito5_NIC">
+			<link_ctn id="quito5_PCI_FAT" />
+			<link_ctn id="quito5_PCI" />
+		</route>
+		<route src="quito5_NIC" dst="wmc10100">
+			<link_ctn id="quito5_BXI"/>
+		</route>
+
+		<!-- Host6 wiring -->
+		<route src="quito6" dst="quito6_NIC">
+			<link_ctn id="quito6_PCI_FAT" />
+			<link_ctn id="quito6_PCI" />
+		</route>
+		<route src="quito6_NIC" dst="wmc10100">
+			<link_ctn id="quito6_BXI"/>
+		</route>
+
+		<!-- Host7 wiring -->
+		<route src="quito7" dst="quito7_NIC">
+			<link_ctn id="quito7_PCI_FAT" />
+			<link_ctn id="quito7_PCI" />
+		</route>
+		<route src="quito7_NIC" dst="wmc10100">
+			<link_ctn id="quito7_BXI"/>
+		</route>
+
+		<!-- Host8 wiring -->
+		<route src="quito8" dst="quito8_NIC">
+			<link_ctn id="quito8_PCI_FAT" />
+			<link_ctn id="quito8_PCI" />
+		</route>
+		<route src="quito8_NIC" dst="wmc10100">
+			<link_ctn id="quito8_BXI"/>
+		</route>
+
+		<!-- Host9 wiring -->
+		<route src="quito9" dst="quito9_NIC">
+			<link_ctn id="quito9_PCI_FAT" />
+			<link_ctn id="quito9_PCI" />
+		</route>
+		<route src="quito9_NIC" dst="wmc10100">
+			<link_ctn id="quito9_BXI"/>
+		</route>
+
+		<!-- Host10 wiring -->
+		<route src="quito10" dst="quito10_NIC">
+			<link_ctn id="quito10_PCI_FAT" />
+			<link_ctn id="quito10_PCI" />
+		</route>
+		<route src="quito10_NIC" dst="wmc10100">
+			<link_ctn id="quito10_BXI"/>
+		</route>
+	</zone>
+</platform>
