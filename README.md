@@ -6,7 +6,7 @@
 
 *(Thanks Martin)*
 
-Wrapper / framework above SimGrid's S4U interface, which provides a model of the [Portals4 network API](https://cs.sandia.gov/Portals/). More specifically, it is tuned to model as best as possible Bull's hardware implementation of portals (BXI interconnect)
+Simulator written using SimGrid's S4U interface, which provides a model of the [Portals4 network API](https://cs.sandia.gov/Portals/). More specifically, it is tuned to model as best as possible Bull's hardware implementation of portals (BXI interconnect)
 
 ## Installation
 
