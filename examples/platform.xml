@@ -1,0 +1,34 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
+<platform version="4.1">
+	<config>
+		<prop id="network/model" value="CM02" />
+		<prop id="network/loopback-lat" value="0.000000001" />
+		<prop id="network/loopback-bw" value="99000000000" />
+	</config>
+	<zone id="AS0" routing="Floyd">
+        <!-- Hosts -->
+		<host id="machine0" speed="10Gf"/>
+		<host id="machine0_NIC" speed="1Gf">
+            <prop id="nid" value="42"/>
+		</host>
+
+        <!-- A single switch/router -->
+		<router id="router0"/>
+
+        <!-- PCI cable -->
+        <link id="machine0_PCI_FAT" bandwidth="10GBps" latency="0ns" sharing_policy="FATPIPE"/>
+        <link id="machine0_PCI" bandwidth="15.75GBps" latency="250ns"/>
+        <!-- Network cable -->
+		<link id="machine0_BXI" bandwidth="10GBps" latency="500ns"/>
+
+        <!-- Wiring, linking cables with hosts and routers -->
+		<route src="machine0" dst="machine0_NIC">
+			<link_ctn id="machine0_PCI_FAT" />
+			<link_ctn id="machine0_PCI" />
+		</route>
+		<route src="machine0_NIC" dst="router0">
+			<link_ctn id="machine0_BXI"/>
+		</route>
+	</zone>
+</platform>

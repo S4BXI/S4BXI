@@ -1,0 +1,13 @@
+
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
+<platform version="4.1">
+    <actor host="machine0" function="user_app"/>
+    <actor host="machine0_NIC" function="nic_initiator">
+        <prop id="VN" value="3"/>
+    </actor>
+    <actor host="machine0_NIC" function="nic_target">
+        <prop id="VN" value="1"/>
+    </actor>
+    <actor host="machine0_NIC" function="nic_e2e"/>
+</platform>
