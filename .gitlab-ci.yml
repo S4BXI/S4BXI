@@ -7,7 +7,7 @@ test:
   script:
     # Install the deps
     - apt-get update
-    - apt-get install -y cmake build-essential libboost-dev libboost-all-dev git
+    - apt-get install -y cmake build-essential libboost-dev libboost-all-dev
     # Build S4BXI
     - ./rebuild.sh
     - export PATH=$PATH:/opt/s4bxi/bin:/usr/lib/x86_64-linux-gnu/simgrid
