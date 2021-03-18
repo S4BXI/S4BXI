@@ -98,7 +98,7 @@ file(READ ${CMAKE_HOME_DIRECTORY}/src/scripts/s4bxitools.sh S4BXITOOLS_SH) # Def
 set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(includedir "${CMAKE_INSTALL_INCLUDEDIR}")
 set(libdir "${CMAKE_INSTALL_LIBDIR}")
-set(includeflag "-I${includedir} -I${includedir}/s4bxi -I${SimGrid_INCLUDE_DIR}")
+set(includeflag "-I${includedir} -I${includedir}/s4bxi")
 set(CMAKE_S4BXI_COMMAND "export LD_LIBRARY_PATH=\"${libdir}")
 if(NS3_LIBRARY_PATH)
     set(CMAKE_S4BXI_COMMAND "${CMAKE_S4BXI_COMMAND}:${NS3_LIBRARY_PATH}")

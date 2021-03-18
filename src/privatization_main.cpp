@@ -14,10 +14,12 @@
  * Lesser General Public License for more details.
  */
 
-
 #include "s4bxi/s4bxi.hpp"
 
 int main(int argc, char* argv[])
 {
+    if (getenv("S4BXI_PRETEND_CC") != NULL)
+        return 0;
+
     return s4bxi_default_main(argc, argv);
 }

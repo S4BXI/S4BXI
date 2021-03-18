@@ -17,8 +17,6 @@
 #ifndef S4BXI_S4BXI_SAMPLE_H
 #define S4BXI_S4BXI_SAMPLE_H
 
-#include <xbt/base.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -14,6 +14,8 @@
  * Lesser General Public License for more details.
  */
 
+#include <xbt/base.h>
+
 #include "s4bxi/s4bxi_sample.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
