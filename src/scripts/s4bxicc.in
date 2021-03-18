@@ -30,12 +30,12 @@ fi
 list_set CFLAGS @S4BXI_C_FLAGS@
 list_add LINKARGS
 if [ "x@WIN32@" = "x1" ]; then
-    list_add CFLAGS "-include" "@includedir@/s4bxi/s4bxi_main.h"
+    list_add CFLAGS "-include" "@includedir@/s4bxi/s4bxi_main.h" # Oops, that's bad copy/paste, but I don't plan on being compatible with windows anyway
     list_add LINKARGS "@libdir@\libsimgrid.dll"
 elif [ "x@APPLE@" = "x1" ]; then
     list_add CFLAGS "-fPIC"
     if [ "x${S4BXI_PRETEND_CC}" = "x" ]; then
-       list_add CFLAGS "-include" "@includedir@/s4bxi/s4bxi_redefine.h"
+       # list_add CFLAGS "-include" "@includedir@/s4bxi/s4bxi_redefine.h" # We'll need this at some point, but it doesn't work well right now
        list_add LINKARGS "-shared"
     else
        echo "Warning: s4bxicc pretends to be a regular compiler (S4BXI_PRETEND_CC is set). Produced binaries will not be usable in SimGrid."
@@ -46,7 +46,7 @@ elif [ "x@APPLE@" = "x1" ]; then
 else
     list_add CFLAGS "-fPIC"
     if [ "x${S4BXI_PRETEND_CC}" = "x" ]; then
-       list_add CFLAGS "-include" "@includedir@/s4bxi/s4bxi_redefine.h"
+       # list_add CFLAGS "-include" "@includedir@/s4bxi/s4bxi_redefine.h" # We'll need this at some point, but it doesn't work well right now
        list_add LINKARGS "-shared"
     else
        echo "Warning: s4bxicc pretends to be a regular compiler (S4BXI_PRETEND_CC is set). Produced binaries will not be usable in SimGrid."
