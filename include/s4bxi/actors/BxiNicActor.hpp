@@ -26,7 +26,6 @@
 class BxiNicActor : public BxiActor {
   protected:
     bxi_vn vn;
-    void maybe_issue_send(BxiPutRequest* req);
     void maybe_issue_get(BxiGetRequest* req);
     void maybe_issue_fetch_atomic(BxiFetchAtomicRequest* req);
     void reliable_comm(BxiMsg* msg);

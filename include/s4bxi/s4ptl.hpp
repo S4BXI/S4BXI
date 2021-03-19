@@ -93,8 +93,8 @@ typedef vector<BxiME*> BxiList;
 
 class BxiPT {
   public:
-    BxiList* priority_list;  // Stores both ME and LE
-    BxiList* overflow_list;  // Same
+    BxiList* priority_list;             // Stores both ME and LE
+    BxiList* overflow_list;             // Same
     vector<BxiMsg*> unexpected_headers; // On the NIC UH are a type of ME, but for us I think a BxiMsg is easier
     BxiEQ* eq;
     BxiNI* ni;
@@ -241,6 +241,9 @@ class BxiPutRequest : public BxiRequest {
     BxiPutRequest(BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits, ptl_pid_t target_pid,
                   ptl_pt_index_t pt_index, void* user_ptr, bool service_vn, ptl_size_t local_offset,
                   ptl_size_t remote_offset, ptl_ack_req_t ack_req, ptl_hdr_data_t hdr);
+
+    void issue_ack();
+    void maybe_issue_send();
 };
 
 class BxiAtomicRequest : public BxiPutRequest {

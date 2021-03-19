@@ -93,7 +93,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     // I don't know if it is an issue or not. Actually that could be better
     // to process more messages in parallel with few actors ?
     if (msg->simulated_size <= 64)
-        maybe_issue_send(req);
+        req->maybe_issue_send();
 
     reliable_comm(msg);
 

@@ -275,16 +275,25 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
 
         if (need_portals_ack || !S4BXI_CONFIG(e2e_off)) {
-            auto ack  = new BxiMsg(*msg);
-            ack->type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
-            // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
-            // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
-            ack->initiator      = msg->target;
-            ack->target         = msg->initiator;
-            ack->simulated_size = ACK_SIZE;
-            ack->retry_count    = 0;
+            if (need_portals_ack && S4BXI_CONFIG(quick_acks)) {
+                // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
+                req->process_state = S4BXI_REQ_FINISHED;
+                // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
+                // although we're currently processing the message at the target side.
+                req->maybe_issue_send();
+                req->issue_ack();
+            } else {
+                auto ack  = new BxiMsg(*msg);
+                ack->type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
+                // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
+                // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
+                ack->initiator      = msg->target;
+                ack->target         = msg->initiator;
+                ack->simulated_size = ACK_SIZE;
+                ack->retry_count    = 0;
 
-            tx_queue->put(ack, 0, true);
+                tx_queue->put(ack, 0, true);
+            }
         }
 
         if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
@@ -449,18 +458,9 @@ void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
     if (req->process_state <= S4BXI_REQ_RECEIVED) {
         req->process_state = S4BXI_REQ_ANSWERED;
 
-        maybe_issue_send(req);
+        req->maybe_issue_send();
 
-        if (HAS_PTL_OPTION(req->md->md, PTL_MD_EVENT_CT_ACK))
-            req->md->increment_ct(req->payload_size);
-        if (req->ack_req == PTL_ACK_REQ) {
-            auto ack          = new ptl_event_t;
-            ack->type         = PTL_EVENT_ACK;
-            ack->ni_fail_type = PTL_OK;
-            ack->user_ptr     = req->user_ptr;
-            ack->mlength      = req->payload_size; // TO-DO : support truncated payloads
-            issue_event((BxiEQ*)req->md->md->eq_handle, ack);
-        }
+        req->issue_ack();
     }
 }
 
@@ -481,7 +481,7 @@ void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
     if (msg->parent_request->type == S4BXI_PUT_REQUEST) {
         auto req = (BxiPutRequest*)msg->parent_request;
         if (req->ack_req == PTL_NO_ACK_REQ)
-            maybe_issue_send(req);
+            req->maybe_issue_send();
     } else if (msg->parent_request->type == S4BXI_GET_REQUEST) {
         auto req = (BxiGetRequest*)msg->parent_request;
         maybe_issue_get(req);

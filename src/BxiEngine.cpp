@@ -35,6 +35,9 @@ using namespace simgrid;
 
 BxiEngine* BxiEngine::instance = nullptr;
 
+#define LOG_STRING_CONFIG(x) XBT_DEBUG("%s: %s", #x, config->x.c_str())
+#define LOG_CONFIG(x) XBT_DEBUG("%s: %s", #x, to_string(config->x).c_str())
+
 BxiEngine::BxiEngine()
 {
     config = new s4bxi_config;
@@ -49,6 +52,20 @@ BxiEngine::BxiEngine()
     config->keep_temps         = get_bool_s4bxi_param("KEEP_TEMPS", false);
     config->max_memcpy         = get_long_s4bxi_param("MAX_MEMCPY", -1);
     config->cpu_factor         = get_double_s4bxi_param("CPU_FACTOR", 1.0F);
+    config->quick_acks         = get_bool_s4bxi_param("QUICK_ACKS", false);
+
+    XBT_DEBUG("Engine was configured with:");
+    LOG_CONFIG(max_retries);
+    LOG_CONFIG(retry_timeout);
+    LOG_CONFIG(model_pci_commands);
+    LOG_CONFIG(e2e_off);
+    LOG_STRING_CONFIG(log_folder);
+    LOG_CONFIG(log_level);
+    LOG_STRING_CONFIG(privatize_libs);
+    LOG_CONFIG(keep_temps);
+    LOG_CONFIG(max_memcpy);
+    LOG_CONFIG(cpu_factor);
+    LOG_CONFIG(quick_acks);
 }
 
 BxiEngine::~BxiEngine()

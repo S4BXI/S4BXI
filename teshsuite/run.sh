@@ -27,8 +27,7 @@ for d in _*/ ; do # Run all
     echo "| ~~~~~~~~~~~~~~~~~~"
     echo "|"
     cd $d || exit 1
-    # These env var are kind of ugly, but it will probably simplify CI
-    PATH="$PATH:/opt/s4bxi/bin" LD_LIBRARY_PATH="/opt/s4bxi/lib:/opt/simgrid/lib" tesh *.tesh
+    tesh *.tesh
     OUTPUT=$?
     echo "|"
     if [ $OUTPUT == 0 ]

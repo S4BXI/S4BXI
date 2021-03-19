@@ -16,6 +16,7 @@
 
 #include "s4bxi/s4ptl.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
+#include "s4bxi/s4bxi_util.hpp"
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_request, "Messages specific to s4ptl request implementation");
 
@@ -52,6 +53,56 @@ BxiPutRequest::BxiPutRequest(BxiMD* md, ptl_size_t payload_size, bool matching, 
     , hdr(hdr)
 {
 }
+
+void BxiPutRequest::issue_ack()
+{
+    if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_ACK))
+        md->increment_ct(payload_size);
+    if (ack_req == PTL_ACK_REQ) {
+        auto ack          = new ptl_event_t;
+        ack->type         = PTL_EVENT_ACK;
+        ack->ni_fail_type = PTL_OK;
+        ack->user_ptr     = user_ptr;
+        ack->mlength      = payload_size; // TO-DO : support truncated payloads
+        (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, ack);
+    }
+}
+
+void BxiPutRequest::maybe_issue_send() {
+    // Make sure the SEND event hasn't already been issued for this MD.
+    // It could have been if :
+    //
+    //    * We're retransmitting (E2E) a buffered PUT (seems unlikely
+    //      but it is physically possible)
+    //
+    //    * We're processing the portals ACK after a buffered PUT
+    //      (wether there was E2E retries in there or not)
+    //
+    //    * We're processing a retransmitted ACK after a PUT that was
+    //      not buffered
+    if (send_event_issued)
+        return;
+
+    // if (!md || !md->md || !md->ni) return;
+    // This is extremely ugly: if the md has been deleted it probably comes from another error
+    // somewhere, but maybe it can come from an error in the user code ? In this case I guess
+    // we should fail silently, and hope we don't mess anything up (I guess that's how a real-
+    // world NIC works ? It doesn't segfault ? Who knows about NIC's life ...)
+
+    send_event_issued = true;
+
+    if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_SEND))
+        md->increment_ct(payload_size);
+
+    if (!HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SEND_DISABLE) &&
+        !HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SUCCESS_DISABLE)) {
+        auto event          = new ptl_event_t;
+        event->type         = PTL_EVENT_SEND;
+        event->ni_fail_type = PTL_OK;
+        event->user_ptr     = user_ptr;
+        event->mlength      = payload_size; // TO-DO : support truncated payloads
+        (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, event);
+    }}
 
 BxiAtomicRequest::BxiAtomicRequest(BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
                                    ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn,

@@ -24,44 +24,6 @@ BxiNicActor::BxiNicActor(const vector<string>& args) : BxiActor()
     self->daemonize();
 }
 
-void BxiNicActor::maybe_issue_send(BxiPutRequest* req)
-{
-    // Make sure the SEND event hasn't already been issued for this MD.
-    // It could have been if :
-    //
-    //    * We're retransmitting (E2E) a buffered PUT (seems unlikely
-    //      but it is physically possible)
-    //
-    //    * We're processing the portals ACK after a buffered PUT
-    //      (wether there was E2E retries in there or not)
-    //
-    //    * We're processing a retransmitted ACK after a PUT that was
-    //      not buffered
-    if (req->send_event_issued)
-        return;
-
-    // if (!req->md || !req->md->md || !req->md->ni) return;
-    // This is extremely ugly: if the md has been deleted it probably comes from another error
-    // somewhere, but maybe it can come from an error in the user code ? In this case I guess
-    // we should fail silently, and hope we don't mess anything up (I guess that's how a real-
-    // world NIC works ? It doesn't segfault ? Who knows about NIC's life ...)
-
-    req->send_event_issued = true;
-
-    if (HAS_PTL_OPTION(req->md->md, PTL_MD_EVENT_CT_SEND))
-        req->md->increment_ct(req->payload_size);
-
-    if (!HAS_PTL_OPTION(req->md->md, PTL_MD_EVENT_SEND_DISABLE) &&
-        !HAS_PTL_OPTION(req->md->md, PTL_MD_EVENT_SUCCESS_DISABLE)) {
-        auto event          = new ptl_event_t;
-        event->type         = PTL_EVENT_SEND;
-        event->ni_fail_type = PTL_OK;
-        event->user_ptr     = req->user_ptr;
-        event->mlength      = req->payload_size; // TO-DO : support truncated payloads
-        issue_event((BxiEQ*)req->md->md->eq_handle, event);
-    }
-}
-
 // TO-DO : factorize get & fetch atomic identical things
 
 void BxiNicActor::maybe_issue_get(BxiGetRequest* req)
