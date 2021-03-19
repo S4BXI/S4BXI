@@ -202,3 +202,35 @@ int s4bxi_clock_getres(clockid_t __clock_id, struct timespec* __tp) __THROW
 
     return 0;
 }
+
+int s4bxi_getopt_long_only(int argc, char* const* argv, const char* options, const struct option* long_options,
+                           int* opt_index)
+{
+    auto main_actor    = GET_CURRENT_MAIN_ACTOR;
+    optind             = main_actor->optind;
+    int ret            = getopt_long_only(argc, argv, options, long_options, opt_index);
+    main_actor->optind = optind;
+
+    return ret;
+}
+
+int s4bxi_getopt_long(int argc, char* const* argv, const char* options, const struct option* long_options,
+                      int* opt_index)
+{
+    auto main_actor    = GET_CURRENT_MAIN_ACTOR;
+    optind             = main_actor->optind;
+    int ret            = getopt_long(argc, argv, options, long_options, opt_index);
+    main_actor->optind = optind;
+
+    return ret;
+}
+
+int s4bxi_getopt(int argc, char* const* argv, const char* options)
+{
+    auto main_actor    = GET_CURRENT_MAIN_ACTOR;
+    optind             = main_actor->optind;
+    int ret            = getopt(argc, argv, options);
+    main_actor->optind = optind;
+
+    return ret;
+}

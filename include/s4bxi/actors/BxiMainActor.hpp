@@ -53,6 +53,7 @@ class BxiMainActor : public BxiActor {
 
     xbt_os_timer_t timer;
     unsigned int is_polling = 0;
+    int optind = 0;
     uint8_t sampling();
     void set_sampling(uint8_t s);
     explicit BxiMainActor(const vector<string>& args);

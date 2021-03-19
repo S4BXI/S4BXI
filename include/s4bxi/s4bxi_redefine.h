@@ -17,11 +17,12 @@
 #ifndef S4BXI_REDEFINE_H
 #define S4BXI_REDEFINE_H
 
-#include <unistd.h>
+#include <getopt.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,16 +48,31 @@ int s4bxi_clock_gettime(clockid_t __clock_id, struct timespec* __tp) __THROW;
 
 int s4bxi_clock_getres(clockid_t __clock_id, struct timespec* __tp) __THROW;
 
-#define gettimeofday(x, y)  s4bxi_gettimeofday(x)
-#define sleep(x)            s4bxi_sleep(x)
-#define usleep(x)           s4bxi_usleep(x)
-#define nanosleep(x, y)     s4bxi_nanosleep(x, y)
-#define sigaction(x, y, z)  s4bxi_sigaction(x, y, z)
-#define setitimer(x, y, z)  s4bxi_setitimer(x, y, z)
-#define alarm(x)            s4bxi_alarm(x)
-#define gethostname(x, y)   s4bxi_gethostname(x, y)
-#define clock_gettime(x, y) s4bxi_clock_gettime(x, y)
-#define clock_getres(x, y)  s4bxi_clock_getres(x, y)
+int s4bxi_getopt_long_only(int argc, char* const* argv, const char* options, const struct option* long_options,
+                           int* opt_index);
+
+int s4bxi_getopt_long(int argc, char* const* argv, const char* options, const struct option* long_options,
+                      int* opt_index);
+
+int s4bxi_getopt(int argc, char* const* argv, const char* options);
+
+#ifndef COMPILING_SIMULATOR
+
+#define gettimeofday(x, y)              s4bxi_gettimeofday(x)
+#define sleep(x)                        s4bxi_sleep(x)
+#define usleep(x)                       s4bxi_usleep(x)
+#define nanosleep(x, y)                 s4bxi_nanosleep(x, y)
+#define sigaction(x, y, z)              s4bxi_sigaction(x, y, z)
+#define setitimer(x, y, z)              s4bxi_setitimer(x, y, z)
+#define alarm(x)                        s4bxi_alarm(x)
+#define gethostname(x, y)               s4bxi_gethostname(x, y)
+#define clock_gettime(x, y)             s4bxi_clock_gettime(x, y)
+#define clock_getres(x, y)              s4bxi_clock_getres(x, y)
+#define getopt_long_only(x, y, z, w, v) s4bxi_getopt_long_only(x, y, z, w, v)
+#define getopt_long(x, y, z, w, v)      s4bxi_getopt_long(x, y, z, w, v)
+#define getopt(x, y, z)                 s4bxi_getopt(x, y, z)
+
+#endif
 
 #ifdef __cplusplus
 }

@@ -37,10 +37,7 @@
 
 #include "s4bxi/s4bxi_sample.h"
 
-#ifndef COMPILING_SIMULATOR
-// Modify behavior of sleep, gettimeofday, etc. only when compiling user code
 #include "s4bxi/s4bxi_redefine.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
