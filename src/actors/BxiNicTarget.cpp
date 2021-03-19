@@ -154,6 +154,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have a PUT_OVERFLOW later
             auto eq             = me->pt->eq;
             auto event          = new ptl_event_t;
+            event->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
             event->type         = PTL_EVENT_PUT;
             event->ni_fail_type = PTL_OK;
             event->pt_index     = me->pt->index;
@@ -301,6 +302,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have an ATOMIC_OVERFLOW later
             auto eq             = me->pt->eq;
             auto event          = new ptl_event_t;
+            event->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
             event->type         = PTL_EVENT_ATOMIC;
             event->ni_fail_type = PTL_OK;
             event->pt_index     = me->pt->index;

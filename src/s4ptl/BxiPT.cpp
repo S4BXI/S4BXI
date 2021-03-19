@@ -148,6 +148,7 @@ bool BxiPT::walk_through_UHs(BxiME* me)
             default:
                 ptl_panic("Incorrect request type found when walking through UH\n");
             }
+            ev->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
             ev->ni_fail_type = PTL_OK;
             ev->pt_index     = req->matched_me->pt->index;
             ev->user_ptr     = req->matched_me->user_ptr;

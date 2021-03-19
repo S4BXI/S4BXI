@@ -40,6 +40,7 @@ void BxiNicActor::maybe_issue_get(BxiGetRequest* req)
         auto event          = new ptl_event_t;
         event->type         = PTL_EVENT_GET;
         event->ni_fail_type = PTL_OK;
+        event->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
         event->pt_index     = req->matched_me->pt->index;
         event->user_ptr     = req->matched_me->user_ptr;
         event->mlength      = req->payload_size; // TO-DO : support truncated payloads
@@ -61,6 +62,7 @@ void BxiNicActor::maybe_issue_fetch_atomic(BxiFetchAtomicRequest* req)
         !HAS_PTL_OPTION(req->matched_me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
         req->matched_me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have a FETCH_ATOMIC_OVERFLOW later
         auto event          = new ptl_event_t;
+        event->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
         event->type         = PTL_EVENT_FETCH_ATOMIC;
         event->ni_fail_type = PTL_OK;
         event->pt_index     = req->matched_me->pt->index;
