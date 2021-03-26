@@ -334,6 +334,9 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
  * This is actually a mix of Atomic and Get, therefore the processing
  * for Atomic is more similar to Put than to FetchAtomic, which in a
  * sense is weird
+ * 
+ * It's also here that we handle SWAP operations, since they are just
+ * a special case of fetch atomic (according to Portals spec)
  */
 void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 {
@@ -351,10 +354,13 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         BxiME* response_me = new BxiME(*me);
         req->start         = me->get_offsetted_addr(msg, true);
         if (node->use_real_memory && md->md->length) {
+            unsigned char* cst = req->is_swap_request() 
+                ? (unsigned char*)&((BxiSwapRequest *)req)->cst
+                : (unsigned char*)md->md->start + req->local_offset; // Whatever, won't be used
+
             // Get a new memory zone to copy data *before* applying the atomic op (copy will be done by apply_atomic_op)
             response_me->me->start = malloc(response_me->me->length);
-            apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start,
-                            (unsigned char*)md->md->start + req->local_offset,
+            apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start, cst,
                             (unsigned char*)md->md->start + req->local_offset,
                             (unsigned char*)response_me->get_offsetted_addr(msg, false), // <<< I'm so unsure about this
                             req->payload_size);

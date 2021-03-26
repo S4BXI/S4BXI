@@ -7,6 +7,9 @@ $ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xm
 > LONG DOUBLE : 69.000000
 > HDR data : 7331
 > Initial LONG DOUBLE : 23.000000
+> SWAP : 42.000000
+> HDR data : 3333
+> Initial SWAP : 12.000000
 
 ! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
 $ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_fetch_atomic.so pt2pt_fetch_atomic --cfg=surf/precision:1e-9
@@ -16,3 +19,6 @@ $ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xm
 > LONG DOUBLE : 23.000000
 > HDR data : 7331
 > Initial LONG DOUBLE : 666.000000
+> SWAP : 12.000000
+> HDR data : 3333
+> Initial SWAP : 666.000000

@@ -24,6 +24,7 @@
 
 #define INT64T_ME      1
 #define LONG_DOUBLE_ME 2
+#define SWAP_ME        3
 
 void ptlerr(std::string str, int rc)
 {
@@ -123,6 +124,41 @@ int client(char* target)
     delete ld_put;
     delete ld_get;
 
+    // SWAP
+
+    auto swap_put = (long double*)malloc(sizeof(long double));
+    auto swap_get = (long double*)malloc(sizeof(long double));
+    *swap_put     = 42;
+    *swap_get     = 666;
+
+    mdpar_put.start     = swap_put;
+    mdpar_put.length    = sizeof(long double);
+    mdpar_put.eq_handle = eqh;
+    mdpar_put.ct_handle = PTL_CT_NONE;
+    mdpar_put.options   = PTL_MD_EVENT_SEND_DISABLE;
+
+    mdpar_get.start     = swap_get;
+    mdpar_get.length    = sizeof(long double);
+    mdpar_get.eq_handle = eqh;
+    mdpar_get.ct_handle = PTL_CT_NONE;
+    mdpar_get.options   = PTL_MD_EVENT_SEND_DISABLE;
+
+    rc = PtlMDBind(nih, &mdpar_put, &mdh_put);
+    rc = PtlMDBind(nih, &mdpar_get, &mdh_get);
+
+    rc = PtlSwap(mdh_get, 0, mdh_put, 0, sizeof(long double), peer, 0, SWAP_ME, 0, nullptr, 3333,
+                 (void*) 0x42, PTL_SWAP, PTL_LONG_DOUBLE);
+
+    PtlEQWait(eqh, &ev);
+
+    rc = PtlMDRelease(mdh_put);
+    rc = PtlMDRelease(mdh_get);
+
+    printf("Initial SWAP : %Lf\n", *swap_get);
+
+    delete swap_put;
+    delete swap_get;
+
     rc = PtlEQFree(eqh);
 
     rc = PtlNIFini(nih);
@@ -193,6 +229,30 @@ int server()
         exit(1);
     }
 
+    // SWAP
+
+    auto swap = (long double*)malloc(sizeof(long double));
+    *swap     = 12;
+
+    ptl_me_t mepar_swap;
+    auto meh_swap = (ptl_handle_me_t*)malloc(sizeof(ptl_handle_me_t));
+
+    memset(&mepar_swap, 0, sizeof(ptl_me_t));
+    mepar_swap.start       = swap;
+    mepar_swap.length      = sizeof(long double);
+    mepar_swap.ct_handle   = NULL;
+    mepar_swap.match_bits  = SWAP_ME;
+    mepar_swap.ignore_bits = 0;
+    mepar_swap.uid         = PTL_UID_ANY;
+    mepar_swap.options     = PTL_ME_OP_PUT | PTL_ME_OP_GET;
+
+    rc = PtlMEAppend(nih, pte, &mepar_swap, PTL_PRIORITY_LIST, meh_swap, meh_swap);
+    rc = PtlEQWait(eqh, &ev);
+    if (ev.type != PTL_EVENT_LINK) {
+        fprintf(stderr, "Wrong event type, got %u instead of LINK (%u)", ev.type, PTL_EVENT_LINK);
+        exit(1);
+    }
+
     // Wait for requests
 
     // INT64
@@ -228,6 +288,23 @@ int server()
     PtlMEUnlink(*meh_ld);
     delete ld;
     delete meh_ld;
+
+    // SWAP
+
+    for (;;) {
+        rc = PtlEQPoll(&eqh, 1, 5000, &ev, &which);
+        if (rc == PTL_OK)
+            break;
+    }
+    if (ev.type != PTL_EVENT_FETCH_ATOMIC) { // /!\ No specific SWAP Portals event
+        fprintf(stderr, "Wrong event type, got %u instead of FETCH_ATOMIC (%u)", ev.type, PTL_EVENT_FETCH_ATOMIC);
+        exit(1);
+    }
+    printf("SWAP : %Lf\n", *swap);
+    printf("HDR data : %lu\n", ev.hdr_data);
+    PtlMEUnlink(*meh_swap);
+    delete swap;
+    delete meh_swap;
 
     // Cleanup
 

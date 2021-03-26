@@ -268,6 +268,18 @@ class BxiFetchAtomicRequest : public BxiAtomicRequest {
                           ptl_size_t local_offset, ptl_size_t remote_offset, ptl_hdr_data_t hdr, ptl_op_t op,
                           ptl_datatype_t datatype, BxiMD* get_md, ptl_size_t get_local_offset);
     ~BxiFetchAtomicRequest();
+    bool is_swap_request();
+};
+
+class BxiSwapRequest : public BxiFetchAtomicRequest {
+  public:
+    const void* cst;
+
+    BxiSwapRequest(BxiMD* put_md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
+                   ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn,
+                   ptl_size_t local_offset, ptl_size_t remote_offset, ptl_hdr_data_t hdr, ptl_op_t op,
+                   ptl_datatype_t datatype, BxiMD* get_md, ptl_size_t get_local_offset, const void* cst);
+    ~BxiSwapRequest();
 };
 
 class BxiGetRequest : public BxiRequest {

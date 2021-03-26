@@ -424,6 +424,29 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
     return PTL_OK;
 }
 
+int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh,
+                                 ptl_size_t put_loffs, ptl_size_t length, ptl_process_t target_id,
+                                 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits, ptl_size_t roffs, void* user_ptr,
+                                 ptl_hdr_data_t hdr, const void* cst, ptl_op_t op, ptl_datatype_t datatype)
+{
+    auto m_put = (BxiMD*)put_mdh;
+    auto m_get = (BxiMD*)get_mdh;
+
+    bool matching = HAS_PTL_OPTION(m_put->ni, PTL_NI_MATCHING);
+
+    auto request =
+        new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_id.phys.pid, pt_index, user_ptr,
+                                  service_mode, put_loffs, roffs, hdr, op, datatype, m_get, get_loffs);
+    auto msg = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
+
+    m_put->ni->cq->acquire();
+    tx_queue->put(msg, 64); // Send header in a blocking way
+
+    // PIO / DMA logic is handled entirely by BxiNicInitiator
+
+    return PTL_OK;
+}
+
 int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t si, ptl_ack_req_t a, ptl_process_t p,
                            ptl_index_t id, ptl_match_bits_t m, ptl_size_t siz, void* v, ptl_hdr_data_t d)
 {
