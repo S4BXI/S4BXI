@@ -42,8 +42,8 @@ BxiEngine::BxiEngine()
 {
     config = new s4bxi_config;
 
-    config->max_retries        = get_int_s4bxi_param("MAX_RETRIES", 10);
-    config->retry_timeout      = get_double_s4bxi_param("RETRY_TIMEOUT", 1.0F);
+    config->max_retries        = get_int_s4bxi_param("MAX_RETRIES", 5);
+    config->retry_timeout      = get_double_s4bxi_param("RETRY_TIMEOUT", 10.0F);
     config->model_pci_commands = get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
     config->e2e_off            = get_bool_s4bxi_param("E2E_OFF", false);
     config->log_folder         = get_string_s4bxi_param("LOG_FOLDER", "/dev/null");
