@@ -28,6 +28,7 @@ struct s4bxi_config {
     bool keep_temps;
     long max_memcpy;
     double cpu_factor;
+    double cpu_threshold;
     bool quick_acks;
 };
 

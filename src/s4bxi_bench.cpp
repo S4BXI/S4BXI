@@ -27,8 +27,9 @@ using namespace simgrid;
 void s4bxi_execute(BxiMainActor* main_actor, double duration)
 {
     static double cpu_factor = S4BXI_CONFIG(cpu_factor);
+    static double cpu_threshold = S4BXI_CONFIG(cpu_threshold);
 
-    if (duration >= 1e-8) {
+    if (duration >= cpu_threshold) {
         auto nid = main_actor->getNid();
         S4BXI_STARTLOG(S4BXILOG_COMPUTE, nid, nid)
         XBT_DEBUG("Sleep for %g to handle real computation time", duration);
@@ -38,7 +39,7 @@ void s4bxi_execute(BxiMainActor* main_actor, double duration)
             ->wait();
         S4BXI_WRITELOG()
     } else {
-        XBT_DEBUG("Real computation took %g while ignore threshold is set to %g => ignore it", duration, 1e-8);
+        XBT_DEBUG("Real computation took %g while ignore threshold is set to %g => ignore it", duration, cpu_threshold);
     }
 }
 
