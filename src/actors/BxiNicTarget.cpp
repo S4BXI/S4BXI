@@ -105,27 +105,6 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             // Here we could copy only the pointer if this piece of memory is read but not written
             capped_memcpy(req->start, (unsigned char*)md->md->start + req->local_offset, msg->simulated_size);
 
-        //         if (S4BXI_LOG_ISENABLED(xbt_log_priority_debug)) {
-        // #define OB1_HEADER_SIZE 16
-        //             char* dump = (char*)malloc(msg->simulated_size + 1);
-        //             memcpy(dump, req->start, msg->simulated_size);
-        //             dump[msg->simulated_size - 1] = '\0';
-        //             XBT_DEBUG("Message's payload : %s",
-        //                       msg->simulated_size > OB1_HEADER_SIZE ? (dump + OB1_HEADER_SIZE) : "<<< empty >>>");
-        //             XBT_DEBUG("Message's HDR : %ld", req->hdr);
-        //             XBT_DEBUG("Binary dump of complete message (%lu B) :", msg->simulated_size);
-        //             for (int yy = 0; yy < msg->simulated_size; yy++) {
-        //                 if (yy && yy % 4 == 0)
-        //                     fprintf(stderr, "\n");
-        //                 fprintf(stderr, " ");
-        //                 for (int zz = 0; zz < 8; zz++) {
-        //                     fprintf(stderr, "%d", !!((dump[yy] << zz) & 0x80));
-        //                 }
-        //             }
-        //             fprintf(stderr, "\n");
-        //             free(dump);
-        //         }
-
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
 
