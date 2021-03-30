@@ -76,18 +76,8 @@ BxiEngine::~BxiEngine()
 
 void BxiEngine::end_simulation()
 {
-    if (config->log_level) {
+    if (config->log_level)
         logFile.close();
-        logFile.open(config->log_folder + "/csvIndex.json");
-        logFile << '[';
-        for (unsigned int i = 0; i <= floor(logCount / LOG_IN_FILE); ++i) {
-            if (i)
-                logFile << ',';
-            logFile << "{ \"name\": \"log_" << i << "\", \"path\": \"/csv/log_" << i << ".csv\" }";
-        }
-        logFile << ']' << endl;
-        logFile.close();
-    }
 
     delete config;
     for (auto pair : nodes)
@@ -200,11 +190,11 @@ void BxiEngine::log(BxiLog& log)
     bool newFile = false;
     if (logCount == 0) {
         newFile = true;
-        logFile.open(config->log_folder + "/csv/log_0.csv");
+        logFile.open(config->log_folder + "/log_0.csv");
     } else if (logCount % LOG_IN_FILE == 0) {
         newFile = true;
         logFile.close();
-        logFile.open(config->log_folder + "/csv/log_" + to_string((int)floor(logCount / LOG_IN_FILE)) + ".csv");
+        logFile.open(config->log_folder + "/log_" + to_string((int)floor(logCount / LOG_IN_FILE)) + ".csv");
     }
 
     if (newFile)

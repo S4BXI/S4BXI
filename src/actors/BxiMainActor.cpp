@@ -58,7 +58,8 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
     if (S4BXI_CONFIG(e2e_off))
         node->e2e_off = true;
 
-    XBT_INFO("Setup with model_pci = %u ; e2e_off = %u", node->model_pci ? 1 : 0, node->e2e_off ? 1 : 0);
+    XBT_INFO("Setup with nid = %d, model_pci = %u ; e2e_off = %u", node->nid, node->model_pci ? 1 : 0,
+             node->e2e_off ? 1 : 0);
 
     self->on_exit([](bool) { XBT_DEBUG("Dying"); });
 }

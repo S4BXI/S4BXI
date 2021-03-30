@@ -109,9 +109,10 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             me->increment_ct(req->payload_size);
 
         bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
+        bool need_ack         = need_portals_ack || !S4BXI_CONFIG(e2e_off);
 
         BxiMsg* ack = nullptr;
-        if (need_portals_ack || !S4BXI_CONFIG(e2e_off)) {
+        if (need_ack && !S4BXI_CONFIG(quick_acks)) {
             ack       = new BxiMsg(*msg);
             ack->type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
             // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
@@ -166,15 +167,19 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             BxiME::maybe_auto_unlink(me);
         }
 
-        if (ack)
-            tx_queue->put(ack, 0, true);
+        if (need_ack) {
+            if (S4BXI_CONFIG(quick_acks)) {
+                // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
+                req->process_state = S4BXI_REQ_FINISHED;
+                // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
+                // although we're currently processing the message at the target side.
+                req->maybe_issue_send();
+                req->issue_ack();
+            } else {
+                tx_queue->put(ack, 0, true);
+            }
+        }
     } // else {} ? We should probably do something if no entry was found
-
-    // There is a problem here : we don't handle the unexpected message queue.
-    // Things still kind of work because we only update req->process_state if
-    // a ME / LE matched, but that looks like a hack: we don't follow Portals
-    // spec correcly here since we simply ignore message which arrive before
-    // the corresponding ME / LE was posted (I think ?)
 }
 
 /**
