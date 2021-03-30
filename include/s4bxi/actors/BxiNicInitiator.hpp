@@ -20,6 +20,12 @@
 #include "BxiNicActor.hpp"
 #include "../s4ptl.hpp"
 
+/**
+ * \brief TX side of the NIC
+ *
+ * This actor listens for commands from the PCI bus and processes 
+ * them to send the correct message on the BXI network
+ */
 class BxiNicInitiator : public BxiNicActor {
     BxiQueue* tx_queue;
 
