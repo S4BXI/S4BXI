@@ -20,6 +20,7 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "portals4.h"
 #include "s4bxi/s4bxi_bench.hpp"
+#include <unistd.h>
 
 using namespace simgrid;
 
@@ -40,9 +41,14 @@ void s4bxi_compute(double flops)
 int s4bxi_fprintf(FILE* stream, const char* fmt, ...)
 {
     int rank = s4bxi_get_my_rank();
-    // Start at 36 and go in reverse, to avoid red and green as much as possible
-    // (they could be misleading since they evoke success or failure)
-    fprintf(stream, "[\e[1;%dm%s:%d\e[0m] ", 36 - (rank % 6), s4u::Actor::self()->get_host()->get_cname(), rank);
+    if (isatty(fileno(stream))) {
+        // Start at 36 and go in reverse, to avoid red and green as much as possible
+        // (they could be misleading since they evoke success or failure)
+        fprintf(stream, "[\e[1;%dm%f - %s:%d\e[0m] ", 36 - (rank % 6), s4u::Engine::get_clock(),
+                s4u::Actor::self()->get_host()->get_cname(), rank);
+    } else {
+        fprintf(stream, "[%f - %s:%d] ", s4u::Engine::get_clock(), s4u::Actor::self()->get_host()->get_cname(), rank);
+    }
 
     va_list argp;
     va_start(argp, fmt);
@@ -59,7 +65,13 @@ int s4bxi_fprintf(FILE* stream, const char* fmt, ...)
 int s4bxi_printf(const char* fmt, ...)
 {
     int rank = s4bxi_get_my_rank();
-    printf("[\e[1;%dm%s:%d\e[0m] ", 36 - (rank % 6), s4u::Actor::self()->get_host()->get_cname(), rank);
+
+    if (isatty(fileno(stdout))) {
+        printf("[\e[1;%dm%f - %s:%d\e[0m] ", 36 - (rank % 6), s4u::Engine::get_clock(),
+               s4u::Actor::self()->get_host()->get_cname(), rank);
+    } else {
+        printf("[%f - %s:%d] ", s4u::Engine::get_clock(), s4u::Actor::self()->get_host()->get_cname(), rank);
+    }
 
     va_list argp;
     va_start(argp, fmt);
