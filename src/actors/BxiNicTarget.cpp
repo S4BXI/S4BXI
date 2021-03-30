@@ -154,7 +154,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have a PUT_OVERFLOW later
             auto eq             = me->pt->eq;
             auto event          = new ptl_event_t;
-            event->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
+            event->initiator    = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
             event->type         = PTL_EVENT_PUT;
             event->ni_fail_type = PTL_OK;
             event->pt_index     = me->pt->index;
@@ -302,7 +302,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have an ATOMIC_OVERFLOW later
             auto eq             = me->pt->eq;
             auto event          = new ptl_event_t;
-            event->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
+            event->initiator    = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
             event->type         = PTL_EVENT_ATOMIC;
             event->ni_fail_type = PTL_OK;
             event->pt_index     = me->pt->index;
@@ -318,10 +318,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             issue_event(eq, event);
 
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-            if (node->model_pci && msg->simulated_size) {
+            if (node->model_pci && msg->simulated_size)
                 pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
-                // node->nic_host->sendto_async(node->main_host, msg->simulated_size);
-            }
         } else {
             BxiME::maybe_auto_unlink(me);
         }
@@ -334,7 +332,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
  * This is actually a mix of Atomic and Get, therefore the processing
  * for Atomic is more similar to Put than to FetchAtomic, which in a
  * sense is weird
- * 
+ *
  * It's also here that we handle SWAP operations, since they are just
  * a special case of fetch atomic (according to Portals spec)
  */
@@ -354,9 +352,9 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         BxiME* response_me = new BxiME(*me);
         req->start         = me->get_offsetted_addr(msg, true);
         if (node->use_real_memory && md->md->length) {
-            unsigned char* cst = req->is_swap_request() 
-                ? (unsigned char*)&((BxiSwapRequest *)req)->cst
-                : (unsigned char*)md->md->start + req->local_offset; // Whatever, won't be used
+            unsigned char* cst = req->is_swap_request()
+                                     ? (unsigned char*)&((BxiSwapRequest*)req)->cst
+                                     : (unsigned char*)md->md->start + req->local_offset; // Whatever, won't be used
 
             // Get a new memory zone to copy data *before* applying the atomic op (copy will be done by apply_atomic_op)
             response_me->me->start = malloc(response_me->me->length);

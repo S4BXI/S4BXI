@@ -91,7 +91,8 @@ int s4bxi_get_ptl_process_from_rank(int rank, ptl_process_t* out)
     return actor->PtlGetId(actor->default_ni, out);
 }
 
-void s4bxi_set_ptl_process_for_rank(ptl_handle_ni_t ni) {
+void s4bxi_set_ptl_process_for_rank(ptl_handle_ni_t ni)
+{
     BxiMainActor* actor = BxiEngine::get_instance()->get_current_main_actor();
 
     actor->default_ni = (BxiNI*)ni;

@@ -20,9 +20,7 @@
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_md, "Messages specific to s4ptl MD implementation");
 
-BxiMD::BxiMD(ptl_handle_ni_t ni_handle, const ptl_md_t* md_t): ni((BxiNI*)ni_handle), md(new ptl_md_t(*md_t))
-{
-}
+BxiMD::BxiMD(ptl_handle_ni_t ni_handle, const ptl_md_t* md_t) : ni((BxiNI*)ni_handle), md(new ptl_md_t(*md_t)) {}
 
 BxiMD::BxiMD(const BxiMD& md) : ni(md.ni), md(new ptl_md_t(*md.md)) {}
 

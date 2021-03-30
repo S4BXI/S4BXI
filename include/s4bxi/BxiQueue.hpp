@@ -32,7 +32,7 @@ class BxiQueue {
     BxiQueue();
     explicit BxiQueue(const string& mailbox_name);
 
-    void put(BxiMsg* msg, const uint64_t &size = 0, bool async = false);
+    void put(BxiMsg* msg, const uint64_t& size = 0, bool async = false);
     BxiMsg* get();
     bool ready();
     void clear();

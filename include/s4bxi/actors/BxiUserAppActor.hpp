@@ -25,14 +25,14 @@
 class BxiUserAppActor : public BxiMainActor {
     vector<string> string_args;
 
-public:
+  public:
     uint32_t my_rank;
-    
+
     explicit BxiUserAppActor(const vector<string>& args);
 
     void operator()();
 };
 
-int s4bxi_default_main(int argc, char *argv[]);
+int s4bxi_default_main(int argc, char* argv[]);
 
 #endif

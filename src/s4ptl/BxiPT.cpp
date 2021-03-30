@@ -27,7 +27,8 @@ BxiPT::BxiPT(ptl_handle_ni_t ni_handle, ptl_handle_eq_t eq_handle, ptl_index_t i
     overflow_list = new BxiList;
 }
 
-BxiPT::~BxiPT() {
+BxiPT::~BxiPT()
+{
     delete priority_list;
     delete overflow_list;
 }
@@ -148,7 +149,7 @@ bool BxiPT::walk_through_UHs(BxiME* me)
             default:
                 ptl_panic("Incorrect request type found when walking through UH\n");
             }
-            ev->initiator    = ptl_process_t{.phys {.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
+            ev->initiator    = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
             ev->ni_fail_type = PTL_OK;
             ev->pt_index     = req->matched_me->pt->index;
             ev->user_ptr     = req->matched_me->user_ptr;

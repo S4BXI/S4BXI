@@ -24,7 +24,7 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_initiator, "Messages specific to the NI
 BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
 {
     // For fast queues : tx_queue = new BxiQueue();
-    tx_queue = new BxiQueue(nic_tx_mailbox_name(vn));
+    tx_queue            = new BxiQueue(nic_tx_mailbox_name(vn));
     node->tx_queues[vn] = tx_queue;
 }
 
@@ -43,8 +43,9 @@ void BxiNicInitiator::operator()()
         case S4BXI_PTL_FETCH_ATOMIC:
             handle_put(msg);
             break;
-        case S4BXI_PTL_GET: // We only need to forward the request for a GET
-            ((BxiGetRequest*)msg->parent_request)->md->ni->cq->release(); // Excessively ugly, should be temporary
+        case S4BXI_PTL_GET:
+            handle_get(msg);
+            break;
         case S4BXI_PTL_ACK: // The different behaviour for PTL vs BXI
         case S4BXI_E2E_ACK: // is implemented in reliable_comm
             reliable_comm(msg);
@@ -75,7 +76,6 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         // Second part of PIO command (end of payload)
 
         pci_transfer_async(req->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
-        // comm = node->main_host->sendto_async(node->nic_host, req->payload_size - inline_size);
 
     } else if (node->model_pci && (msg->retry_count // Retransmissions are always DMA (even small ones)
                                    || msg->simulated_size > PIO_size)) {
@@ -99,6 +99,12 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
 
     if (comm)
         comm->wait(); // Wait for any memory operation in progress (PIO or DMA)
+}
+
+void BxiNicInitiator::handle_get(BxiMsg* msg)
+{
+    ((BxiGetRequest*)msg->parent_request)->md->ni->cq->release();
+    reliable_comm(msg);
 }
 
 // TO-DO: factorise code below

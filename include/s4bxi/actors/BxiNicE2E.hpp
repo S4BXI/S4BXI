@@ -23,7 +23,7 @@
 
 class BxiNicE2E : public BxiActor {
     s4u::Mailbox* nic_cmd_mailboxes[4] = {nullptr};
-    BxiMsg* current_msg = nullptr;
+    BxiMsg* current_msg                = nullptr;
     BxiQueue queue;
 
   public:
@@ -31,7 +31,7 @@ class BxiNicE2E : public BxiActor {
 
     void operator()();
     s4u::Mailbox* get_retransmit_mailbox(const BxiMsg* msg);
-    void process_message(BxiMsg *msg);
+    void process_message(BxiMsg* msg);
 };
 
 #endif // S4BXI_BXINICE2E_HPP

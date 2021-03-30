@@ -32,7 +32,7 @@ void BxiCT::on_update()
 {
     for (auto it = waiting.begin(); it != waiting.end(); ++it) {
         if (it->test == event.success || event.failure) {
-            s4u::Actor* actor             = it->actor;
+            s4u::Actor* actor     = it->actor;
             s4u::Mailbox* mailbox = it->mailbox;
             waiting.erase(it--);
 

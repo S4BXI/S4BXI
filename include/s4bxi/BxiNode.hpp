@@ -41,7 +41,7 @@ class BxiNode {
     s4u::Host* main_host;
     s4u::Host* nic_host;
     s4u::SemaphorePtr e2e_entries;
-    BxiNicE2E* e2e_actor = nullptr;
+    BxiNicE2E* e2e_actor   = nullptr;
     BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
 
     // Params

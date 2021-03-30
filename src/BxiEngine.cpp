@@ -36,7 +36,7 @@ using namespace simgrid;
 BxiEngine* BxiEngine::instance = nullptr;
 
 #define LOG_STRING_CONFIG(x) XBT_DEBUG("%s: %s", #x, config->x.c_str())
-#define LOG_CONFIG(x) XBT_DEBUG("%s: %s", #x, to_string(config->x).c_str())
+#define LOG_CONFIG(x)        XBT_DEBUG("%s: %s", #x, to_string(config->x).c_str())
 
 BxiEngine::BxiEngine()
 {
@@ -106,8 +106,8 @@ BxiNode* BxiEngine::get_node(int nid)
         node = new BxiNode(nid);
         nodes.emplace(nid, node);
 
-        // For some mysterious reason everything blocks if we initialize that in 
-        // BxiNode's constructor, but it's fine if we do it afterwards 
+        // For some mysterious reason everything blocks if we initialize that in
+        // BxiNode's constructor, but it's fine if we do it afterwards
         node->e2e_entries = s4u::Semaphore::create(MAX_E2E_ENTRIES);
     } else {
         node = nodeIt->second;
@@ -131,12 +131,12 @@ BxiMainActor* BxiEngine::get_current_main_actor()
     return actor;
 }
 
-BxiMainActor* BxiEngine::get_main_actor(aid_t pid) {
+BxiMainActor* BxiEngine::get_main_actor(aid_t pid)
+{
     auto actorIt = actors.find(pid);
 
     return actorIt == actors.end() ? nullptr : actorIt->second;
 }
-
 
 BxiMainActor* BxiEngine::get_actor_from_rank(int rank)
 {

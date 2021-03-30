@@ -16,7 +16,7 @@
 
 #include "s4bxi/BxiQueue.hpp"
 
-BxiQueue::BxiQueue(): mailbox(nullptr)
+BxiQueue::BxiQueue() : mailbox(nullptr)
 {
     waiting = s4u::Semaphore::create(0);
 }

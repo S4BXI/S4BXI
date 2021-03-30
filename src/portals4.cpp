@@ -502,16 +502,16 @@ int PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_m
             ptl_size_t len, ptl_process_t rank, ptl_pt_index_t pte, ptl_match_bits_t bits, ptl_size_t roffs, void* uptr,
             ptl_hdr_data_t hdr, const void* cst, ptl_op_t aop, ptl_datatype_t atype)
 {
-    return GET_CURRENT_MAIN_ACTOR->PtlSwap(get_mdh, get_loffs, put_mdh, put_loffs, len, rank, pte, bits, roffs,
-                                           uptr, hdr, cst, aop, atype);
+    return GET_CURRENT_MAIN_ACTOR->PtlSwap(get_mdh, get_loffs, put_mdh, put_loffs, len, rank, pte, bits, roffs, uptr,
+                                           hdr, cst, aop, atype);
 }
 
 int PtlSwapNB(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh, ptl_size_t put_loffs,
               ptl_size_t len, ptl_process_t rank, ptl_pt_index_t pte, ptl_match_bits_t bits, ptl_size_t roffs,
               void* uptr, ptl_hdr_data_t hdr, const void* cst, ptl_op_t aop, ptl_datatype_t atype)
 {
-    return GET_CURRENT_MAIN_ACTOR->PtlSwapNB(get_mdh, get_loffs, put_mdh, put_loffs, len, rank, pte, bits, roffs,
-                                             uptr, hdr, cst, aop, atype);
+    return GET_CURRENT_MAIN_ACTOR->PtlSwapNB(get_mdh, get_loffs, put_mdh, put_loffs, len, rank, pte, bits, roffs, uptr,
+                                             hdr, cst, aop, atype);
 }
 
 int PtlTriggeredPut(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, int ack, union ptl_process rank,

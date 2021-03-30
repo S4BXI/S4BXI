@@ -63,7 +63,7 @@ void BxiNicE2E::operator()()
         return;
 
     for (;;) {
-        auto msg = queue.get();
+        auto msg    = queue.get();
         current_msg = msg;
 
         double wake_up_time = msg->send_init_time + S4BXI_CONFIG(retry_timeout);
@@ -74,7 +74,6 @@ void BxiNicE2E::operator()()
         }
 
         s4u::this_actor::sleep_until(wake_up_time);
-
 
         // Message got ACKed in time, ignore E2E processing and go to next one
         if (msg->parent_request->process_state >=

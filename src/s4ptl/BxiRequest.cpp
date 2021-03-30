@@ -68,7 +68,8 @@ void BxiPutRequest::issue_ack()
     }
 }
 
-void BxiPutRequest::maybe_issue_send() {
+void BxiPutRequest::maybe_issue_send()
+{
     // Make sure the SEND event hasn't already been issued for this MD.
     // It could have been if :
     //
@@ -94,15 +95,15 @@ void BxiPutRequest::maybe_issue_send() {
     if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_SEND))
         md->increment_ct(payload_size);
 
-    if (!HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SEND_DISABLE) &&
-        !HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SUCCESS_DISABLE)) {
+    if (!HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SEND_DISABLE) && !HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SUCCESS_DISABLE)) {
         auto event          = new ptl_event_t;
         event->type         = PTL_EVENT_SEND;
         event->ni_fail_type = PTL_OK;
         event->user_ptr     = user_ptr;
         event->mlength      = payload_size; // TO-DO : support truncated payloads
         (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, event);
-    }}
+    }
+}
 
 BxiAtomicRequest::BxiAtomicRequest(BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
                                    ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn,
@@ -152,15 +153,15 @@ bool BxiFetchAtomicRequest::is_swap_request()
     }
 }
 
-BxiSwapRequest::BxiSwapRequest(BxiMD* md, ptl_size_t payload_size, bool matching,
-                               ptl_match_bits_t match_bits, ptl_pid_t target_pid, ptl_pt_index_t pt_index,
-                               void* user_ptr, bool service_vn, ptl_size_t local_offset,
-                               ptl_size_t remote_offset, ptl_hdr_data_t hdr, ptl_op_t op,
+BxiSwapRequest::BxiSwapRequest(BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
+                               ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn,
+                               ptl_size_t local_offset, ptl_size_t remote_offset, ptl_hdr_data_t hdr, ptl_op_t op,
                                ptl_datatype_t datatype, BxiMD* get_md, ptl_size_t get_local_offset, const void* cst)
-    : BxiFetchAtomicRequest(md, payload_size, matching, match_bits, target_pid, pt_index, user_ptr, service_vn, 
+    : BxiFetchAtomicRequest(md, payload_size, matching, match_bits, target_pid, pt_index, user_ptr, service_vn,
                             local_offset, remote_offset, hdr, op, datatype, get_md, get_local_offset)
     , cst(cst)
-{} // No need to change the request type, BxiNicTarget knows how to deal with this in the FetchAtomic processing
+{
+} // No need to change the request type, BxiNicTarget knows how to deal with this in the FetchAtomic processing
 
 /**
  * Copy / paste FetchAtomic destructor instead of using virtual destructors:

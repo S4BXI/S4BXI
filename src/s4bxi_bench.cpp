@@ -26,7 +26,7 @@ using namespace simgrid;
 
 void s4bxi_execute(BxiMainActor* main_actor, double duration)
 {
-    static double cpu_factor = S4BXI_CONFIG(cpu_factor);
+    static double cpu_factor    = S4BXI_CONFIG(cpu_factor);
     static double cpu_threshold = S4BXI_CONFIG(cpu_threshold);
 
     if (duration >= cpu_threshold) {

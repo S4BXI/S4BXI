@@ -53,7 +53,7 @@ class BxiMainActor : public BxiActor {
 
     xbt_os_timer_t timer;
     unsigned int is_polling = 0;
-    int optind = 0;
+    int optind              = 0;
     uint8_t sampling();
     void set_sampling(uint8_t s);
     explicit BxiMainActor(const vector<string>& args);
@@ -121,10 +121,8 @@ class BxiMainActor : public BxiActor {
                   ptl_match_bits_t, ptl_size_t, void*, ptl_hdr_data_t, ptl_op_t, ptl_datatype_t);
     int PtlFetchAtomic(ptl_handle_md_t, ptl_size_t, ptl_handle_md_t, ptl_size_t, ptl_size_t, ptl_process_t,
                        ptl_pt_index_t, ptl_match_bits_t, ptl_size_t, void*, ptl_hdr_data_t, ptl_op_t, ptl_datatype_t);
-    int PtlSwap(ptl_handle_md_t, ptl_size_t,
-               ptl_handle_md_t, ptl_size_t, ptl_size_t,
-               ptl_process_t, ptl_pt_index_t, ptl_match_bits_t, ptl_size_t, void *,
-               ptl_hdr_data_t, const void *, ptl_op_t, ptl_datatype_t);
+    int PtlSwap(ptl_handle_md_t, ptl_size_t, ptl_handle_md_t, ptl_size_t, ptl_size_t, ptl_process_t, ptl_pt_index_t,
+                ptl_match_bits_t, ptl_size_t, void*, ptl_hdr_data_t, const void*, ptl_op_t, ptl_datatype_t);
     // int PtlAtomicSync(void);
     // int PtlNIAtomicSync(ptl_handle_ni_t);
     //
@@ -200,10 +198,9 @@ class BxiMainActor : public BxiActor {
     {
         return PtlFetchAtomic(m, s, md, si, siz, p, i, mb, size, v, h, o, d);
     }
-    int PtlSwapNB(ptl_handle_md_t m, ptl_size_t s,
-                 ptl_handle_md_t md, ptl_size_t si, ptl_size_t siz,
-                 ptl_process_t p, ptl_pt_index_t i, ptl_match_bits_t mb, ptl_size_t size, void * v,
-                 ptl_hdr_data_t h, const void * vo, ptl_op_t o, ptl_datatype_t d)
+    int PtlSwapNB(ptl_handle_md_t m, ptl_size_t s, ptl_handle_md_t md, ptl_size_t si, ptl_size_t siz, ptl_process_t p,
+                  ptl_pt_index_t i, ptl_match_bits_t mb, ptl_size_t size, void* v, ptl_hdr_data_t h, const void* vo,
+                  ptl_op_t o, ptl_datatype_t d)
     {
         return PtlSwap(m, s, md, si, siz, p, i, mb, size, v, h, vo, o, d);
     }

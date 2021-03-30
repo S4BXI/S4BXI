@@ -27,7 +27,8 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_sample, "Messages specific to sampling")
 namespace {
 class SampleLocation : public std::string {
   public:
-    SampleLocation(bool global, const char* file, int line) : std::string(std::string(file) + ":" + std::to_string(line))
+    SampleLocation(bool global, const char* file, int line)
+        : std::string(std::string(file) + ":" + std::to_string(line))
     {
         if (not global)
             this->append(":" + std::to_string(simgrid::s4u::this_actor::get_pid()));
@@ -52,18 +53,18 @@ bool LocalData::need_more_benchs() const
 {
     bool res = (count < iters) || (threshold > 0.0 && (count < 2 ||          // not enough data
                                                        relstderr > threshold // stderr too high yet
-    ));
-    XBT_DEBUG("%s (count:%d iter:%d stderr:%f thres:%f mean:%fs)",
-              (res ? "need more data" : "enough benchs"), count, iters, relstderr, threshold, mean);
+                                                       ));
+    XBT_DEBUG("%s (count:%d iter:%d stderr:%f thres:%f mean:%fs)", (res ? "need more data" : "enough benchs"), count,
+              iters, relstderr, threshold, mean);
     return res;
 }
 
 std::unordered_map<SampleLocation, LocalData, std::hash<std::string>> samples;
-}
+} // namespace
 
-void s4bxi_sample_1(int global, const char *file, int line, int iters, double threshold)
+void s4bxi_sample_1(int global, const char* file, int line, int iters, double threshold)
 {
-    BxiMainActor *mainActor = GET_CURRENT_MAIN_ACTOR;
+    BxiMainActor* mainActor = GET_CURRENT_MAIN_ACTOR;
     SampleLocation loc(global, file, line);
     if (not mainActor->sampling()) { /* Only at first call when benchmarking, skip for next ones */
         s4bxi_bench_end(mainActor);  /* Take time from previous, unrelated computation into account */
@@ -71,19 +72,19 @@ void s4bxi_sample_1(int global, const char *file, int line, int iters, double th
     }
 
     auto insert = samples.emplace(loc, LocalData{
-        threshold, // threshold
-        0.0,       // relstderr
-        0.0,       // mean
-        0.0,       // sum
-        0.0,       // sum_pow2
-        iters,     // iters
-        0,         // count
-        true       // benching (if we have no data, we need at least one)
-    });
+                                           threshold, // threshold
+                                           0.0,       // relstderr
+                                           0.0,       // mean
+                                           0.0,       // sum
+                                           0.0,       // sum_pow2
+                                           iters,     // iters
+                                           0,         // count
+                                           true       // benching (if we have no data, we need at least one)
+                                       });
     if (insert.second) {
         XBT_DEBUG("XXXXX First time ever on benched nest %s.", loc.c_str());
-        xbt_assert(threshold > 0 || iters > 0,
-                   "You should provide either a positive amount of iterations to bench, or a positive maximal stderr (or both)");
+        xbt_assert(threshold > 0 || iters > 0, "You should provide either a positive amount of iterations to bench, or "
+                                               "a positive maximal stderr (or both)");
     } else {
         LocalData& data = insert.first->second;
         if (data.iters != iters || data.threshold != threshold) {
@@ -101,9 +102,9 @@ void s4bxi_sample_1(int global, const char *file, int line, int iters, double th
     }
 }
 
-int s4bxi_sample_2(int global, const char *file, int line, int iter_count)
+int s4bxi_sample_2(int global, const char* file, int line, int iter_count)
 {
-    BxiMainActor *mainActor = GET_CURRENT_MAIN_ACTOR;
+    BxiMainActor* mainActor = GET_CURRENT_MAIN_ACTOR;
     SampleLocation loc(global, file, line);
 
     XBT_DEBUG("sample2 %s %d", loc.c_str(), iter_count);
@@ -114,20 +115,21 @@ int s4bxi_sample_2(int global, const char *file, int line, int iter_count)
 
     if (data.benching) {
         // we need to run a new bench
-        XBT_DEBUG("benchmarking: count:%d iter:%d stderr:%f thres:%f; mean:%f; total:%f",
-                  data.count, data.iters, data.relstderr, data.threshold, data.mean, data.sum);
+        XBT_DEBUG("benchmarking: count:%d iter:%d stderr:%f thres:%f; mean:%f; total:%f", data.count, data.iters,
+                  data.relstderr, data.threshold, data.mean, data.sum);
         s4bxi_bench_begin(mainActor);
     } else {
         // Enough data, no more bench (either we got enough data from previous visits to this benched nest, or we just
-        //ran one bench and need to bail out now that our job is done). Just sleep instead
-        if (not data.need_more_benchs()){
-            XBT_DEBUG("No benchmark (either no need, or just ran one): count >= iter (%d >= %d) or stderr<thres (%f<=%f). "
-                      "Mean is %f, will be injected %d times",
-                      data.count, data.iters, data.relstderr, data.threshold, data.mean, iter_count);
+        // ran one bench and need to bail out now that our job is done). Just sleep instead
+        if (not data.need_more_benchs()) {
+            XBT_DEBUG(
+                "No benchmark (either no need, or just ran one): count >= iter (%d >= %d) or stderr<thres (%f<=%f). "
+                "Mean is %f, will be injected %d times",
+                data.count, data.iters, data.relstderr, data.threshold, data.mean, iter_count);
 
-            //we ended benchmarking, let's inject all the time, now, and fast forward out of the loop.
+            // we ended benchmarking, let's inject all the time, now, and fast forward out of the loop.
             mainActor->set_sampling(0);
-            s4bxi_execute(mainActor, data.mean*iter_count);
+            s4bxi_execute(mainActor, data.mean * iter_count);
             s4bxi_bench_begin(mainActor);
             return 0;
         } else {
@@ -138,9 +140,9 @@ int s4bxi_sample_2(int global, const char *file, int line, int iter_count)
     return 1;
 }
 
-void s4bxi_sample_3(int global, const char *file, int line)
+void s4bxi_sample_3(int global, const char* file, int line)
 {
-    BxiMainActor *mainActor = GET_CURRENT_MAIN_ACTOR;
+    BxiMainActor* mainActor = GET_CURRENT_MAIN_ACTOR;
     SampleLocation loc(global, file, line);
 
     XBT_DEBUG("sample3 %s", loc.c_str());
@@ -157,23 +159,24 @@ void s4bxi_sample_3(int global, const char *file, int line)
 
     // update the stats
     data.count++;
-    double period  = xbt_os_timer_elapsed(mainActor->timer);
-    data.sum      += period;
+    double period = xbt_os_timer_elapsed(mainActor->timer);
+    data.sum += period;
     data.sum_pow2 += period * period;
     double n       = data.count;
     data.mean      = data.sum / n;
     data.relstderr = sqrt((data.sum_pow2 / n - data.mean * data.mean) / n) / data.mean;
 
-    XBT_DEBUG("Average mean after %d steps is %f, relative standard error is %f (sample was %f)",
-              data.count, data.mean, data.relstderr, period);
+    XBT_DEBUG("Average mean after %d steps is %f, relative standard error is %f (sample was %f)", data.count, data.mean,
+              data.relstderr, period);
 
     // That's enough for now, prevent sample_2 to run the same code over and over
     data.benching = false;
 }
 
-int s4bxi_sample_exit(int global, const char *file, int line, int iter_count){
-    BxiMainActor *mainActor = GET_CURRENT_MAIN_ACTOR;
-    if (mainActor->sampling()){
+int s4bxi_sample_exit(int global, const char* file, int line, int iter_count)
+{
+    BxiMainActor* mainActor = GET_CURRENT_MAIN_ACTOR;
+    if (mainActor->sampling()) {
         SampleLocation loc(global, file, line);
 
         XBT_DEBUG("sample exit %s", loc.c_str());
@@ -181,7 +184,7 @@ int s4bxi_sample_exit(int global, const char *file, int line, int iter_count){
         if (sample == samples.end())
             xbt_die("Y U NO use S4BXI_SAMPLE_* macros? Stop messing directly with s4bxi_sample_* functions!");
 
-        if (mainActor->sampling()){//end of loop, but still sampling needed
+        if (mainActor->sampling()) { // end of loop, but still sampling needed
             const LocalData& data = sample->second;
             mainActor->set_sampling(0);
             s4bxi_execute(mainActor, data.mean * iter_count);

@@ -70,10 +70,8 @@ BxiMainActor::~BxiMainActor()
 
 void BxiMainActor::issue_portals_command(int simulated_size)
 {
-    if (node->model_pci && S4BXI_CONFIG(model_pci_commands) && simulated_size) {
+    if (node->model_pci && S4BXI_CONFIG(model_pci_commands) && simulated_size)
         pci_transfer(simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_COMMAND);
-        // node->main_host->sendto(node->nic_host, simulated_size);
-    }
 }
 
 void BxiMainActor::issue_portals_command()
@@ -424,10 +422,10 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
     return PTL_OK;
 }
 
-int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh,
-                                 ptl_size_t put_loffs, ptl_size_t length, ptl_process_t target_id,
-                                 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits, ptl_size_t roffs, void* user_ptr,
-                                 ptl_hdr_data_t hdr, const void* cst, ptl_op_t op, ptl_datatype_t datatype)
+int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh, ptl_size_t put_loffs,
+                          ptl_size_t length, ptl_process_t target_id, ptl_pt_index_t pt_index,
+                          ptl_match_bits_t match_bits, ptl_size_t roffs, void* user_ptr, ptl_hdr_data_t hdr,
+                          const void* cst, ptl_op_t op, ptl_datatype_t datatype)
 {
     auto m_put = (BxiMD*)put_mdh;
     auto m_get = (BxiMD*)get_mdh;
