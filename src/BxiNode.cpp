@@ -20,6 +20,8 @@
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bxi_node, "Messages specific to BxiNode");
 
+using namespace simgrid;
+
 /**
  * Actor to perform a DMA operation and log it
  *
@@ -30,7 +32,7 @@ void dma_log_actor(vector<string> args)
 {
     ptl_nid_t nid = atoi(args[2].c_str());
     S4BXI_STARTLOG((bxi_log_type)atoi(args[3].c_str()), nid, nid)
-    s4u::Actor::self()->get_host()->sendto(s4u::Host::by_name(args[1]), atoi(args[0].c_str()));
+    s4u::Comm::sendto(s4u::Actor::self()->get_host(), s4u::Host::by_name(args[1]), atoi(args[0].c_str()));
     S4BXI_WRITELOG()
 }
 
@@ -38,18 +40,18 @@ BxiNode::BxiNode(int nid) : nid(nid), e2e_entries(s4u::Semaphore::create(MAX_E2E
 
 void BxiNode::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
 {
-    simgrid::s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
-    simgrid::s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
+    s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
+    s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
 
     S4BXI_STARTLOG(type, nid, nid)
-    source->sendto(dest, size);
+    s4u::Comm::sendto(source, dest, size);
     S4BXI_WRITELOG()
 }
 
 void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
 {
-    simgrid::s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
-    simgrid::s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
+    s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
+    s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
 
     if (!S4BXI_CONFIG(log_level)) {
         // It's important to do that, instead of sendto_async,
