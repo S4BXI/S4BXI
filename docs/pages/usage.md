@@ -12,7 +12,7 @@ The only requirement is to compile your applications as shared libraries (instea
 
 - **Automatic method using our compilers:** this is still experimental, but it works very similarly to SMPI's compilers: you simply need to replace your usual compiler by `s4bxicc` or `s4bxicxx` (to compile C or C++), which should add the required flags automatically. These scripts might not be recognized as valid compilers by autoconf or CMake (because they only produce shared libs instead of executable binaries), in which case you need to set the `S4BXI_PRETEND_CC` environment variable **at configuration time only** (for more explanations see [SMPI's documentation](https://simgrid.org/doc/latest/app_smpi.html#troubleshooting-with-smpi)).
 
-Similarly to SimGrid, S4BXI provides a CMake module, which can be found [here](https://framagit.org/s4bxi/s4bxi-cmake-modules). This module allows S4BXI to itself itself automatically if you installed it in the standard location (`/opt/s4bxi`). If you installed it somewhere else, you can specify the path manually by setting the `S4BXI_PATH` cmake variable (`-DS4BXI_PATH=...`). If you use this module, compiling a simple `hello.cpp` program for simulation could look like this:
+Similarly to SimGrid, S4BXI provides a CMake module, which can be found [here](https://framagit.org/s4bxi/s4bxi-cmake-modules). This module allows S4BXI to find itself automatically if you installed it in the standard location (`/opt/s4bxi`). If you installed it somewhere else, you can specify the path manually by setting the `S4BXI_PATH` cmake variable (`-DS4BXI_PATH=...`). If you use this module, compiling a simple `hello.cpp` program for simulation could look like this:
 
 ```cmake
 cmake_minimum_required(VERSION 3.9)
