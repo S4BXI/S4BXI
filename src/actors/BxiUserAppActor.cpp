@@ -230,15 +230,18 @@ void BxiUserAppActor::operator()()
         strcpy(argv[i], string_args[i].c_str());
     }
 
+    const char* prop = self->get_property("delay_start");
+    if (prop)
+        s4u::this_actor::sleep_for(atof(prop));
+
     s4bxi_bench_begin(this);
 
     entry_point(argc, argv);
 
     s4bxi_bench_end(this);
 
-    for (unsigned long i = 0; i < string_args.size(); ++i) {
+    for (unsigned long i = 0; i < string_args.size(); ++i)
         delete[] argv[i];
-    }
     delete[] argv;
 
     dlclose(handle); // If using Valgrind, remove the `dlclose`s or it will get lost
