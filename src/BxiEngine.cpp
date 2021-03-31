@@ -52,7 +52,7 @@ BxiEngine::BxiEngine()
     config->keep_temps         = get_bool_s4bxi_param("KEEP_TEMPS", false);
     config->max_memcpy         = get_long_s4bxi_param("MAX_MEMCPY", -1);
     config->cpu_factor         = get_double_s4bxi_param("CPU_FACTOR", 1.0F);
-    config->cpu_threshold      = get_double_s4bxi_param("CPU_FACTOR", 1e-7);
+    config->cpu_threshold      = get_double_s4bxi_param("CPU_THRESHOLD", 1e-7);
     config->quick_acks         = get_bool_s4bxi_param("QUICK_ACKS", false);
 
     XBT_DEBUG("Engine was configured with:");
