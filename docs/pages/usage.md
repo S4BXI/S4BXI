@@ -6,7 +6,7 @@
 
 S4BXI is able to [run unmodified scientific applications](https://hal.inria.fr/hal-02972297) that use Portals for network communications. It can also be used to run unmodified MPI applications, using the Portals BTL of OpenMPI, with only a few modifications to MPI's initialisation (to correctly setup ranks).
 
-The only requirement is to compile your applications as shared libraries (instead of regular executable binaries), and to add our simulator to your include paths. Internally this allows the simulator to fetch symbols from you application (using `dlopen`) and run them in a controlled environment. There are two ways to do this: either manually in your build system, or using our own compilers (which are simply wrappers around your usual compiler):
+The only requirement is to compile your applications as shared libraries (instead of regular executable binaries), and to add our simulator to your include paths. Internally making a shared library allows the simulator to fetch symbols from your application (using `dlopen`) and run them in a controlled environment. There are two ways to do this: either manually in your build system, or using our own compilers (which are simply wrappers around your usual compiler):
 
 - **Manual method:** usually this is just a few flag to add somewhere in your build toolchain, for example `-shared` and `-I <S4BXI path>/include` for GCC, or `SHARED` and `include_directories(<S4BXI path>/include)` for CMake. Note that you don't even need to link with Portals/S4BXI: since you are building a shared library, all symbols are not required to be resolved at compile time, and Portals' API will automatically be available when running the simulator.
 
@@ -77,7 +77,7 @@ _**Platform:**_ Each machine of your cluster should consist of:
 
 - a *NIC host* with an optionnal *NID* property, for example 
 ```xml
-<host id="machine0_NIC" speed="1Gf">
+<host id="machine0_NIC" speed="1Gf"/>
 ```
 
 - a network cable, for example 
@@ -163,3 +163,35 @@ So for example, the deployment for *machine0* in our previous example could look
     <actor host="machine0_NIC" function="nic_e2e"/>
 </platform>
 ```
+
+## Options of the simulator
+
+Several options can be passed in the form of environment variables to modify the behaviour of the simulator. These include:
+
+### E2E 
+
+Timeout and retries can be configured using `S4BXI_MAX_RETRIES` (*default=5*) and `S4BXI_RETRY_TIMEOUT` (*default=10.0*) environment variables (the timeout is in seconds and can be floating point).
+
+E2E processing can be globally disabled using `S4BXI_E2E_OFF` (*default=false*). In earlier versions E2E used to cause a huge drop in the performance in the simulator, which is the reason why this option was added, but nowadays the overhead is usually not that big.
+
+### Precision/Speed tradeoff
+
+Some options can speed up the simulation at the cost of some accuracy:
+
+- `S4BXI_MODEL_PCI_COMMANDS`: if `true` then a small PCI transfer is added in simulation for each command that is sent to a NIC (*default=true*)
+
+- `S4BXI_QUICK_ACKS`: if `true` then NICs that receive a Put (or Atomic) request will trigger a Portals ACK event at initiator side without sending any actual ACK message on the network (thanks to simulated world's magic), so it saves 1 or 2 small message transfers per Put (or Atomic) operation (1 if E2E is disabled, 2 otherwise, because of the BXI ack)
+
+- `S4BXI_MAX_MEMCPY`: if set to a positive value **N**, only **N** bytes of payload will be copied from an incomming message into the corresponding buffer (MD or LE/ME buffer) when doing Portals operations (Put, Get, etc.). Obviously this could break the application being simulated, but if messages' payload are not important for the execution flow of the program this can speed up the simulation a little bit (*default=-1*)
+
+### CPU modeling
+
+There is no detailed CPU model in the simulator, and computations are modeled in a way that is extremely similar to SMPI: the compute time between network operations is measured **on the real physical machine that is running the simulation**, and then injected in the simulated world. These benchmarked computation times can be multiplied by a factor which corresponds to the variable `S4BXI_CPU_FACTOR` (*default=1*). The smallest computation can be ignored (i.e. not injected in the simulation) using the variable `S4BXI_CPU_THRESHOLD` (*default=1e-7*), which is defines a threshold (in seconds) under which computations are ignored
+
+### Other
+
+S4BXI can generate logs of various events (Network operation, PCI transfers, computations, etc.) in CSV format. To turn on this feature, simply specify `S4BXI_LOG_FOLDER` (*default="/dev/null"*) and CSV files will be generated in this directory (the files are split each 10000 operations). The log files can then be vizualized using our [web viewer](https://s4bxi.julien-emmanuel.com/log-viewer/)
+
+S4BXI generates temporary files at startup, which are deleted very quickly (before your code starts to run). To keep this files, set `S4BXI_KEEP_TEMPS` (*default=false*) to `true`. This should really only be used when debugging the internals of S4BXI
+
+Because the simulation is single-threaded, all actors run in the same process, which causes problems because each actor running your application should have its global variables privatized (since in a real cluster each actor would correspond to a different process, possibly running on a different machine than the others). S4BXI uses the same technique as SMPI to privatize variables (which consists in copies of libraries on disk to trick the linker). If you also need some shared libraries to be privatized (and not just global variables), you can specify them in `S4BXI_PRIVATIZE_LIBS` (*default=""*). For example if you want to simulate an OpenMPI app, you probably want to set `S4BXI_PRIVATIZE_LIBS="libmpi.so.40;libopen-rte.so.40;libopen-pal.so.40"` so that each actor running the application gets its own private copy of the OpenMPI runtime
