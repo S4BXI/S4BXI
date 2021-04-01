@@ -24,6 +24,12 @@
 #include "../s4ptl.hpp"
 #include "../BxiQueue.hpp"
 
+/**
+ * @brief RX side of the NIC
+ *
+ * This actor listens for messages from the BXI network and processes
+ * them to issue the correct event and/or send a response
+ */
 class BxiNicTarget : public BxiNicActor {
     s4u::Mailbox* nic_rx_mailbox;
     BxiQueue* tx_queue;

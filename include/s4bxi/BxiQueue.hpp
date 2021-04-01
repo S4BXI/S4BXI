@@ -23,6 +23,18 @@
 
 using namespace std;
 
+/**
+ * @brief FIFO structure with variable timing
+ *
+ * This queue implementation has 2 different timing behaviours:
+ *
+ * - The mailbox approach, which is slow in wall-clock time but
+ *   allows modeling a transfer in simulated-world time
+ * - The semaphore + std::queue approach, which is more performant
+ *   (wall-clock time) but doesn't update the simulated-world's time
+ *   (although it still yields to SimGrid because of the use of a
+ *   simulated-world semaphore)
+ */
 class BxiQueue {
     queue<BxiMsg*> to_process;
     s4u::SemaphorePtr waiting;

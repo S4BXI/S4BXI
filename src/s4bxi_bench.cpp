@@ -29,17 +29,20 @@ void s4bxi_execute(BxiMainActor* main_actor, double duration)
     static double cpu_factor    = S4BXI_CONFIG(cpu_factor);
     static double cpu_threshold = S4BXI_CONFIG(cpu_threshold);
 
-    if (duration >= cpu_threshold) {
+    double simulated_duration = duration * cpu_factor;
+
+    if (simulated_duration >= cpu_threshold) {
         auto nid = main_actor->getNid();
         S4BXI_STARTLOG(S4BXILOG_COMPUTE, nid, nid)
         XBT_DEBUG("Sleep for %g to handle real computation time", duration);
-        s4u::this_actor::exec_init(cpu_factor * duration * s4u::Actor::self()->get_host()->get_speed())
+        s4u::this_actor::exec_init(simulated_duration * s4u::Actor::self()->get_host()->get_speed())
             ->set_name("computation")
             ->start()
             ->wait();
         S4BXI_WRITELOG()
     } else {
-        XBT_DEBUG("Real computation took %g while ignore threshold is set to %g => ignore it", duration, cpu_threshold);
+        XBT_DEBUG("Real computation took %g while ignore threshold is set to %g => ignore it", simulated_duration,
+                  cpu_threshold);
     }
 }
 
