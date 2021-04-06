@@ -96,6 +96,7 @@ s4u::CommPtr BxiNicActor::reliable_comm_init(BxiMsg* msg, bool shallow)
     //             BXI_ACKs don't have any higher level of ACK, so no E2E logic
     //                                              ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
     if (!S4BXI_CONFIG(e2e_off) && !node->e2e_off && msg->type != S4BXI_E2E_ACK) {
+        node->e2e_entries->acquire();
         node->e2e_actor->process_message(msg);
     }
 

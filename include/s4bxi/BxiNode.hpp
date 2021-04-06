@@ -56,6 +56,7 @@ class BxiNode {
     void pci_transfer(ptl_size_t size, bool direction, bxi_log_type type);
     void pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
+    void release_e2e_entry();
 };
 
 #endif // S4BXI_BXINODE_HPP

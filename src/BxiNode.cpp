@@ -85,6 +85,11 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     eq->mailbox->put_init(ev, 0)->detach();
 }
 
+void BxiNode::release_e2e_entry() {
+    if (!S4BXI_CONFIG(e2e_off) && !e2e_off)
+        e2e_entries->release();
+}
+
 BxiNode::~BxiNode()
 {
     for (auto& tx_queue : tx_queues)
