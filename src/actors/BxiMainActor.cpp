@@ -353,8 +353,10 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
                                      service_mode, local_offset, remote_offset, ack_req, hdr);
     auto msg     = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_PUT, length, request);
 
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
 
@@ -374,8 +376,10 @@ int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     //                                                                     ^^^^
     //               I Don't know what the actual size of a get request on the network is
 
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    S4BXI_WRITELOG()
 
     return PTL_OK;
 }
@@ -392,8 +396,10 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
                                         service_mode, loffs, roffs, ack_req, hdr, op, datatype);
     auto msg     = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_ATOMIC, length, request);
 
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
 
@@ -415,8 +421,10 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
                                   service_mode, put_loffs, roffs, hdr, op, datatype, m_get, get_loffs);
     auto msg = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
 
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
 
