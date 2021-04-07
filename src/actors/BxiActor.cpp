@@ -133,3 +133,8 @@ string BxiActor::getSlug()
 {
     return slug;
 }
+
+const BxiNode* BxiActor::getNode()
+{
+    return node;
+}

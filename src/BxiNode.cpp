@@ -78,14 +78,15 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     if (eq == PTL_EQ_NONE)
         return;
 
-    if (model_pci) {
+    if (model_pci && S4BXI_CONFIG(model_pci_commands)) {
         pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
     }
 
     eq->mailbox->put_init(ev, 0)->detach();
 }
 
-void BxiNode::release_e2e_entry() {
+void BxiNode::release_e2e_entry()
+{
     if (!S4BXI_CONFIG(e2e_off) && !e2e_off)
         e2e_entries->release();
 }

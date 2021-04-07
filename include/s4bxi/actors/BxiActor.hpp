@@ -48,6 +48,7 @@ class BxiActor {
     s4u::Actor* getSimgridActor();
     ptl_nid_t getNid();
     string getSlug();
+    const BxiNode* getNode();
 };
 
 #endif // S4BXI_BXIACTOR_HPP

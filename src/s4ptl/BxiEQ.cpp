@@ -27,9 +27,6 @@ BxiEQ::BxiEQ()
 
 BxiEQ::~BxiEQ()
 {
-    // Allows the actor to be garbage-collected :
-    // https://simgrid.org/doc/latest/app_s4u.html#declaring-a-receiving-actor
-    mailbox->set_receiver(nullptr);
     free_random_mailbox(mailbox);
 }
 

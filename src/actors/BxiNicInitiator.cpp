@@ -23,8 +23,8 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_initiator, "Messages specific to the NI
 
 BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
 {
-    // For fast queues : tx_queue = new BxiQueue();
-    tx_queue            = new BxiQueue(nic_tx_mailbox_name(vn));
+    tx_queue =
+        node->model_pci && S4BXI_CONFIG(model_pci_commands) ? new BxiQueue(nic_tx_mailbox_name(vn)) : new BxiQueue;
     node->tx_queues[vn] = tx_queue;
 }
 

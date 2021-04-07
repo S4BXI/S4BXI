@@ -32,7 +32,7 @@ s4u::Mailbox* get_random_mailbox()
 
 void free_random_mailbox(s4u::Mailbox* m)
 {
-    // Allows the actor to be garbage-collected :
+    // Allows the calling actor to be garbage-collected :
     // https://simgrid.org/doc/latest/app_s4u.html#declaring-a-receiving-actor
     m->set_receiver(nullptr);
     pool.push(m);

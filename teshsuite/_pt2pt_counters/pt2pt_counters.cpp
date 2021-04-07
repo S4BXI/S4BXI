@@ -91,7 +91,7 @@ int client(char* target)
         sleep(1);
 
         PtlCTSet(cth, empty_event);
-        
+
         for (int j = 0; j < MESSAGE_NUMBER;) {
             // Should match with 3rd ME (40 + 2)
             rc = PtlPut(mdh, 0, buffer_size, PTL_ACK_REQ, peer, 0, 42, 0, nullptr, ~0ULL);
@@ -106,6 +106,8 @@ int client(char* target)
         buffer_size *= 4;
         printf("Finished run %d\n", i);
     }
+
+    s4bxi_barrier();
 
     rc = PtlCTFree(cth);
 
@@ -201,6 +203,8 @@ int server()
         printf("Third buffer : %s\n", bufs[2]);
     }
 
+    s4bxi_barrier();
+
     for (i = 0; i < 10; i++) {
         free(bufs[i]);
         PtlMEUnlink(meh_pool[i]);
@@ -208,6 +212,7 @@ int server()
     free(bufs);
     free(meh_pool);
     PtlPTFree(nih, pte);
+    PtlCTFree(cth);
     PtlNIFini(nih);
     PtlFini();
 

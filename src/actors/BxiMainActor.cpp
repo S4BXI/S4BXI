@@ -503,6 +503,8 @@ int BxiMainActor::PtlGetNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
 
 int BxiMainActor::PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t* ct_handle)
 {
+    issue_portals_command();
+
     *ct_handle = new BxiCT;
 
     return PTL_OK;
@@ -510,6 +512,8 @@ int BxiMainActor::PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t* ct_hand
 
 int BxiMainActor::PtlCTFree(ptl_handle_ct_t ct_handle)
 {
+    issue_portals_command();
+
     delete (BxiCT*)ct_handle;
 
     return PTL_OK;
