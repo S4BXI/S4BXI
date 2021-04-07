@@ -642,6 +642,7 @@ int PtlPollEvents(ptl_handle_ni_t, struct pollfd *);
 int s4bxi_fprintf(FILE* stream, const char* fmt, ...);
 int s4bxi_printf(const char* fmt, ...);
 void s4bxi_compute(double flops);
+void s4bxi_compute_s(double seconds);
 uint32_t s4bxi_get_my_rank();
 uint32_t s4bxi_get_rank_number();
 char* s4bxi_get_hostname_from_rank(int rank);

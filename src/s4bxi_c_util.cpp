@@ -38,6 +38,15 @@ void s4bxi_compute(double flops)
     s4bxi_bench_begin(main_actor);
 }
 
+void s4bxi_compute_s(double seconds)
+{
+    auto main_actor = GET_CURRENT_MAIN_ACTOR;
+
+    s4bxi_bench_end(main_actor);
+    s4bxi_execute(main_actor, seconds);
+    s4bxi_bench_begin(main_actor);
+}
+
 int s4bxi_fprintf(FILE* stream, const char* fmt, ...)
 {
     int rank = s4bxi_get_my_rank();
