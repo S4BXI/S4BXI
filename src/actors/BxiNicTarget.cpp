@@ -101,7 +101,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
         BxiMD* md  = req->md;
         req->start = me->get_offsetted_addr(msg, true);
-        if (node->use_real_memory && md->md->length)
+        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length)
             // Here we could copy only the pointer if this piece of memory is read but not written
             capped_memcpy(req->start, (unsigned char*)md->md->start + req->local_offset, msg->simulated_size);
 
@@ -249,7 +249,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
         BxiMD* md  = req->md;
         req->start = me->get_offsetted_addr(msg, true);
-        if (node->use_real_memory && md->md->length)
+        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length)
             apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start,
                             (unsigned char*)md->md->start + req->local_offset,
                             (unsigned char*)md->md->start + req->local_offset,
@@ -337,7 +337,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         BxiMD* md          = req->md;
         BxiME* response_me = new BxiME(*me);
         req->start         = me->get_offsetted_addr(msg, true);
-        if (node->use_real_memory && md->md->length) {
+        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length) {
             unsigned char* cst = req->is_swap_request()
                                      ? (unsigned char*)&((BxiSwapRequest*)req)->cst
                                      : (unsigned char*)md->md->start + req->local_offset; // Whatever, won't be used
@@ -380,7 +380,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, pt
 
     req->process_state = S4BXI_REQ_ANSWERED;
 
-    if (node->use_real_memory) {
+    if (S4BXI_CONFIG_AND(node, use_real_memory)) {
         auto me = matched_me->me;
         if (me && me->length) {
             // Here we could copy only the pointer if this piece of memory is read but not written
@@ -430,7 +430,7 @@ void BxiNicTarget::handle_fetch_atomic_response(BxiMsg* msg)
 
     handle_response(msg, req->get_md, req->matched_me, req->get_local_offset);
 
-    if (node->use_real_memory)
+    if (S4BXI_CONFIG_AND(node, use_real_memory))
         free(req->matched_me->me->start); // Free the temporary memory zone we used
 }
 

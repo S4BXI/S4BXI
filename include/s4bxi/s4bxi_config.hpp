@@ -27,6 +27,8 @@ struct s4bxi_config {
     int max_retries;
     /** @brief E2E timeout between retries */
     double retry_timeout;
+    /** @brief If disabled, messages' payloads won't actually be copied to save a bit of time */
+    bool use_real_memory;
     /** @brief Model PCI transfers (a value of 0 implies model_pci_commands=0) */
     bool model_pci;
     /** @brief Model small PCI transfers when issuing commands to the NIC */

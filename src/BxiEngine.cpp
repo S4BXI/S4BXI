@@ -44,6 +44,7 @@ BxiEngine::BxiEngine()
 
     config->max_retries        = get_int_s4bxi_param("MAX_RETRIES", 5);
     config->retry_timeout      = get_double_s4bxi_param("RETRY_TIMEOUT", 10.0F);
+    config->use_real_memory    = get_bool_s4bxi_param("USE_REAL_MEMORY", true);
     config->model_pci          = get_bool_s4bxi_param("MODEL_PCI", true);
     config->model_pci_commands = config->model_pci && get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
     config->e2e_off            = get_bool_s4bxi_param("E2E_OFF", false);
@@ -59,6 +60,7 @@ BxiEngine::BxiEngine()
     XBT_DEBUG("Engine was configured with:");
     LOG_CONFIG(max_retries);
     LOG_CONFIG(retry_timeout);
+    LOG_CONFIG(use_real_memory);
     LOG_CONFIG(model_pci);
     LOG_CONFIG(model_pci_commands);
     LOG_CONFIG(e2e_off);

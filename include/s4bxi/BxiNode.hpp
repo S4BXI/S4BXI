@@ -45,7 +45,7 @@ class BxiNode {
     BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
 
     // Params
-    bool use_real_memory    = false;
+    bool use_real_memory    = true;
     bool model_pci          = true;
     bool model_pci_commands = true;
     bool e2e_off            = true;
