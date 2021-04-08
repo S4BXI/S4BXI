@@ -27,6 +27,8 @@ struct s4bxi_config {
     int max_retries;
     /** @brief E2E timeout between retries */
     double retry_timeout;
+    /** @brief Model PCI transfers (a value of 0 implies model_pci_commands=0) */
+    bool model_pci;
     /** @brief Model small PCI transfers when issuing commands to the NIC */
     bool model_pci_commands;
     /** @brief Disable all E2E processing globally */

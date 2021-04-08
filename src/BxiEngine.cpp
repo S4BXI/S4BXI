@@ -29,7 +29,7 @@
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_engine, "Messages specific to BXI engine");
 
-#define LOG_IN_FILE 10000
+#define LOGS_IN_FILE 10000
 
 using namespace simgrid;
 
@@ -44,7 +44,8 @@ BxiEngine::BxiEngine()
 
     config->max_retries        = get_int_s4bxi_param("MAX_RETRIES", 5);
     config->retry_timeout      = get_double_s4bxi_param("RETRY_TIMEOUT", 10.0F);
-    config->model_pci_commands = get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
+    config->model_pci          = get_bool_s4bxi_param("MODEL_PCI", true);
+    config->model_pci_commands = config->model_pci && get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
     config->e2e_off            = get_bool_s4bxi_param("E2E_OFF", false);
     config->log_folder         = get_string_s4bxi_param("LOG_FOLDER", "/dev/null");
     config->log_level          = config->log_folder == "/dev/null" ? 0 : 1;
@@ -58,6 +59,7 @@ BxiEngine::BxiEngine()
     XBT_DEBUG("Engine was configured with:");
     LOG_CONFIG(max_retries);
     LOG_CONFIG(retry_timeout);
+    LOG_CONFIG(model_pci);
     LOG_CONFIG(model_pci_commands);
     LOG_CONFIG(e2e_off);
     LOG_STRING_CONFIG(log_folder);
@@ -191,10 +193,10 @@ void BxiEngine::log(BxiLog& log)
     if (logCount == 0) {
         newFile = true;
         logFile.open(config->log_folder + "/log_0.csv");
-    } else if (logCount % LOG_IN_FILE == 0) {
+    } else if (logCount % LOGS_IN_FILE == 0) {
         newFile = true;
         logFile.close();
-        logFile.open(config->log_folder + "/log_" + to_string((int)floor(logCount / LOG_IN_FILE)) + ".csv");
+        logFile.open(config->log_folder + "/log_" + to_string((int)floor(logCount / LOGS_IN_FILE)) + ".csv");
     }
 
     if (newFile)

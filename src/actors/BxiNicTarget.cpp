@@ -109,10 +109,10 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             me->increment_ct(req->payload_size);
 
         bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
-        bool need_ack         = need_portals_ack || !S4BXI_CONFIG(e2e_off);
+        bool need_ack         = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
 
         BxiMsg* ack = nullptr;
-        if (need_ack && !S4BXI_CONFIG(quick_acks)) {
+        if (need_ack && !S4BXI_GLOBAL_CONFIG(quick_acks)) {
             ack       = new BxiMsg(*msg);
             ack->type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
             // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
@@ -160,7 +160,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             issue_event(eq, event);
 
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-            if (node->model_pci && msg->simulated_size) {
+            if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
                 pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
             }
         } else {
@@ -168,7 +168,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         }
 
         if (need_ack) {
-            if (S4BXI_CONFIG(quick_acks)) {
+            if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
                 // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
                 req->process_state = S4BXI_REQ_FINISHED;
                 // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
@@ -260,8 +260,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
         bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
 
-        if (need_portals_ack || !S4BXI_CONFIG(e2e_off)) {
-            if (need_portals_ack && S4BXI_CONFIG(quick_acks)) {
+        if (need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {
+            if (need_portals_ack && S4BXI_GLOBAL_CONFIG(quick_acks)) {
                 // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
                 req->process_state = S4BXI_REQ_FINISHED;
                 // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
@@ -304,7 +304,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             issue_event(eq, event);
 
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-            if (node->model_pci && msg->simulated_size)
+            if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size)
                 pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
         } else {
             BxiME::maybe_auto_unlink(me);
@@ -393,10 +393,10 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, pt
     }
 
     // Simulate the PCI transfer to write data to memory
-    if (node->model_pci && msg->simulated_size)
+    if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size)
         pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
 
-    if (!S4BXI_CONFIG(e2e_off)) {
+    if (!S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {
         auto bxi_ack            = new BxiMsg(*msg);
         bxi_ack->type           = S4BXI_E2E_ACK;
         bxi_ack->initiator      = msg->target;
@@ -439,7 +439,7 @@ void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
     node->release_e2e_entry();
     auto req = (BxiPutRequest*)msg->parent_request;
 
-    if (!S4BXI_CONFIG(e2e_off)) {
+    if (!S4BXI_CONFIG_OR(req->md->ni->node, e2e_off)) {
         auto bxi_ack            = new BxiMsg(*msg);
         bxi_ack->type           = S4BXI_E2E_ACK;
         bxi_ack->initiator      = msg->target;
@@ -537,7 +537,7 @@ BxiME* BxiNicTarget::match_entry(BxiMsg* msg)
  */
 void BxiNicTarget::capped_memcpy(void* dest, const void* src, size_t n)
 {
-    long max_memcpy = S4BXI_CONFIG(max_memcpy);
+    long max_memcpy = S4BXI_GLOBAL_CONFIG(max_memcpy);
     size_t to_copy  = max_memcpy == -1 ? n : (max_memcpy < n ? max_memcpy : n);
     xbt_assert(!to_copy || dest != nullptr && src != nullptr, "\n\nCan't copy user data from %p to %p\n", dest, src);
     if (to_copy)

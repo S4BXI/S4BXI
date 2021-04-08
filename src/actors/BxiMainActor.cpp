@@ -37,6 +37,9 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
     prop            = self->get_property("model_pci");
     node->model_pci = !prop || TRUTHY_CHAR(prop);
 
+    prop                     = self->get_property("model_pci_commands");
+    node->model_pci_commands = node->model_pci && (!prop || TRUTHY_CHAR(prop));
+
     prop         = self->get_property("service_mode");
     service_mode = prop && TRUTHY_CHAR(prop);
 
@@ -46,17 +49,18 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
         self->daemonize();
     }
 
-    auto nic_actors = node->nic_host->get_all_actors();
-    for (const auto& it : nic_actors) {
-        // Enable E2E only if the NIC has an actor for that
-        if (strcmp(it->get_cname(), "nic_e2e") == 0) {
-            node->e2e_off = false;
-            break;
+    if (S4BXI_GLOBAL_CONFIG(e2e_off)) {
+        node->e2e_off = true;
+    } else {
+        auto nic_actors = node->nic_host->get_all_actors();
+        for (const auto& it : nic_actors) {
+            // Enable E2E only if the NIC has an actor for that
+            if (strcmp(it->get_cname(), "nic_e2e") == 0) {
+                node->e2e_off = false;
+                break;
+            }
         }
     }
-
-    if (S4BXI_CONFIG(e2e_off))
-        node->e2e_off = true;
 
     XBT_INFO("Setup with nid = %d, model_pci = %u ; e2e_off = %u", node->nid, node->model_pci ? 1 : 0,
              node->e2e_off ? 1 : 0);
@@ -71,7 +75,7 @@ BxiMainActor::~BxiMainActor()
 
 void BxiMainActor::issue_portals_command(int simulated_size)
 {
-    if (node->model_pci && S4BXI_CONFIG(model_pci_commands) && simulated_size)
+    if (S4BXI_CONFIG_AND(node, model_pci_commands) && simulated_size)
         pci_transfer(simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_COMMAND);
 }
 

@@ -23,7 +23,7 @@ BxiNicE2E::BxiNicE2E(const vector<string>& args) : BxiActor()
 {
     // If E2E was disabled globally, immediately kill any E2E actor
     // This also forces at most 1 E2E actor per node
-    if (S4BXI_CONFIG(e2e_off) || node->e2e_actor)
+    if (S4BXI_GLOBAL_CONFIG(e2e_off) || node->e2e_actor)
         self->kill();
 
     self->daemonize();
@@ -38,8 +38,8 @@ BxiNicE2E::BxiNicE2E(const vector<string>& args) : BxiActor()
         XBT_INFO("Retried %lu times, gave up %lu times", node->e2e_retried, node->e2e_gave_up);
     });
 
-    XBT_INFO("E2E was configured with timeout = %f and retries = %d", S4BXI_CONFIG(retry_timeout),
-             S4BXI_CONFIG(max_retries));
+    XBT_INFO("E2E was configured with timeout = %f and retries = %d", S4BXI_GLOBAL_CONFIG(retry_timeout),
+             S4BXI_GLOBAL_CONFIG(max_retries));
 }
 
 /**
@@ -59,14 +59,14 @@ BxiNicE2E::BxiNicE2E(const vector<string>& args) : BxiActor()
 void BxiNicE2E::operator()()
 {
     // If for some reason E2E was disabled globally, immediately kill any E2E actor
-    if (S4BXI_CONFIG(e2e_off))
+    if (S4BXI_GLOBAL_CONFIG(e2e_off))
         return;
 
     for (;;) {
         auto msg    = queue.get();
         current_msg = msg;
 
-        double wake_up_time = msg->send_init_time + S4BXI_CONFIG(retry_timeout);
+        double wake_up_time = msg->send_init_time + S4BXI_GLOBAL_CONFIG(retry_timeout);
 
         if (wake_up_time < s4u::Engine::get_clock()) {
             XBT_INFO("Expected sleep > %f, got %f", s4u::Engine::get_clock(), wake_up_time);
@@ -84,7 +84,7 @@ void BxiNicE2E::operator()()
         }
 
         // All hope is lost for this message, just give up and go to the next one
-        if (msg->retry_count == S4BXI_CONFIG(max_retries)) {
+        if (msg->retry_count == S4BXI_GLOBAL_CONFIG(max_retries)) {
             ++node->e2e_gave_up;
             BxiMsg::unref(msg);
             current_msg = nullptr;
@@ -94,7 +94,7 @@ void BxiNicE2E::operator()()
 
         // Message didn't get an ACK yet, and can be retransmitted :
         // give it back to BxiNicInitiator and go to the next one
-        if (msg->retry_count < S4BXI_CONFIG(max_retries)) {
+        if (msg->retry_count < S4BXI_GLOBAL_CONFIG(max_retries)) {
             ++node->e2e_retried;
             ++msg->retry_count;
 
@@ -105,7 +105,7 @@ void BxiNicE2E::operator()()
             continue;
         }
 
-        XBT_INFO("Expected retry count > %d, got %d", S4BXI_CONFIG(max_retries), msg->retry_count);
+        XBT_INFO("Expected retry count > %d, got %d", S4BXI_GLOBAL_CONFIG(max_retries), msg->retry_count);
         ptl_panic("Retry count is bigger than MAX_RETRY_COUNT in E2E, which shouldn't be possible");
     }
 }

@@ -23,8 +23,7 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_initiator, "Messages specific to the NI
 
 BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
 {
-    tx_queue =
-        node->model_pci && S4BXI_CONFIG(model_pci_commands) ? new BxiQueue(nic_tx_mailbox_name(vn)) : new BxiQueue;
+    tx_queue = S4BXI_CONFIG_AND(node, model_pci_commands) ? new BxiQueue(nic_tx_mailbox_name(vn)) : new BxiQueue;
     node->tx_queues[vn] = tx_queue;
 }
 
@@ -72,13 +71,14 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     s4u::ActivityPtr comm = nullptr;
 
     if (!msg->retry_count // PIO doesn't make sense for retransmissions
-        && node->model_pci && req->payload_size > inline_size && req->payload_size <= PIO_size) {
+        && S4BXI_CONFIG_AND(node, model_pci) && req->payload_size > inline_size && req->payload_size <= PIO_size) {
         // Second part of PIO command (end of payload)
 
         pci_transfer_async(req->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
 
-    } else if (node->model_pci && (msg->retry_count // Retransmissions are always DMA (even small ones)
-                                   || msg->simulated_size > PIO_size)) {
+    } else if (S4BXI_CONFIG_AND(node, model_pci) &&
+               (msg->retry_count // Retransmissions are always DMA (even small ones)
+                || msg->simulated_size > PIO_size)) {
         // Ask for the memory we need to send (DMA case)
 
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
@@ -111,7 +111,8 @@ void BxiNicInitiator::handle_get(BxiMsg* msg)
 
 void BxiNicInitiator::handle_response(BxiMsg* msg)
 {
-    if (node->model_pci && msg->simulated_size) { // Ask for the memory we need to send (Get is always DMA)
+    if (S4BXI_CONFIG_AND(node, model_pci) &&
+        msg->simulated_size) { // Ask for the memory we need to send (Get is always DMA)
         pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
         pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
     }
@@ -128,7 +129,8 @@ void BxiNicInitiator::handle_response(BxiMsg* msg)
 
 void BxiNicInitiator::handle_fetch_atomic_response(BxiMsg* msg)
 {
-    if (node->model_pci && msg->simulated_size) { // Ask for the memory we need to send (Response is always DMA)
+    if (S4BXI_CONFIG_AND(node, model_pci) &&
+        msg->simulated_size) { // Ask for the memory we need to send (Response is always DMA)
         pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
         pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
     }

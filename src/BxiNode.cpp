@@ -53,7 +53,7 @@ void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type t
     s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
     s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
 
-    if (!S4BXI_CONFIG(log_level)) {
+    if (!S4BXI_GLOBAL_CONFIG(log_level)) {
         // It's important to do that, instead of sendto_async,
         // see https://framagit.org/simgrid/simgrid/-/issues/60
         // (Thanks Martin for your help on this)
@@ -78,7 +78,7 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     if (eq == PTL_EQ_NONE)
         return;
 
-    if (model_pci && S4BXI_CONFIG(model_pci_commands)) {
+    if (S4BXI_CONFIG_AND(this, model_pci_commands)) {
         pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
     }
 
@@ -87,7 +87,7 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
 
 void BxiNode::release_e2e_entry()
 {
-    if (!S4BXI_CONFIG(e2e_off) && !e2e_off)
+    if (!e2e_off)
         e2e_entries->release();
 }
 

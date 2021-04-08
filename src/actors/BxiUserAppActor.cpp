@@ -98,7 +98,7 @@ static void s4bxi_init_privatization_dlopen(const string& e)
     stat(e.c_str(), &fdin_stat);
     fdin_size = fdin_stat.st_size;
 
-    string libnames = S4BXI_CONFIG(privatize_libs);
+    string libnames = S4BXI_GLOBAL_CONFIG(privatize_libs);
     if (not libnames.empty()) {
         // split option
         vector<string> privatize_libs;
@@ -209,7 +209,7 @@ void BxiUserAppActor::operator()()
     // Load the copy and resolve the entry point:
     void* handle    = dlopen(target_executable.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
     int saved_errno = errno;
-    if (S4BXI_CONFIG(keep_temps) == false) {
+    if (S4BXI_GLOBAL_CONFIG(keep_temps) == false) {
         unlink(target_executable.c_str());
         for (const string& target_lib : target_libs)
             unlink(target_lib.c_str());

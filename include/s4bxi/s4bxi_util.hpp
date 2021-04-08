@@ -34,11 +34,13 @@
 
 #define HAS_PTL_OPTION(ptl_object, flag) (((ptl_object)->options & (flag)) != 0)
 
-#define S4BXI_CONFIG(name) (BxiEngine::get_config()->name)
+#define S4BXI_GLOBAL_CONFIG(name)    (BxiEngine::get_config()->name)
+#define S4BXI_CONFIG_AND(node, name) (node->name && S4BXI_GLOBAL_CONFIG(name))
+#define S4BXI_CONFIG_OR(node, name)  (node->name || S4BXI_GLOBAL_CONFIG(name))
 
 #define S4BXI_STARTLOG(log_type, log_initiator, log_target)                                                            \
     BxiLog __bxi_log;                                                                                                  \
-    int __bxi_log_level = S4BXI_CONFIG(log_level);                                                                     \
+    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);                                                              \
     if (__bxi_log_level) {                                                                                             \
         __bxi_log.start     = simgrid::s4u::Engine::get_clock();                                                       \
         __bxi_log.type      = log_type;                                                                                \

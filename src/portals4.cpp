@@ -41,7 +41,7 @@
     do {                                                                                                               \
         int res;                                                                                                       \
         auto main_actor = GET_CURRENT_MAIN_ACTOR;                                                                      \
-        if (main_actor->getNode()->model_pci && S4BXI_CONFIG(model_pci_commands)) {                                    \
+        if (S4BXI_CONFIG_AND(main_actor->getNode(), model_pci_commands)) {                                             \
             s4bxi_bench_end(main_actor);                                                                               \
             res = (call);                                                                                              \
             s4bxi_bench_begin(main_actor);                                                                             \
