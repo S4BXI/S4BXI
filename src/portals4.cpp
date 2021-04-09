@@ -117,8 +117,7 @@ int PtlSetMap(ptl_handle_ni_t nih, ptl_size_t size, const union ptl_process* map
 
 int PtlGetMap(ptl_handle_ni_t nih, ptl_size_t size, union ptl_process* map, ptl_size_t* retsize)
 {
-    THROW_UNIMPLEMENTED;
-    return 1;
+    INSTANT_PORTALS_CALL(main_actor->PtlGetMap(nih, size, map, retsize));
 }
 
 int PtlPTAlloc(ptl_handle_ni_t nih, unsigned int options, ptl_handle_eq_t eqh, ptl_index_t pte, ptl_index_t* ret)

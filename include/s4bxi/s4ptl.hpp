@@ -125,6 +125,7 @@ class BxiNI {
     ptl_pid_t pid;
     s4u::SemaphorePtr cq;
     map<ptl_pt_index_t, BxiPT*> pt_indexes;
+    vector<ptl_process_t> l2p_map;
 
     BxiNI(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits);
 
@@ -132,6 +133,8 @@ class BxiNI {
                        const ptl_ni_limits_t* desired, ptl_ni_limits_t* actual);
     static void fini(ptl_handle_ni_t handle);
     bool can_match_request(BxiRequest* req);
+    ptl_rank_t get_l2p_rank();
+    const ptl_process_t get_physical_proc(const ptl_process_t& proc);
 };
 
 class BxiCT {

@@ -1,0 +1,12 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xml ./build/libpt2pt_l2p.so pt2pt_l2p --cfg=surf/precision:1e-9
+> INT64 : 42
+> HDR data : 1337
+> Initial INT64 : 40
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_fake_memory.xml ./build/libpt2pt_l2p.so pt2pt_l2p --cfg=surf/precision:1e-9
+> INT64 : 40
+> HDR data : 1337
+> Initial INT64 : 666

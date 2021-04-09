@@ -84,6 +84,16 @@ void BxiMainActor::issue_portals_command()
     issue_portals_command(COMMAND_SIZE);
 }
 
+uint8_t BxiMainActor::sampling()
+{
+    return is_sampling;
+}
+
+void BxiMainActor::set_sampling(uint8_t s)
+{
+    is_sampling = s;
+}
+
 // ==================================
 // =                                =
 // =     Portals implementation     =
@@ -128,7 +138,14 @@ int BxiMainActor::PtlGetUid(ptl_handle_ni_t, ptl_uid_t* uid)
  */
 int BxiMainActor::PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t* id)
 {
-    return PtlGetPhysId(ni_handle, id);
+    auto ni = ((BxiNI*)ni_handle);
+
+    if (HAS_PTL_OPTION(ni, PTL_NI_PHYSICAL))
+        return PtlGetPhysId(ni_handle, id);
+
+    id->rank = ni->get_l2p_rank();
+
+    return PTL_OK;
 }
 
 /**
@@ -349,13 +366,13 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
                          ptl_process_t target_id, ptl_index_t pt_index, ptl_match_bits_t match_bits,
                          ptl_size_t remote_offset, void* user_ptr, ptl_hdr_data_t hdr)
 {
-    auto m = (BxiMD*)md_handle;
+    auto m                          = (BxiMD*)md_handle;
+    bool matching                   = HAS_PTL_OPTION(m->ni, PTL_NI_MATCHING);
+    const ptl_process_t target_proc = m->ni->get_physical_proc(target_id);
 
-    bool matching = HAS_PTL_OPTION(m->ni, PTL_NI_MATCHING);
-
-    auto request = new BxiPutRequest(m, length, matching, match_bits, target_id.phys.pid, pt_index, user_ptr,
+    auto request = new BxiPutRequest(m, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                      service_mode, local_offset, remote_offset, ack_req, hdr);
-    auto msg     = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_PUT, length, request);
+    auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_PUT, length, request);
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
@@ -370,15 +387,15 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
 int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl_size_t length, ptl_process_t target_id,
                          ptl_index_t pt_index, ptl_match_bits_t match_bits, ptl_size_t remote_offset, void* user_ptr)
 {
-    auto m = (BxiMD*)md_handle;
+    auto m                          = (BxiMD*)md_handle;
+    bool matching                   = HAS_PTL_OPTION(m->ni, PTL_NI_MATCHING);
+    const ptl_process_t target_proc = m->ni->get_physical_proc(target_id);
 
-    bool matching = HAS_PTL_OPTION(m->ni, PTL_NI_MATCHING);
-
-    auto request = new BxiGetRequest(m, length, matching, match_bits, target_id.phys.pid, pt_index, user_ptr,
+    auto request = new BxiGetRequest(m, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                      service_mode, local_offset, remote_offset);
-    auto msg     = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_GET, 64, request);
-    //                                                                     ^^^^
-    //               I Don't know what the actual size of a get request on the network is
+    auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_GET, 64, request);
+    //                                                                       ^^^^
+    //                 I Don't know what the actual size of a get request on the network is
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
@@ -392,13 +409,13 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
                             ptl_process_t target_id, ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
                             ptl_size_t roffs, void* user_ptr, ptl_hdr_data_t hdr, ptl_op_t op, ptl_datatype_t datatype)
 {
-    auto m = (BxiMD*)md_handle;
+    auto m                          = (BxiMD*)md_handle;
+    bool matching                   = HAS_PTL_OPTION(m->ni, PTL_NI_MATCHING);
+    const ptl_process_t target_proc = m->ni->get_physical_proc(target_id);
 
-    bool matching = HAS_PTL_OPTION(m->ni, PTL_NI_MATCHING);
-
-    auto request = new BxiAtomicRequest(m, length, matching, match_bits, target_id.phys.pid, pt_index, user_ptr,
+    auto request = new BxiAtomicRequest(m, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                         service_mode, loffs, roffs, ack_req, hdr, op, datatype);
-    auto msg     = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_ATOMIC, length, request);
+    auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_ATOMIC, length, request);
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
@@ -415,15 +432,15 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
                                  ptl_pt_index_t pt_index, ptl_match_bits_t match_bits, ptl_size_t roffs, void* user_ptr,
                                  ptl_hdr_data_t hdr, ptl_op_t op, ptl_datatype_t datatype)
 {
-    auto m_put = (BxiMD*)put_mdh;
-    auto m_get = (BxiMD*)get_mdh;
-
-    bool matching = HAS_PTL_OPTION(m_put->ni, PTL_NI_MATCHING);
+    auto m_put                      = (BxiMD*)put_mdh;
+    auto m_get                      = (BxiMD*)get_mdh;
+    bool matching                   = HAS_PTL_OPTION(m_put->ni, PTL_NI_MATCHING);
+    const ptl_process_t target_proc = m_put->ni->get_physical_proc(target_id);
 
     auto request =
-        new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_id.phys.pid, pt_index, user_ptr,
+        new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                   service_mode, put_loffs, roffs, hdr, op, datatype, m_get, get_loffs);
-    auto msg = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
+    auto msg = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
@@ -440,15 +457,15 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
                           ptl_match_bits_t match_bits, ptl_size_t roffs, void* user_ptr, ptl_hdr_data_t hdr,
                           const void* cst, ptl_op_t op, ptl_datatype_t datatype)
 {
-    auto m_put = (BxiMD*)put_mdh;
-    auto m_get = (BxiMD*)get_mdh;
-
-    bool matching = HAS_PTL_OPTION(m_put->ni, PTL_NI_MATCHING);
+    auto m_put                      = (BxiMD*)put_mdh;
+    auto m_get                      = (BxiMD*)get_mdh;
+    bool matching                   = HAS_PTL_OPTION(m_put->ni, PTL_NI_MATCHING);
+    const ptl_process_t target_proc = m_put->ni->get_physical_proc(target_id);
 
     auto request =
-        new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_id.phys.pid, pt_index, user_ptr,
+        new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                   service_mode, put_loffs, roffs, hdr, op, datatype, m_get, get_loffs);
-    auto msg = new BxiMsg(node->nid, target_id.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
+    auto msg = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
 
     m_put->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
@@ -560,23 +577,25 @@ int BxiMainActor::PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 }
 
 // ===============
-// ===== Map =====
+// ===== L2P =====
 // ===============
 
-/**
- * TO-DO: For now this is just a test, we need to actually implement that at some point
- */
 int BxiMainActor::PtlSetMap(ptl_handle_ni_t ni_handle, ptl_size_t size, const union ptl_process* map)
 {
+    ((BxiNI*)ni_handle)->l2p_map = vector<ptl_process_t>(map, map + size);
+
     return PTL_OK;
 }
 
-uint8_t BxiMainActor::sampling()
+int BxiMainActor::PtlGetMap(ptl_handle_ni_t ni_handle, ptl_size_t size, ptl_process* map, ptl_size_t* actual_map_size)
 {
-    return is_sampling;
-}
+    auto ni       = ((BxiNI*)ni_handle);
+    auto map_size = ni->l2p_map.size();
+    if (map_size == 0)
+        return PTL_NO_SPACE;
+    *actual_map_size = map_size;
+    auto to_copy     = size > map_size ? map_size : size;
+    memcpy(map, ni->l2p_map.data(), to_copy * sizeof(ptl_process_t));
 
-void BxiMainActor::set_sampling(uint8_t s)
-{
-    is_sampling = s;
+    return PTL_OK;
 }

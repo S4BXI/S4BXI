@@ -72,7 +72,7 @@ class BxiMainActor : public BxiActor {
     // int PtlNIHandle(ptl_handle_any_t, ptl_handle_ni_t *);
     // int PtlNIStatus(ptl_handle_ni_t, ptl_sr_index_t, ptl_sr_value_t *);
     int PtlSetMap(ptl_handle_ni_t, ptl_size_t, const union ptl_process*);
-    // int PtlGetMap(ptl_handle_ni_t, ptl_size_t, union ptl_process *, ptl_size_t *);
+    int PtlGetMap(ptl_handle_ni_t, ptl_size_t, union ptl_process *, ptl_size_t *);
     //
     int PtlPTAlloc(ptl_handle_ni_t, unsigned int, ptl_handle_eq_t, ptl_index_t, ptl_index_t*);
     int PtlPTFree(ptl_handle_ni_t, ptl_index_t);
