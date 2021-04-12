@@ -1,0 +1,38 @@
+# Exclude XBT_INFO lines : we don't want to tests timing, only output (as we may modify the model)
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/quito.xml ../deploys/quito_client_server_real_memory.xml ./build/libpt2pt_truncated_payload.so pt2pt_truncated_payload --cfg=surf/precision:1e-9
+> SEND mlength 1
+> Message : L
+> PUT mlength : 1
+> ACK mlength 1
+> SEND mlength 4
+> Message : Lore
+> PUT mlength : 4
+> ACK mlength 4
+> SEND mlength 16
+> Message : Lorem ipsum
+> PUT mlength : 11
+> ACK mlength 11
+> SEND mlength 64
+> Message : Lorem ipsum
+> PUT mlength : 11
+> ACK mlength 11
+
+! ignore (.*)\[(.*)\] \[(.*)/INFO\](.*)
+$ s4bximain ../platforms/vix.xml ../deploys/vix_client_server_real_memory.xml ./build/libpt2pt_truncated_payload.so pt2pt_truncated_payload --cfg=surf/precision:1e-9
+> SEND mlength 1
+> Message : L
+> PUT mlength : 1
+> ACK mlength 1
+> SEND mlength 4
+> Message : Lore
+> PUT mlength : 4
+> ACK mlength 4
+> SEND mlength 16
+> Message : Lorem ipsum
+> PUT mlength : 11
+> ACK mlength 11
+> SEND mlength 64
+> Message : Lorem ipsum
+> PUT mlength : 11
+> ACK mlength 11

@@ -99,11 +99,13 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
         req->process_state = S4BXI_REQ_RECEIVED;
 
+        req->mlength = me->get_mlength(req);
+
         BxiMD* md  = req->md;
         req->start = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length)
             // Here we could copy only the pointer if this piece of memory is read but not written
-            capped_memcpy(req->start, (unsigned char*)md->md->start + req->local_offset, msg->simulated_size);
+            capped_memcpy(req->start, (unsigned char*)md->md->start + req->local_offset, req->mlength);
 
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
@@ -140,8 +142,9 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             event->pt_index     = me->pt->index;
             event->user_ptr     = me->user_ptr;
             event->hdr_data     = req->hdr;
-            event->mlength      = req->payload_size; // TO-DO : support truncated payloads
-            event->match_bits   = req->match_bits;   // Maybe check if we have a matching NI ?
+            event->rlength      = req->payload_size;
+            event->mlength      = req->mlength;
+            event->match_bits   = req->match_bits;
             event->start        = req->start;
 
             // We need to auto_unlink at this precise moment, otherwise on rare
@@ -203,6 +206,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
         req->matched_me    = new BxiME(*me);
+        req->mlength       = me->get_mlength(req);
         req->start         = me->get_offsetted_addr(msg, true);
 
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
@@ -213,10 +217,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
         response->initiator      = msg->target;
         response->target         = msg->initiator;
         response->retry_count    = 0;
-        response->simulated_size = req->payload_size;
-        //                         ^^^^^^^^^^^^^^^^^
-        // If the ME length (or remaining length in case of MANAGE_LOCAL is smaller
-        // than req->payload_size we might want to "truncate" and use that ?)
+        response->simulated_size = req->mlength;
 
         tx_queue->put(response, 0, true);
 
@@ -246,6 +247,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             req->matched_me = new BxiME(*me);
 
         req->process_state = S4BXI_REQ_RECEIVED;
+        req->mlength       = me->get_mlength(req);
 
         BxiMD* md  = req->md;
         req->start = me->get_offsetted_addr(msg, true);
@@ -253,7 +255,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start,
                             (unsigned char*)md->md->start + req->local_offset,
                             (unsigned char*)md->md->start + req->local_offset,
-                            (unsigned char*)req->start /* to have a noop memcpy */, req->payload_size);
+                            (unsigned char*)req->start /* to have a noop memcpy */, req->mlength);
 
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
@@ -294,8 +296,9 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             event->pt_index     = me->pt->index;
             event->user_ptr     = me->user_ptr;
             event->hdr_data     = req->hdr;
-            event->mlength      = req->payload_size; // TO-DO : support truncated payloads
-            event->match_bits   = req->match_bits;   // Maybe check if we have a matching NI ?
+            event->rlength      = req->payload_size;
+            event->mlength      = req->mlength;
+            event->match_bits   = req->match_bits;
             event->start        = req->start;
 
             // See comment for put
@@ -336,6 +339,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 
         BxiMD* md          = req->md;
         BxiME* response_me = new BxiME(*me);
+        req->mlength       = me->get_mlength(req);
         req->start         = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length) {
             unsigned char* cst = req->is_swap_request()
@@ -347,7 +351,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
             apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start, cst,
                             (unsigned char*)md->md->start + req->local_offset,
                             (unsigned char*)response_me->get_offsetted_addr(msg, false), // <<< I'm so unsure about this
-                            req->payload_size);
+                            req->mlength);
         }
 
         req->matched_me = response_me;
@@ -359,7 +363,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         response->type           = S4BXI_PTL_FETCH_ATOMIC_RESPONSE;
         response->initiator      = msg->target;
         response->target         = msg->initiator;
-        response->simulated_size = req->payload_size;
+        response->simulated_size = req->mlength;
         response->retry_count    = 0;
 
         tx_queue->put(response, 0, true);
@@ -383,12 +387,11 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, pt
     if (S4BXI_CONFIG_AND(node, use_real_memory)) {
         auto me = matched_me->me;
         if (me && me->length) {
-            // Here we could copy only the pointer if this piece of memory is read but not written
+            // We're handling a deep copy of the actual matched BxiME here, so we really don't care about updating
+            //                                    the manage_local_offset (this BxiME won't ever be reused anyway)
+            //                                                                                        ⌄⌄⌄⌄⌄
             capped_memcpy((unsigned char*)md->md->start + offset, matched_me->get_offsetted_addr(msg, false),
-                          req->payload_size); //                                                      ^^^^^
-            //                                                                                        |||||
-            //    We're handling a deep copy of the actual matched BxiME here, so we really don't care about updating
-            //    the manage_local_offset (this BxiME won't ever be reused anyway)
+                          req->mlength);
         }
     }
 
@@ -413,7 +416,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, pt
     reply_evt->type         = PTL_EVENT_REPLY;
     reply_evt->ni_fail_type = PTL_OK;
     reply_evt->user_ptr     = req->user_ptr;
-    reply_evt->mlength      = req->payload_size; // TO-DO : support truncated payloads
+    reply_evt->mlength      = req->mlength;
     issue_event((BxiEQ*)md->md->eq_handle, reply_evt);
 }
 

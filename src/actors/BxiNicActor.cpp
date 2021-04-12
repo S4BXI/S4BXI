@@ -43,8 +43,9 @@ void BxiNicActor::maybe_issue_get(BxiGetRequest* req)
         event->initiator    = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
         event->pt_index     = req->matched_me->pt->index;
         event->user_ptr     = req->matched_me->user_ptr;
-        event->mlength      = req->payload_size; // TO-DO : support truncated payloads
-        event->match_bits   = req->match_bits;   // Maybe check if we have a matching NI ?
+        event->rlength      = req->payload_size;
+        event->mlength      = req->mlength;
+        event->match_bits   = req->match_bits;
         event->start        = req->start;
         issue_event(req->matched_me->pt->eq, event);
     }
@@ -68,8 +69,9 @@ void BxiNicActor::maybe_issue_fetch_atomic(BxiFetchAtomicRequest* req)
         event->pt_index     = req->matched_me->pt->index;
         event->user_ptr     = req->matched_me->user_ptr;
         event->hdr_data     = req->hdr;
-        event->mlength      = req->payload_size; // TO-DO : support truncated payloads
-        event->match_bits   = req->match_bits;   // Maybe check if we have a matching NI ?
+        event->rlength      = req->payload_size;
+        event->mlength      = req->mlength;
+        event->match_bits   = req->match_bits;
         event->start        = req->start;
         issue_event(req->matched_me->pt->eq, event);
     }
@@ -93,8 +95,8 @@ void BxiNicActor::shallow_reliable_comm(BxiMsg* msg)
 s4u::CommPtr BxiNicActor::reliable_comm_init(BxiMsg* msg, bool shallow)
 {
     s4u::this_actor::sleep_for(2e-9);
-    //             BXI_ACKs don't have any higher level of ACK, so no E2E logic
-    //                                              ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
+    // BXI_ACKs don't have any higher level of ACK, so no E2E logic
+    //                    ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
     if (!node->e2e_off && msg->type != S4BXI_E2E_ACK) {
         node->e2e_entries->acquire();
         node->e2e_actor->process_message(msg);

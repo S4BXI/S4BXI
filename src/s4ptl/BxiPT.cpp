@@ -153,8 +153,9 @@ bool BxiPT::walk_through_UHs(BxiME* me)
             ev->ni_fail_type = PTL_OK;
             ev->pt_index     = req->matched_me->pt->index;
             ev->user_ptr     = req->matched_me->user_ptr;
-            ev->mlength      = req->payload_size; // TO-DO : support truncated payloads
-            ev->match_bits   = req->match_bits;   // Maybe check if we have a matching NI ?
+            ev->rlength      = req->payload_size;
+            ev->mlength      = req->mlength;
+            ev->match_bits   = req->match_bits;
             ev->start        = req->start;
             if (req->type != S4BXI_GET_REQUEST) // All requests other than GET look like a PUT
                 ev->hdr_data = ((BxiPutRequest*)req)->hdr;

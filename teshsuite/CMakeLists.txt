@@ -22,7 +22,8 @@ foreach(x pt2pt_unexpected_headers
           pt2pt_atomic 
           pt2pt_auto_unlink 
           pt2pt_counters
-          pt2pt_l2p)
+          pt2pt_l2p
+          pt2pt_truncated_payload)
   add_library          (${x} SHARED ${CMAKE_SOURCE_DIR}/_${x}/${x}.cpp)
   # We don't even need to link with S4BXI because of dlopen magic
   # target_link_libraries(${x} ${S4BXI_LIBRARY})

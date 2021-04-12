@@ -63,7 +63,7 @@ void BxiPutRequest::issue_ack()
         ack->type         = PTL_EVENT_ACK;
         ack->ni_fail_type = PTL_OK;
         ack->user_ptr     = user_ptr;
-        ack->mlength      = payload_size; // TO-DO : support truncated payloads
+        ack->mlength      = mlength;
         (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, ack);
     }
 }
@@ -100,7 +100,7 @@ void BxiPutRequest::maybe_issue_send()
         event->type         = PTL_EVENT_SEND;
         event->ni_fail_type = PTL_OK;
         event->user_ptr     = user_ptr;
-        event->mlength      = payload_size; // TO-DO : support truncated payloads
+        event->mlength      = payload_size; // SEND doesn't care about truncated payloads
         (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, event);
     }
 }

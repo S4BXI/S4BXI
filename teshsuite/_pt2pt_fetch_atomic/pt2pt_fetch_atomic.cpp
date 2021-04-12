@@ -84,6 +84,8 @@ int client(char* target)
     rc = PtlMDRelease(mdh_put);
     rc = PtlMDRelease(mdh_get);
 
+    s4bxi_barrier();
+
     printf("Initial INT64 : %ld\n", *i64_get);
 
     delete i64_put;
@@ -119,6 +121,8 @@ int client(char* target)
     rc = PtlMDRelease(mdh_put);
     rc = PtlMDRelease(mdh_get);
 
+    s4bxi_barrier();
+
     printf("Initial LONG DOUBLE : %Lf\n", *ld_get);
 
     delete ld_put;
@@ -153,6 +157,8 @@ int client(char* target)
 
     rc = PtlMDRelease(mdh_put);
     rc = PtlMDRelease(mdh_get);
+
+    s4bxi_barrier();
 
     printf("Initial SWAP : %Lf\n", *swap_get);
 
@@ -268,6 +274,9 @@ int server()
     }
     printf("INT64 : %ld\n", *i64);
     printf("HDR data : %lu\n", ev.hdr_data);
+
+    s4bxi_barrier();
+
     PtlMEUnlink(*meh_i64);
     delete i64;
     delete meh_i64;
@@ -285,6 +294,9 @@ int server()
     }
     printf("LONG DOUBLE : %Lf\n", *ld);
     printf("HDR data : %lu\n", ev.hdr_data);
+
+    s4bxi_barrier();
+
     PtlMEUnlink(*meh_ld);
     delete ld;
     delete meh_ld;
@@ -302,6 +314,9 @@ int server()
     }
     printf("SWAP : %Lf\n", *swap);
     printf("HDR data : %lu\n", ev.hdr_data);
+
+    s4bxi_barrier();
+
     PtlMEUnlink(*meh_swap);
     delete swap;
     delete meh_swap;

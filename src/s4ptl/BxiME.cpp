@@ -139,6 +139,15 @@ BxiList* BxiME::get_list(BxiPT* considered_pt)
     return list == PTL_PRIORITY_LIST ? considered_pt->priority_list : considered_pt->overflow_list;
 }
 
+/**
+ * Get the quantity of data actually copied at target
+ * This is used for potentially truncated payloads
+ */
+ptl_size_t BxiME::get_mlength(const BxiRequest* req) {
+    ptl_size_t remaining_size = me->length - manage_local_offset;
+    return remaining_size < req->payload_size ? remaining_size : req->payload_size;
+}
+
 void BxiME::maybe_auto_unlink(BxiME* me)
 {
     bool should_unlink = HAS_PTL_OPTION(me->me, PTL_ME_USE_ONCE) // Simple case: flag is set

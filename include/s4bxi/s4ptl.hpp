@@ -194,6 +194,7 @@ class BxiME {
     ptl_addr_t get_offsetted_addr(BxiMsg* msg, bool update_manage_local_offset = false);
     BxiList* get_list();
     BxiList* get_list(BxiPT* pt);
+    ptl_size_t get_mlength(const BxiRequest* req);
 
     static void append(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr, ptl_handle_me_t* me_handle);
     static void unlink(ptl_handle_me_t me_handle);
@@ -212,6 +213,7 @@ class BxiME {
  */
 class BxiRequest {
   public:
+    ptl_size_t mlength;
     bxi_req_type type;
     uint64_t payload_size; // In bytes
     BxiMD* md;
