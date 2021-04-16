@@ -27,6 +27,7 @@
 #include <boost/algorithm/string.hpp>
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/plugins/BxiActorExt.hpp"
 
 using namespace std;
 
@@ -249,6 +250,7 @@ void BxiUserAppActor::operator()()
 
 int s4bxi_default_main(int argc, char* argv[])
 {
+    s4bxi_actor_ext_plugin_init();
     simgrid::s4u::Engine e(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
 

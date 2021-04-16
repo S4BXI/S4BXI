@@ -79,12 +79,13 @@ ptl_rank_t BxiNI::get_l2p_rank()
 {
     for (int i = 0; i < l2p_map.size(); ++i) {
         if (l2p_map[i].phys.nid == node->nid && l2p_map[i].phys.pid == pid)
-        return i;
+            return i;
     }
 
     ptl_panic("Couldn't find my rank in L2P table");
 }
 
-const ptl_process_t BxiNI::get_physical_proc(const ptl_process_t &proc) {
+const ptl_process_t BxiNI::get_physical_proc(const ptl_process_t& proc)
+{
     return HAS_PTL_OPTION(this, PTL_NI_PHYSICAL) ? proc : l2p_map[proc.rank];
 }

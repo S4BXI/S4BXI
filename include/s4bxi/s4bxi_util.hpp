@@ -19,10 +19,10 @@
 
 #include "BxiEngine.hpp"
 #include "BxiLog.hpp"
+#include "s4bxi/plugins/BxiActorExt.hpp"
 #include <xbt.h>
 
-#define GET_CURRENT_MAIN_ACTOR BxiEngine::get_instance()->get_current_main_actor()
-#define GET_MAIN_ACTOR(pid)    BxiEngine::get_instance()->get_main_actor(pid)
+#define GET_CURRENT_MAIN_ACTOR get_cached_current_main_actor()
 
 #define PCI_CPU_TO_NIC true
 #define PCI_NIC_TO_CPU false

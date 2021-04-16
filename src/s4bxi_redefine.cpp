@@ -87,7 +87,7 @@ void s4bxi_timer_actor(vector<string> args)
     s4u::this_actor::sleep_for(stod(args[0]));
 
     struct sigaction* action;
-    auto main_actor = GET_MAIN_ACTOR(stoi(args[2]));
+    auto main_actor = BxiEngine::get_instance()->get_main_actor(stoi(args[2]));
     if (!main_actor)
         return; // It has probably been killed, should be fine
 

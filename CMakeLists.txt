@@ -68,7 +68,8 @@ set(SOURCE_FILES
         src/s4bxi_redefine.cpp
         src/s4bxi_mailbox_pool.cpp
         src/s4bxi_bench.cpp
-        src/s4bxi_sample.cpp)
+        src/s4bxi_sample.cpp
+        src/plugins/BxiActorExt.cpp)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(SimGrid 3.26 REQUIRED)
