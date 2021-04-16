@@ -500,10 +500,15 @@ int PtlTriggeredCTIncNB(ptl_handle_ct_t cth, struct ptl_ct_event delta, ptl_hand
     return 1;
 }
 
+/**
+ * For now I just need this to exist. Not sure if
+ * we'll ever need to do anything actually because
+ * there is not real concurrency in monothread
+ * simulation
+ */
 int PtlAtomicSync(void)
 {
-    THROW_UNIMPLEMENTED;
-    return 1;
+    return PTL_OK;
 }
 
 int PtlNIAtomicSync(ptl_handle_ni_t nih)

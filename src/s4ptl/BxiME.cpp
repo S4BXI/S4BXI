@@ -143,7 +143,8 @@ BxiList* BxiME::get_list(BxiPT* considered_pt)
  * Get the quantity of data actually copied at target
  * This is used for potentially truncated payloads
  */
-ptl_size_t BxiME::get_mlength(const BxiRequest* req) {
+ptl_size_t BxiME::get_mlength(const BxiRequest* req)
+{
     ptl_size_t remaining_size = me->length - manage_local_offset;
     return remaining_size < req->payload_size ? remaining_size : req->payload_size;
 }

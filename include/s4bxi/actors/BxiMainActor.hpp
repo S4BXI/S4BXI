@@ -22,10 +22,15 @@
 #include <map>
 #include <vector>
 #include <xbt.h>
+#include <map>
 
 #include "../s4ptl.hpp"
 #include "../BxiQueue.hpp"
 #include "BxiActor.hpp"
+
+struct cmp_str {
+    bool operator()(char const* a, char const* b) const { return std::strcmp(a, b) < 0; }
+};
 
 class BxiMainActor : public BxiActor {
   protected:
@@ -51,6 +56,8 @@ class BxiMainActor : public BxiActor {
      */
     BxiNI* default_ni;
 
+    map<char*, void*, cmp_str> keyval_store;
+
     xbt_os_timer_t timer;
     unsigned int is_polling = 0;
     int optind              = 0;
@@ -72,7 +79,7 @@ class BxiMainActor : public BxiActor {
     // int PtlNIHandle(ptl_handle_any_t, ptl_handle_ni_t *);
     // int PtlNIStatus(ptl_handle_ni_t, ptl_sr_index_t, ptl_sr_value_t *);
     int PtlSetMap(ptl_handle_ni_t, ptl_size_t, const union ptl_process*);
-    int PtlGetMap(ptl_handle_ni_t, ptl_size_t, union ptl_process *, ptl_size_t *);
+    int PtlGetMap(ptl_handle_ni_t, ptl_size_t, union ptl_process*, ptl_size_t*);
     //
     int PtlPTAlloc(ptl_handle_ni_t, unsigned int, ptl_handle_eq_t, ptl_index_t, ptl_index_t*);
     int PtlPTFree(ptl_handle_ni_t, ptl_index_t);

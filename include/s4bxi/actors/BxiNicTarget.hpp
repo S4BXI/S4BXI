@@ -43,7 +43,7 @@ class BxiNicTarget : public BxiNicActor {
     void handle_ptl_ack(BxiMsg* msg);
     void handle_bxi_ack(BxiMsg* msg);
     BxiME* match_entry(BxiMsg* msg);
-    void handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, ptl_size_t offset);
+    void handle_response(BxiMsg* msg, BxiMD* md);
     void apply_atomic_op(int op, int type, unsigned char* me, unsigned char* cst, unsigned char* rx, unsigned char* tx,
                          size_t len);
     void capped_memcpy(void* dest, const void* src, size_t n);

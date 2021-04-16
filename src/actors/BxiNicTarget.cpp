@@ -59,10 +59,8 @@ void BxiNicTarget::operator()()
             handle_fetch_atomic_request(msg);
             break;
         case S4BXI_PTL_RESPONSE:
-            handle_get_response(msg);
-            break;
         case S4BXI_PTL_FETCH_ATOMIC_RESPONSE:
-            handle_fetch_atomic_response(msg);
+            handle_response(msg, msg->parent_request->md);
             break;
         case S4BXI_PTL_ACK:
             handle_ptl_ack(msg);
@@ -221,6 +219,9 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
 
         tx_queue->put(response, 0, true);
 
+        if (S4BXI_CONFIG_AND(req->md->ni->node, use_real_memory) && me->me->length)
+            capped_memcpy((unsigned char*)req->md->md->start + req->local_offset, req->start, req->mlength);
+
         // GET event isn't here, it will be issued by the initiator actor when the response is sent on the BXI cable
         BxiME::maybe_auto_unlink(me);
     } // else {} ? We should probably do something if no entry was found
@@ -337,24 +338,24 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
 
-        BxiMD* md          = req->md;
-        BxiME* response_me = new BxiME(*me);
-        req->mlength       = me->get_mlength(req);
-        req->start         = me->get_offsetted_addr(msg, true);
+        BxiMD* md       = req->md;
+        req->matched_me = new BxiME(*me);
+        req->mlength    = me->get_mlength(req);
+        req->start      = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length) {
+            if (me->me->length)
+                capped_memcpy((unsigned char*)req->get_md->md->start + req->get_local_offset, req->start, req->mlength);
+
             unsigned char* cst = req->is_swap_request()
                                      ? (unsigned char*)&((BxiSwapRequest*)req)->cst
                                      : (unsigned char*)md->md->start + req->local_offset; // Whatever, won't be used
 
-            // Get a new memory zone to copy data *before* applying the atomic op (copy will be done by apply_atomic_op)
-            response_me->me->start = malloc(response_me->me->length);
-            apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start, cst,
-                            (unsigned char*)md->md->start + req->local_offset,
-                            (unsigned char*)response_me->get_offsetted_addr(msg, false), // <<< I'm so unsure about this
-                            req->mlength);
+            apply_atomic_op(
+                req->op, req->datatype, (unsigned char*)req->start, cst,
+                (unsigned char*)md->md->start + req->local_offset,
+                (unsigned char*)req->matched_me->get_offsetted_addr(msg, false), // <<< I'm so unsure about this
+                req->mlength);
         }
-
-        req->matched_me = response_me;
 
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
@@ -374,7 +375,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     } // See comment for put and get
 }
 
-void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, ptl_size_t offset)
+void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 {
     node->release_e2e_entry();
     BxiRequest* req = msg->parent_request;
@@ -383,17 +384,6 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, pt
         return;
 
     req->process_state = S4BXI_REQ_ANSWERED;
-
-    if (S4BXI_CONFIG_AND(node, use_real_memory)) {
-        auto me = matched_me->me;
-        if (me && me->length) {
-            // We're handling a deep copy of the actual matched BxiME here, so we really don't care about updating
-            //                                    the manage_local_offset (this BxiME won't ever be reused anyway)
-            //                                                                                        ⌄⌄⌄⌄⌄
-            capped_memcpy((unsigned char*)md->md->start + offset, matched_me->get_offsetted_addr(msg, false),
-                          req->mlength);
-        }
-    }
 
     // Simulate the PCI transfer to write data to memory
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size)
@@ -418,23 +408,6 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md, BxiME* matched_me, pt
     reply_evt->user_ptr     = req->user_ptr;
     reply_evt->mlength      = req->mlength;
     issue_event((BxiEQ*)md->md->eq_handle, reply_evt);
-}
-
-void BxiNicTarget::handle_get_response(BxiMsg* msg)
-{
-    auto req = (BxiGetRequest*)msg->parent_request;
-
-    handle_response(msg, req->md, req->matched_me, req->local_offset);
-}
-
-void BxiNicTarget::handle_fetch_atomic_response(BxiMsg* msg)
-{
-    auto req = (BxiFetchAtomicRequest*)msg->parent_request;
-
-    handle_response(msg, req->get_md, req->matched_me, req->get_local_offset);
-
-    if (S4BXI_CONFIG_AND(node, use_real_memory))
-        free(req->matched_me->me->start); // Free the temporary memory zone we used
 }
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)

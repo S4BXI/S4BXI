@@ -163,3 +163,16 @@ void s4bxi_barrier()
         }
     }
 }
+
+void s4bxi_keyval_store_pointer(char* key, void* value)
+{
+    GET_CURRENT_MAIN_ACTOR->keyval_store.emplace(key, value);
+}
+
+void* s4bxi_keyval_fetch_pointer(int rank, char* key)
+{
+    auto a = BxiEngine::get_instance();
+    auto b = a->get_actor_from_rank(rank);
+    auto c = b->keyval_store;
+    return c[key];
+}
