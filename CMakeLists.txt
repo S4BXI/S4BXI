@@ -67,6 +67,7 @@ set(SOURCE_FILES
         src/s4bxi_util.cpp
         src/s4bxi_redefine.cpp
         src/s4bxi_mailbox_pool.cpp
+        src/s4bxi_shared.cpp
         src/s4bxi_bench.cpp
         src/s4bxi_sample.cpp
         src/plugins/BxiActorExt.cpp)

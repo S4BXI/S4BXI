@@ -60,7 +60,7 @@ int client(char* target)
 
     double comm_time, total_size_kB;
 
-    int64_t* i64 = (int64_t*)malloc(sizeof(int64_t));
+    int64_t* i64 = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *i64         = 42;
 
     mdpar.start     = i64;
@@ -95,7 +95,7 @@ int client(char* target)
         return rc;
     }
 
-    free(i64);
+    S4BXI_SHARED_FREE(i64);
 
     rc = PtlEQFree(eqh);
     if (rc != PTL_OK) {
@@ -143,7 +143,7 @@ int server()
     }
     ptl_event_t ev;
 
-    int64_t* overflow_buf = (int64_t*)malloc(sizeof(int64_t));
+    int64_t* overflow_buf = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *overflow_buf         = 0;
 
     ptl_me_t mepar_overflow;
@@ -185,7 +185,7 @@ int server()
         return 1;
     }
 
-    int64_t* priority_buf = (int64_t*)malloc(sizeof(int64_t));
+    int64_t* priority_buf = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *priority_buf         = 0;
 
     ptl_me_t mepar_priority;
@@ -217,8 +217,8 @@ int server()
     printf("Target after PUT : overflow %ld - priority %ld\n", *overflow_buf, *priority_buf);
 
     // PtlMEUnlink(*meh_priority);
-    free(overflow_buf);
-    free(priority_buf);
+    S4BXI_SHARED_FREE(overflow_buf);
+    S4BXI_SHARED_FREE(priority_buf);
     free(meh_overflow);
     free(meh_priority);
 

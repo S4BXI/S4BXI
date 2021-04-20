@@ -51,6 +51,14 @@ struct s4bxi_config {
     double cpu_threshold;
     /** @brief Triggers ACK at sender side without issuing an actual ACK message on the network */
     bool quick_acks;
+    /** @brief Shared memory threshold */
+    double auto_shared_malloc_thresh;
+    /** @brief Type of shared malloc (global, local or none) */
+    int shared_malloc;
+    /** @brief Huge page mount point (used for global shared mem) */
+    string shared_malloc_hugepage;
+    /** @brief Blocksize used for global shared mem */
+    unsigned long shared_malloc_blocksize;
 };
 
 #endif // S4BXI_s4bxi_config_HPP

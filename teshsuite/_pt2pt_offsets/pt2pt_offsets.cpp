@@ -48,7 +48,7 @@ int client(char* target)
 
     double comm_time, total_size_kB;
 
-    int64_t* i64 = (int64_t*)malloc(4 * sizeof(int64_t));
+    int64_t* i64 = (int64_t*)S4BXI_SHARED_MALLOC(4 * sizeof(int64_t));
     *i64         = -666;
     *(i64 + 1)   = 27;
     *(i64 + 2)   = 42;
@@ -137,7 +137,7 @@ int client(char* target)
 
     rc = PtlMDRelease(mdh);
 
-    free(i64);
+    S4BXI_SHARED_FREE(i64);
 
     rc = PtlEQFree(eqh);
 
@@ -169,7 +169,7 @@ int server()
     // Local offset test
     // =================
 
-    auto i64 = (int64_t*)malloc(sizeof(int64_t));
+    auto i64 = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *i64     = 0;
 
     ptl_me_t mepar_i64;
@@ -216,14 +216,14 @@ int server()
     printf("Target after FETCH_ATOMIC : %ld\n", *i64);
 
     PtlMEUnlink(*meh_i64);
-    free(i64);
+    S4BXI_SHARED_FREE(i64);
     free(meh_i64);
 
     // ==================
     // Remote offset test
     // ==================
 
-    i64        = (int64_t*)malloc(3 * sizeof(int64_t));
+    i64        = (int64_t*)S4BXI_SHARED_MALLOC(3 * sizeof(int64_t));
     *i64       = 0;
     *(i64 + 1) = 0;
     *(i64 + 2) = 0;
@@ -262,14 +262,14 @@ int server()
     printf("Target[2] after PUT : %ld\n", *(i64 + 2));
 
     PtlMEUnlink(*meh_i64);
-    free(i64);
+    S4BXI_SHARED_FREE(i64);
     free(meh_i64);
 
     // =================
     // MANAGE_LOCAL test
     // =================
 
-    i64        = (int64_t*)malloc(4 * sizeof(int64_t));
+    i64        = (int64_t*)S4BXI_SHARED_MALLOC(4 * sizeof(int64_t));
     *i64       = 999;
     *(i64 + 1) = 999;
     *(i64 + 2) = 69;
@@ -331,7 +331,7 @@ int server()
 
     sleep(1); // Make sure Client is done copying data (/!\ this should not be necessary)
 
-    free(i64);
+    S4BXI_SHARED_FREE(i64);
     free(meh_i64);
 
     // Cleanup

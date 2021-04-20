@@ -61,8 +61,8 @@ int client(char* target)
 
     // INT64
 
-    auto i64_put = (int64_t*)malloc(sizeof(int64_t));
-    auto i64_get = (int64_t*)malloc(sizeof(int64_t));
+    auto i64_put = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
+    auto i64_get = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *i64_put     = 2;
     *i64_get     = 666;
 
@@ -83,7 +83,7 @@ int client(char* target)
 
     sleep(1); // Make sure Server is done posting ME
 
-    rc = PtlFetchAtomic(mdh_get, 0, mdh_put, 0, sizeof(int64_t), {.rank=1}, 0, INT64T_ME, 0, nullptr, 1337, PTL_SUM,
+    rc = PtlFetchAtomic(mdh_get, 0, mdh_put, 0, sizeof(int64_t), {.rank = 1}, 0, INT64T_ME, 0, nullptr, 1337, PTL_SUM,
                         PTL_INT64_T);
 
     PtlEQWait(eqh, &ev);
@@ -93,8 +93,8 @@ int client(char* target)
 
     printf("Initial INT64 : %ld\n", *i64_get);
 
-    delete i64_put;
-    delete i64_get;
+    S4BXI_SHARED_FREE(i64_put);
+    S4BXI_SHARED_FREE(i64_get);
 
     rc = PtlEQFree(eqh);
 
@@ -122,7 +122,7 @@ int server()
     rc = PtlPTAlloc(nih, 0, eqh, 0, &pte);
     ptl_event_t ev;
 
-    auto i64 = (int64_t*)malloc(sizeof(int64_t));
+    auto i64 = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *i64     = 40;
 
     ptl_me_t mepar_i64;
@@ -154,8 +154,8 @@ int server()
     printf("INT64 : %ld\n", *i64);
     printf("HDR data : %lu\n", ev.hdr_data);
     PtlMEUnlink(*meh_i64);
-    delete i64;
-    delete meh_i64;
+    S4BXI_SHARED_FREE(i64);
+    free(meh_i64);
 
     // Cleanup
 

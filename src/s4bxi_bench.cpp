@@ -55,7 +55,7 @@ void s4bxi_bench_end(BxiMainActor* main_actor)
 {
     if (main_actor->sampling()) {
         XBT_CRITICAL("Cannot do recursive benchmarks.");
-        XBT_CRITICAL("Are you trying to make a call to MPI within an SMPI_SAMPLE_ block?");
+        XBT_CRITICAL("Are you trying to make a call to MPI within an S4BXI_SAMPLE_ block?");
         xbt_backtrace_display_current();
         xbt_die("Aborting.");
     }

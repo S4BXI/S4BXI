@@ -42,20 +42,30 @@ BxiEngine::BxiEngine()
 {
     config = new s4bxi_config;
 
-    config->max_retries        = get_int_s4bxi_param("MAX_RETRIES", 5);
-    config->retry_timeout      = get_double_s4bxi_param("RETRY_TIMEOUT", 10.0F);
-    config->use_real_memory    = get_bool_s4bxi_param("USE_REAL_MEMORY", true);
-    config->model_pci          = get_bool_s4bxi_param("MODEL_PCI", true);
-    config->model_pci_commands = config->model_pci && get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
-    config->e2e_off            = get_bool_s4bxi_param("E2E_OFF", false);
-    config->log_folder         = get_string_s4bxi_param("LOG_FOLDER", "/dev/null");
-    config->log_level          = config->log_folder == "/dev/null" ? 0 : 1;
-    config->privatize_libs     = get_string_s4bxi_param("PRIVATIZE_LIBS", "");
-    config->keep_temps         = get_bool_s4bxi_param("KEEP_TEMPS", false);
-    config->max_memcpy         = get_long_s4bxi_param("MAX_MEMCPY", -1);
-    config->cpu_factor         = get_double_s4bxi_param("CPU_FACTOR", 1.0F);
-    config->cpu_threshold      = get_double_s4bxi_param("CPU_THRESHOLD", 1e-7);
-    config->quick_acks         = get_bool_s4bxi_param("QUICK_ACKS", false);
+    config->max_retries               = get_int_s4bxi_param("MAX_RETRIES", 5);
+    config->retry_timeout             = get_double_s4bxi_param("RETRY_TIMEOUT", 10.0F);
+    config->use_real_memory           = get_bool_s4bxi_param("USE_REAL_MEMORY", true);
+    config->model_pci                 = get_bool_s4bxi_param("MODEL_PCI", true);
+    config->model_pci_commands        = config->model_pci && get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
+    config->e2e_off                   = get_bool_s4bxi_param("E2E_OFF", false);
+    config->log_folder                = get_string_s4bxi_param("LOG_FOLDER", "/dev/null");
+    config->log_level                 = config->log_folder == "/dev/null" ? 0 : 1;
+    config->privatize_libs            = get_string_s4bxi_param("PRIVATIZE_LIBS", "");
+    config->keep_temps                = get_bool_s4bxi_param("KEEP_TEMPS", false);
+    config->max_memcpy                = get_long_s4bxi_param("MAX_MEMCPY", -1);
+    config->cpu_factor                = get_double_s4bxi_param("CPU_FACTOR", 1.0F);
+    config->cpu_threshold             = get_double_s4bxi_param("CPU_THRESHOLD", 1e-7);
+    config->quick_acks                = get_bool_s4bxi_param("QUICK_ACKS", false);
+    config->auto_shared_malloc_thresh = get_double_s4bxi_param("SHARED_MALLOC_THRESH", 1.0);
+    config->shared_malloc_hugepage    = get_string_s4bxi_param("SHARED_MALLOC_HUGEPAGE", "");
+    config->shared_malloc_blocksize   = get_long_s4bxi_param("SHARED_MALLOC_BLOCKSIZE", 1048576);
+    const string s                    = get_string_s4bxi_param("SHARED_MALLOC", "none");
+    if (s == "local")
+        config->shared_malloc = 1;
+    else if (s == "global")
+        config->shared_malloc = 2;
+    else
+        config->shared_malloc = 0;
 
     XBT_DEBUG("Engine was configured with:");
     LOG_CONFIG(max_retries);
@@ -71,6 +81,9 @@ BxiEngine::BxiEngine()
     LOG_CONFIG(max_memcpy);
     LOG_CONFIG(cpu_factor);
     LOG_CONFIG(quick_acks);
+    LOG_CONFIG(auto_shared_malloc_thresh);
+    LOG_STRING_CONFIG(shared_malloc_hugepage);
+    LOG_CONFIG(shared_malloc);
 }
 
 BxiEngine::~BxiEngine()

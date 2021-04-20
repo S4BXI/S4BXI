@@ -53,7 +53,7 @@ int client(char* target)
     double comm_time, total_size_kB;
 
     for (int i = 0; i < RUNS_NUMBER; ++i) {
-        char* buf = (char*)malloc(buffer_size * sizeof(char));
+        char* buf = (char*)S4BXI_SHARED_MALLOC((buffer_size + 1) * sizeof(char));
         buf[0]    = '\0';
 
         mdpar.start     = buf;
@@ -91,7 +91,7 @@ int client(char* target)
 
         rc = PtlMDRelease(mdh);
 
-        delete buf;
+        S4BXI_SHARED_FREE(buf);
 
         buffer_size *= 4;
         printf("Finished run %d\n", i);
@@ -129,7 +129,7 @@ int server()
     int i, j;
 
     for (i = 0; i < 10; i++) {
-        bufs[i] = (char*)malloc(4200000 * sizeof(char));
+        bufs[i] = (char*)S4BXI_SHARED_MALLOC(4200000 * sizeof(char));
         memset(&lepar[i], 0, sizeof(ptl_le_t));
         lepar[i].start     = bufs[i];
         lepar[i].length    = 4200000;
@@ -165,7 +165,7 @@ int server()
     }
 
     for (i = 0; i < 10; i++)
-        free(bufs[i]);
+        S4BXI_SHARED_FREE(bufs[i]);
     free(bufs);
 
     for (i = 0; i < 10; i++) {

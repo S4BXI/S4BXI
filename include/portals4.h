@@ -36,6 +36,7 @@
 #endif
 
 #include "s4bxi/s4bxi_sample.h"
+#include "s4bxi/s4bxi_shared.h"
 
 #include "s4bxi/s4bxi_redefine.h"
 

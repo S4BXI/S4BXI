@@ -136,8 +136,8 @@ int server()
         delete bufs[i];
     delete[] bufs;
 
-    free(leh_pool);
-    free(lepar);
+    S4BXI_SHARED_FREE(leh_pool);
+    S4BXI_SHARED_FREE(lepar);
 
     rc = PtlPTFree(nih, pte);
     if (rc != PTL_OK) {

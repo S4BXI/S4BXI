@@ -42,7 +42,7 @@ int client(char* target)
     ptl_handle_md_t mdh;
     ptl_process_t peer;
     ptl_event_t ev;
-    char* buf = (char*)malloc(512 * sizeof(char));
+    char* buf = (char*)S4BXI_SHARED_MALLOC(512 * sizeof(char));
     sprintf(buf, "Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 
     rc = PtlEQAlloc(nih, 64, &eqh);
@@ -96,7 +96,7 @@ int client(char* target)
     rc = PtlNIFini(nih);
     PtlFini();
 
-    free(buf);
+    S4BXI_SHARED_FREE(buf);
 
     return 0;
 }
@@ -121,7 +121,7 @@ int server()
 
     int i;
 
-    char* buf = (char*)malloc(12 * sizeof(char));
+    char* buf = (char*)S4BXI_SHARED_MALLOC(12 * sizeof(char));
     memset(&mepar, 0, sizeof(ptl_me_t));
     mepar.start       = buf;
     mepar.length      = 11;
@@ -161,7 +161,7 @@ int server()
         printf("PUT mlength : %ld\n", ev.mlength);
     }
 
-    free(buf);
+    S4BXI_SHARED_FREE(buf);
 
     PtlMEUnlink(meh);
 

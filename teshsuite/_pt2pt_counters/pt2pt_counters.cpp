@@ -69,7 +69,7 @@ int client(char* target)
 
     ptl_ct_event_t empty_event{0, 0};
     for (int i = 0; i < RUNS_NUMBER; ++i) {
-        char* buf = (char*)malloc(buffer_size * sizeof(char));
+        char* buf = (char*)S4BXI_SHARED_MALLOC(buffer_size * sizeof(char));
         sprintf(buf, "Message of run %d", i);
 
         ptl_md_t mdpar;
@@ -101,7 +101,7 @@ int client(char* target)
 
         rc = PtlMDRelease(mdh);
 
-        delete buf;
+        S4BXI_SHARED_FREE(buf);
 
         buffer_size *= 4;
         printf("Finished run %d\n", i);
@@ -162,7 +162,7 @@ int server()
     int i, j;
 
     for (i = 0; i < 10; i++) {
-        bufs[i] = (char*)malloc(4200000 * sizeof(char));
+        bufs[i] = (char*)S4BXI_SHARED_MALLOC(4200000 * sizeof(char));
 
         ptl_me_t mepar;
         ptl_event_t ev_link;
@@ -206,7 +206,7 @@ int server()
     s4bxi_barrier();
 
     for (i = 0; i < 10; i++) {
-        free(bufs[i]);
+        S4BXI_SHARED_FREE(bufs[i]);
         PtlMEUnlink(meh_pool[i]);
     }
     free(bufs);

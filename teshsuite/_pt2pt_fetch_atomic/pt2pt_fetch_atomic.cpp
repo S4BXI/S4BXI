@@ -54,8 +54,8 @@ int client(char* target)
 
     // INT64
 
-    auto i64_put = (int64_t*)malloc(sizeof(int64_t));
-    auto i64_get = (int64_t*)malloc(sizeof(int64_t));
+    auto i64_put = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
+    auto i64_get = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *i64_put     = 2;
     *i64_get     = 666;
 
@@ -88,13 +88,13 @@ int client(char* target)
 
     printf("Initial INT64 : %ld\n", *i64_get);
 
-    delete i64_put;
-    delete i64_get;
+    S4BXI_SHARED_FREE(i64_put);
+    S4BXI_SHARED_FREE(i64_get);
 
     // LONG_DOUBLE
 
-    auto ld_put = (long double*)malloc(sizeof(long double));
-    auto ld_get = (long double*)malloc(sizeof(long double));
+    auto ld_put = (long double*)S4BXI_SHARED_MALLOC(sizeof(long double));
+    auto ld_get = (long double*)S4BXI_SHARED_MALLOC(sizeof(long double));
     *ld_put     = 3;
     *ld_get     = 666;
 
@@ -125,13 +125,13 @@ int client(char* target)
 
     printf("Initial LONG DOUBLE : %Lf\n", *ld_get);
 
-    delete ld_put;
-    delete ld_get;
+    S4BXI_SHARED_FREE(ld_put);
+    S4BXI_SHARED_FREE(ld_get);
 
     // SWAP
 
-    auto swap_put = (long double*)malloc(sizeof(long double));
-    auto swap_get = (long double*)malloc(sizeof(long double));
+    auto swap_put = (long double*)S4BXI_SHARED_MALLOC(sizeof(long double));
+    auto swap_get = (long double*)S4BXI_SHARED_MALLOC(sizeof(long double));
     *swap_put     = 42;
     *swap_get     = 666;
 
@@ -150,8 +150,8 @@ int client(char* target)
     rc = PtlMDBind(nih, &mdpar_put, &mdh_put);
     rc = PtlMDBind(nih, &mdpar_get, &mdh_get);
 
-    rc = PtlSwap(mdh_get, 0, mdh_put, 0, sizeof(long double), peer, 0, SWAP_ME, 0, nullptr, 3333,
-                 (void*) 0x42, PTL_SWAP, PTL_LONG_DOUBLE);
+    rc = PtlSwap(mdh_get, 0, mdh_put, 0, sizeof(long double), peer, 0, SWAP_ME, 0, nullptr, 3333, (void*)0x42, PTL_SWAP,
+                 PTL_LONG_DOUBLE);
 
     PtlEQWait(eqh, &ev);
 
@@ -162,8 +162,8 @@ int client(char* target)
 
     printf("Initial SWAP : %Lf\n", *swap_get);
 
-    delete swap_put;
-    delete swap_get;
+    S4BXI_SHARED_FREE(swap_put);
+    S4BXI_SHARED_FREE(swap_get);
 
     rc = PtlEQFree(eqh);
 
@@ -193,7 +193,7 @@ int server()
 
     // INT64
 
-    auto i64 = (int64_t*)malloc(sizeof(int64_t));
+    auto i64 = (int64_t*)S4BXI_SHARED_MALLOC(sizeof(int64_t));
     *i64     = 40;
 
     ptl_me_t mepar_i64;
@@ -213,7 +213,7 @@ int server()
 
     // LONG DOUBLE
 
-    auto ld = (long double*)malloc(sizeof(long double));
+    auto ld = (long double*)S4BXI_SHARED_MALLOC(sizeof(long double));
     *ld     = 23;
 
     ptl_me_t mepar_ld;
@@ -237,7 +237,7 @@ int server()
 
     // SWAP
 
-    auto swap = (long double*)malloc(sizeof(long double));
+    auto swap = (long double*)S4BXI_SHARED_MALLOC(sizeof(long double));
     *swap     = 12;
 
     ptl_me_t mepar_swap;
@@ -278,8 +278,8 @@ int server()
     s4bxi_barrier();
 
     PtlMEUnlink(*meh_i64);
-    delete i64;
-    delete meh_i64;
+    S4BXI_SHARED_FREE(i64);
+    free(meh_i64);
 
     // LONG DOUBLE
 
@@ -298,8 +298,8 @@ int server()
     s4bxi_barrier();
 
     PtlMEUnlink(*meh_ld);
-    delete ld;
-    delete meh_ld;
+    S4BXI_SHARED_FREE(ld);
+    free(meh_ld);
 
     // SWAP
 
@@ -318,8 +318,8 @@ int server()
     s4bxi_barrier();
 
     PtlMEUnlink(*meh_swap);
-    delete swap;
-    delete meh_swap;
+    S4BXI_SHARED_FREE(swap);
+    free(meh_swap);
 
     // Cleanup
 
