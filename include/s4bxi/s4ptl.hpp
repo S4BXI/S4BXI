@@ -227,6 +227,7 @@ class BxiRequest {
     bool service_vn;
     ptl_size_t local_offset;
     ptl_size_t remote_offset;
+    ptl_size_t target_remote_offset;
     ptl_addr_t start; // "start" as in a ptl_event_t, it's easier to store it in the request than to re-compute it when
                       // issuing events, so there it is
     BxiME* matched_me = nullptr; // Unused for PUT and ATOMIC on priority list

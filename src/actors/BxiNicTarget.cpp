@@ -132,18 +132,19 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
             !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
             me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have a PUT_OVERFLOW later
-            auto eq             = me->pt->eq;
-            auto event          = new ptl_event_t;
-            event->initiator    = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
-            event->type         = PTL_EVENT_PUT;
-            event->ni_fail_type = PTL_OK;
-            event->pt_index     = me->pt->index;
-            event->user_ptr     = me->user_ptr;
-            event->hdr_data     = req->hdr;
-            event->rlength      = req->payload_size;
-            event->mlength      = req->mlength;
-            event->match_bits   = req->match_bits;
-            event->start        = req->start;
+            auto eq              = me->pt->eq;
+            auto event           = new ptl_event_t;
+            event->initiator     = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
+            event->type          = PTL_EVENT_PUT;
+            event->ni_fail_type  = PTL_OK;
+            event->pt_index      = me->pt->index;
+            event->user_ptr      = me->user_ptr;
+            event->hdr_data      = req->hdr;
+            event->rlength       = req->payload_size;
+            event->mlength       = req->mlength;
+            event->remote_offset = req->remote_offset;
+            event->match_bits    = req->match_bits;
+            event->start         = req->start;
 
             // We need to auto_unlink at this precise moment, otherwise on rare
             // occasions the ME could be already gone by the time we check if
@@ -289,18 +290,19 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
             !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
             me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have an ATOMIC_OVERFLOW later
-            auto eq             = me->pt->eq;
-            auto event          = new ptl_event_t;
-            event->initiator    = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
-            event->type         = PTL_EVENT_ATOMIC;
-            event->ni_fail_type = PTL_OK;
-            event->pt_index     = me->pt->index;
-            event->user_ptr     = me->user_ptr;
-            event->hdr_data     = req->hdr;
-            event->rlength      = req->payload_size;
-            event->mlength      = req->mlength;
-            event->match_bits   = req->match_bits;
-            event->start        = req->start;
+            auto eq              = me->pt->eq;
+            auto event           = new ptl_event_t;
+            event->initiator     = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
+            event->type          = PTL_EVENT_ATOMIC;
+            event->ni_fail_type  = PTL_OK;
+            event->pt_index      = me->pt->index;
+            event->user_ptr      = me->user_ptr;
+            event->hdr_data      = req->hdr;
+            event->rlength       = req->payload_size;
+            event->mlength       = req->mlength;
+            event->remote_offset = req->remote_offset;
+            event->match_bits    = req->match_bits;
+            event->start         = req->start;
 
             // See comment for put
             BxiME::maybe_auto_unlink(me);
@@ -402,11 +404,12 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
     if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_REPLY))
         md->increment_ct(req->payload_size);
 
-    auto reply_evt          = new ptl_event_t;
-    reply_evt->type         = PTL_EVENT_REPLY;
-    reply_evt->ni_fail_type = PTL_OK;
-    reply_evt->user_ptr     = req->user_ptr;
-    reply_evt->mlength      = req->mlength;
+    auto reply_evt           = new ptl_event_t;
+    reply_evt->type          = PTL_EVENT_REPLY;
+    reply_evt->ni_fail_type  = PTL_OK;
+    reply_evt->user_ptr      = req->user_ptr;
+    reply_evt->mlength       = req->mlength;
+    reply_evt->remote_offset = req->target_remote_offset;
     issue_event((BxiEQ*)md->md->eq_handle, reply_evt);
 }
 

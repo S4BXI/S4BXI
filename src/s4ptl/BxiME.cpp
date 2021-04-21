@@ -112,14 +112,18 @@ bool BxiME::matches_request(BxiRequest* req)
 
 ptl_addr_t BxiME::get_offsetted_addr(BxiMsg* msg, bool update_manage_local_offset)
 {
+    BxiRequest* req = msg->parent_request;
     // Simple case, use requested remote offset
-    if (!HAS_PTL_OPTION(me, PTL_ME_MANAGE_LOCAL))
-        return (char*)me->start + msg->parent_request->remote_offset;
+    if (!HAS_PTL_OPTION(me, PTL_ME_MANAGE_LOCAL)) {
+        req->target_remote_offset = req->remote_offset;
+        return (char*)me->start + req->remote_offset;
+    }
 
     // MANAGE_LOCAL case, see spec sec 3.12.1 about this option
-    ptl_addr_t addr = (char*)me->start + manage_local_offset;
+    ptl_addr_t addr           = (char*)me->start + manage_local_offset;
+    req->target_remote_offset = manage_local_offset; // Overwrite the requested offset
     if (update_manage_local_offset) {
-        manage_local_offset += msg->parent_request->payload_size;
+        manage_local_offset += req->payload_size;
         manage_local_offset = manage_local_offset <= me->length ? manage_local_offset : me->length;
     }
 

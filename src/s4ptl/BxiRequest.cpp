@@ -59,11 +59,12 @@ void BxiPutRequest::issue_ack()
     if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_ACK))
         md->increment_ct(payload_size);
     if (ack_req == PTL_ACK_REQ) {
-        auto ack          = new ptl_event_t;
-        ack->type         = PTL_EVENT_ACK;
-        ack->ni_fail_type = PTL_OK;
-        ack->user_ptr     = user_ptr;
-        ack->mlength      = mlength;
+        auto ack           = new ptl_event_t;
+        ack->type          = PTL_EVENT_ACK;
+        ack->ni_fail_type  = PTL_OK;
+        ack->user_ptr      = user_ptr;
+        ack->mlength       = mlength;
+        ack->remote_offset = target_remote_offset;
         (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, ack);
     }
 }
