@@ -42,7 +42,7 @@ class BxiNicTarget : public BxiNicActor {
     void handle_fetch_atomic_response(BxiMsg* msg);
     void handle_ptl_ack(BxiMsg* msg);
     void handle_bxi_ack(BxiMsg* msg);
-    BxiME* match_entry(BxiMsg* msg);
+    int match_entry(BxiMsg* msg, BxiME** me);
     void handle_response(BxiMsg* msg, BxiMD* md);
     void apply_atomic_op(int op, int type, unsigned char* me, unsigned char* cst, unsigned char* rx, unsigned char* tx,
                          size_t len);

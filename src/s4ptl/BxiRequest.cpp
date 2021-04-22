@@ -54,14 +54,14 @@ BxiPutRequest::BxiPutRequest(BxiMD* md, ptl_size_t payload_size, bool matching, 
 {
 }
 
-void BxiPutRequest::issue_ack()
+void BxiPutRequest::issue_ack(int ni_fail_type)
 {
     if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_ACK))
         md->increment_ct(payload_size);
     if (ack_req == PTL_ACK_REQ) {
         auto ack           = new ptl_event_t;
         ack->type          = PTL_EVENT_ACK;
-        ack->ni_fail_type  = PTL_OK;
+        ack->ni_fail_type  = ni_fail_type;
         ack->user_ptr      = user_ptr;
         ack->mlength       = mlength;
         ack->remote_offset = target_remote_offset;

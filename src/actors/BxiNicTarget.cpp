@@ -89,7 +89,11 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    BxiME* me = match_entry(msg);
+    bool need_ack         = false;
+    bxi_msg_type ack_type = S4BXI_PTL_ACK;
+
+    BxiME* me        = nullptr;
+    int ni_fail_type = match_entry(msg, &me);
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -109,25 +113,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             me->increment_ct(req->payload_size);
 
         bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
-        bool need_ack         = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
-
-        BxiMsg* ack = nullptr;
-        if (need_ack && !S4BXI_GLOBAL_CONFIG(quick_acks)) {
-            ack       = new BxiMsg(*msg);
-            ack->type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
-            // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
-            // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
-            ack->initiator      = msg->target;
-            ack->target         = msg->initiator;
-            ack->simulated_size = ACK_SIZE;
-            ack->retry_count    = 0;
-
-            // DON'T SEND THE ACK YET !
-            // Sending the ack will yield to SimGrid, and another process could be scheduled (very rare since
-            // sending the ack doesn't take any time, but it definitely does happen sometimes), for example
-            // a process in the middle of a ME unlink, which means that the `me` we're currently using could
-            // be anihilated before we get to the next line
-        }
+        need_ack              = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
+        ack_type              = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
         if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
             !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
@@ -168,21 +155,33 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         } else {
             BxiME::maybe_auto_unlink(me);
         }
+    } else if (req->ack_req != PTL_NO_ACK_REQ) {
+        need_ack = true;
+        ack_type = S4BXI_PTL_ACK;
+    }
 
-        if (need_ack) {
-            if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
-                // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
-                req->process_state = S4BXI_REQ_FINISHED;
-                // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
-                // although we're currently processing the message at the target side.
-                req->md->ni->node->release_e2e_entry();
-                req->maybe_issue_send();
-                req->issue_ack();
-            } else {
-                tx_queue->put(ack, 0, true);
-            }
+    if (need_ack) {
+        if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
+            // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
+            req->process_state = S4BXI_REQ_FINISHED;
+            // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
+            // although we're currently processing the message at the target side.
+            req->md->ni->node->release_e2e_entry();
+            req->maybe_issue_send();
+            req->issue_ack(ni_fail_type);
+        } else {
+            BxiMsg* ack = new BxiMsg(*msg);
+            ack->type   = ack_type;
+            // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
+            // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
+            ack->initiator      = msg->target;
+            ack->target         = msg->initiator;
+            ack->simulated_size = ACK_SIZE;
+            ack->retry_count    = 0;
+            ack->ni_fail_type   = ni_fail_type;
+            tx_queue->put(ack, 0, true);
         }
-    } // else {} ? We should probably do something if no entry was found
+    }
 }
 
 /**
@@ -200,7 +199,13 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    BxiME* me = match_entry(msg);
+    BxiME* me             = nullptr;
+    int ni_fail_type      = match_entry(msg, &me);
+    auto response         = new BxiMsg(*msg);
+    response->type        = S4BXI_PTL_RESPONSE;
+    response->initiator   = msg->target;
+    response->target      = msg->initiator;
+    response->retry_count = 0;
 
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
@@ -211,23 +216,18 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
 
-        auto response            = new BxiMsg(*msg);
-        response->type           = S4BXI_PTL_RESPONSE;
-        response->initiator      = msg->target;
-        response->target         = msg->initiator;
-        response->retry_count    = 0;
         response->simulated_size = req->mlength;
-
-        tx_queue->put(response, 0, true);
 
         if (S4BXI_CONFIG_AND(req->md->ni->node, use_real_memory) && me->me->length)
             capped_memcpy((unsigned char*)req->md->md->start + req->local_offset, req->start, req->mlength);
 
         // GET event isn't here, it will be issued by the initiator actor when the response is sent on the BXI cable
         BxiME::maybe_auto_unlink(me);
-    } // else {} ? We should probably do something if no entry was found
+    } else {
+        response->simulated_size = 0;
+    }
 
-    // Same remark as in PtlPut
+    tx_queue->put(response, 0, true);
 }
 
 /**
@@ -242,7 +242,11 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    BxiME* me = match_entry(msg);
+    bool need_ack         = false;
+    bxi_msg_type ack_type = S4BXI_PTL_ACK;
+
+    BxiME* me        = nullptr;
+    int ni_fail_type = match_entry(msg, &me);
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -263,29 +267,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             me->increment_ct(req->payload_size);
 
         bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
-
-        if (need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {
-            if (need_portals_ack && S4BXI_GLOBAL_CONFIG(quick_acks)) {
-                // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
-                req->process_state = S4BXI_REQ_FINISHED;
-                // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
-                // although we're currently processing the message at the target side.
-                req->md->ni->node->release_e2e_entry();
-                req->maybe_issue_send();
-                req->issue_ack();
-            } else {
-                auto ack  = new BxiMsg(*msg);
-                ack->type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
-                // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
-                // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
-                ack->initiator      = msg->target;
-                ack->target         = msg->initiator;
-                ack->simulated_size = ACK_SIZE;
-                ack->retry_count    = 0;
-
-                tx_queue->put(ack, 0, true);
-            }
-        }
+        need_ack              = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
+        ack_type              = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
         if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
             !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
@@ -315,7 +298,33 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         } else {
             BxiME::maybe_auto_unlink(me);
         }
-    } // See comment for put and get
+    } else if (req->ack_req != PTL_NO_ACK_REQ) {
+        need_ack = true;
+        ack_type = S4BXI_PTL_ACK;
+    }
+
+    if (need_ack) {
+        if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
+            // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
+            req->process_state = S4BXI_REQ_FINISHED;
+            // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
+            // although we're currently processing the message at the target side.
+            req->md->ni->node->release_e2e_entry();
+            req->maybe_issue_send();
+            req->issue_ack(ni_fail_type);
+        } else {
+            BxiMsg* ack = new BxiMsg(*msg);
+            ack->type   = ack_type;
+            // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
+            // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
+            ack->initiator      = msg->target;
+            ack->target         = msg->initiator;
+            ack->simulated_size = ACK_SIZE;
+            ack->retry_count    = 0;
+            ack->ni_fail_type   = ni_fail_type;
+            tx_queue->put(ack, 0, true);
+        }
+    }
 }
 
 /**
@@ -335,7 +344,13 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    BxiME* me = match_entry(msg);
+    BxiME* me             = nullptr;
+    int ni_fail_type      = match_entry(msg, &me);
+    auto response         = new BxiMsg(*msg);
+    response->type        = S4BXI_PTL_FETCH_ATOMIC_RESPONSE;
+    response->initiator   = msg->target;
+    response->target      = msg->initiator;
+    response->retry_count = 0;
 
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
@@ -362,19 +377,16 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
 
-        auto response            = new BxiMsg(*msg);
-        response->type           = S4BXI_PTL_FETCH_ATOMIC_RESPONSE;
-        response->initiator      = msg->target;
-        response->target         = msg->initiator;
         response->simulated_size = req->mlength;
-        response->retry_count    = 0;
-
-        tx_queue->put(response, 0, true);
 
         // FETCH_ATOMIC event isn't here, it will be issued by the initiator
         // actor when the response is sent on the BXI cable
         BxiME::maybe_auto_unlink(me);
-    } // See comment for put and get
+    } else {
+        response->simulated_size = 0;
+    }
+
+    tx_queue->put(response, 0, true);
 }
 
 void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
@@ -406,7 +418,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 
     auto reply_evt           = new ptl_event_t;
     reply_evt->type          = PTL_EVENT_REPLY;
-    reply_evt->ni_fail_type  = PTL_OK;
+    reply_evt->ni_fail_type  = msg->ni_fail_type;
     reply_evt->user_ptr      = req->user_ptr;
     reply_evt->mlength       = req->mlength;
     reply_evt->remote_offset = req->target_remote_offset;
@@ -433,7 +445,7 @@ void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
 
         req->maybe_issue_send();
 
-        req->issue_ack();
+        req->issue_ack(msg->ni_fail_type);
     }
 }
 
@@ -474,41 +486,27 @@ void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
  * @param matching Whether we are trying to match a LE or a ME
  * @return Pointer to the entry, or nullptr if none found
  */
-BxiME* BxiNicTarget::match_entry(BxiMsg* msg)
+int BxiNicTarget::match_entry(BxiMsg* msg, BxiME** me)
 {
     auto req = msg->parent_request;
-    BxiME* me;
     for (auto ni : node->ni_handles) {
         if (!ni->can_match_request(req))
             continue; // The NI doesn't correspond, don't even look at what's inside
 
-        if (req->pt_index == PTL_PT_ANY) {
-            // I don't know if a request with PTL_PT_ANY is legal, specification doesn't
-            // say anything about this, but I have the feeling that it should
-            for (auto pt : ni->pt_indexes) {
-                if (!pt.second->enabled)
-                    continue; // I really don't know if that's what I should do here
+        // Check if the requested PT exists in the NI
+        if (!ni->pt_indexes.count(req->pt_index))
+            return PTL_NI_TARGET_INVALID;
 
-                if ((me = pt.second->walk_through_lists(msg))) // Much parentheses to please clang
-                    return me;
-            }
-        } else {
-            // Check if the requested PT exists in the NI
-            if (!ni->pt_indexes.count(req->pt_index))
-                return nullptr;
+        auto pt = ni->pt_indexes[req->pt_index];
 
-            auto pt = ni->pt_indexes[req->pt_index];
+        if (!pt->enabled)
+            return PTL_NI_PT_DISABLED;
 
-            if (!pt->enabled)
-                return nullptr; // I really don't know if that's what I should do here (maybe
-                                // issue a PTL_PT_DISABLED event if flow control is active ?)
-
-            if ((me = pt->walk_through_lists(msg)))
-                return me;
-        }
+        if ((*me = pt->walk_through_lists(msg)))
+            return PTL_NI_OK;
     }
 
-    return nullptr;
+    return PTL_NI_TARGET_INVALID;
 }
 
 /**
