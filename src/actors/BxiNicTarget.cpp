@@ -166,7 +166,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             req->process_state = S4BXI_REQ_FINISHED;
             // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
             // although we're currently processing the message at the target side.
-            req->md->ni->node->release_e2e_entry();
+            req->md->ni->node->release_e2e_entry(node->nid);
             req->maybe_issue_send();
             req->issue_ack(ni_fail_type);
         } else {
@@ -309,7 +309,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             req->process_state = S4BXI_REQ_FINISHED;
             // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
             // although we're currently processing the message at the target side.
-            req->md->ni->node->release_e2e_entry();
+            req->md->ni->node->release_e2e_entry(node->nid);
             req->maybe_issue_send();
             req->issue_ack(ni_fail_type);
         } else {
@@ -391,7 +391,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 
 void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 {
-    node->release_e2e_entry();
+    node->release_e2e_entry(msg->initiator);
     BxiRequest* req = msg->parent_request;
 
     if (req->process_state > S4BXI_REQ_RECEIVED)
@@ -427,7 +427,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
 {
-    node->release_e2e_entry();
+    node->release_e2e_entry(msg->initiator);
     auto req = (BxiPutRequest*)msg->parent_request;
 
     if (!S4BXI_CONFIG_OR(req->md->ni->node, e2e_off)) {
@@ -459,7 +459,7 @@ void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
  */
 void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
 {
-    node->release_e2e_entry();
+    node->release_e2e_entry(msg->initiator);
     msg->parent_request->process_state = S4BXI_REQ_FINISHED;
 
     // If we have a PUT request, check that the send event was issued at some point

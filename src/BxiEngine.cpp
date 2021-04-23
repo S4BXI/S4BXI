@@ -59,6 +59,7 @@ BxiEngine::BxiEngine()
     config->auto_shared_malloc_thresh = get_double_s4bxi_param("SHARED_MALLOC_THRESH", 1.0);
     config->shared_malloc_hugepage    = get_string_s4bxi_param("SHARED_MALLOC_HUGEPAGE", "");
     config->shared_malloc_blocksize   = get_long_s4bxi_param("SHARED_MALLOC_BLOCKSIZE", 1048576);
+    config->max_inflight_to_target    = get_int_s4bxi_param("MAX_INFLIGHT_TO_TARGET", 0);
     const string s                    = get_string_s4bxi_param("SHARED_MALLOC", "none");
     if (s == "local")
         config->shared_malloc = 1;

@@ -59,6 +59,8 @@ struct s4bxi_config {
     string shared_malloc_hugepage;
     /** @brief Blocksize used for global shared mem */
     unsigned long shared_malloc_blocksize;
+    /** @brief Maximum number of messages inflight between two nodes (0 to disable) */
+    int max_inflight_to_target;
 };
 
 #endif // S4BXI_s4bxi_config_HPP

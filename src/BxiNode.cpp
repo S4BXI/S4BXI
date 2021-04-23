@@ -85,10 +85,42 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     eq->mailbox->put_init(ev, 0)->detach();
 }
 
-void BxiNode::release_e2e_entry()
+void BxiNode::acquire_e2e_entry(ptl_nid_t target_nid)
 {
-    if (!e2e_off)
-        e2e_entries->release();
+    if (e2e_off)
+        return;
+
+    int max_inflight = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
+
+    if (!max_inflight)
+        return;
+
+    s4u::SemaphorePtr flow_control_sem;
+    auto it = flow_control_semaphores.find(target_nid);
+    if (it == flow_control_semaphores.end()) {
+        flow_control_sem = s4u::Semaphore::create(max_inflight);
+        flow_control_semaphores.emplace(target_nid, flow_control_sem);
+    } else {
+        flow_control_sem = it->second;
+    }
+    flow_control_sem->acquire();
+}
+
+void BxiNode::release_e2e_entry(ptl_nid_t target_nid)
+{
+    if (e2e_off)
+        return;
+
+    if (S4BXI_GLOBAL_CONFIG(max_inflight_to_target)) {
+        auto it = flow_control_semaphores.find(target_nid);
+
+        if (it == flow_control_semaphores.end())
+            ptl_panic("Trying to release a flow control entry in a non-existing semaphore.");
+
+        it->second->release();
+    }
+
+    e2e_entries->release();
 }
 
 BxiNode::~BxiNode()
