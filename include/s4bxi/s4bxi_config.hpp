@@ -49,6 +49,8 @@ struct s4bxi_config {
     double cpu_factor;
     /** @brief Threshold under which computation time is ignored (i.e. benchmarked but not simulated) */
     double cpu_threshold;
+    /** @brief Accumulate small CPU operations instead of ignoring them */
+    double cpu_accumulate;
     /** @brief Triggers ACK at sender side without issuing an actual ACK message on the network */
     bool quick_acks;
     /** @brief Shared memory threshold */

@@ -55,6 +55,7 @@ class BxiMainActor : public BxiActor {
      * make MPI work otherwise for now
      */
     BxiNI* default_ni;
+    double cpu_accumulator = 0;
 
     map<char*, void*, cmp_str> keyval_store;
 
