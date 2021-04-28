@@ -120,7 +120,9 @@ static void s4bxi_init_privatization_dlopen(const string& e)
                        fullpath);
             XBT_DEBUG("Extra lib to privatize '%s' found", fullpath);
             privatize_libs_paths.push_back(fullpath);
-            dlclose(libhandle); // If using Valgrind, remove the `dlclose`s or it will get lost
+
+            if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
+                dlclose(libhandle);
         }
     }
 }
@@ -245,7 +247,8 @@ void BxiUserAppActor::operator()()
         delete[] argv[i];
     delete[] argv;
 
-    dlclose(handle); // If using Valgrind, remove the `dlclose`s or it will get lost
+    if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
+        dlclose(handle);
 }
 
 int s4bxi_default_main(int argc, char* argv[])
