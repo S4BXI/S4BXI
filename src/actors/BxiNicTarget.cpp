@@ -166,7 +166,14 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             req->process_state = S4BXI_REQ_FINISHED;
             // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
             // although we're currently processing the message at the target side.
-            req->md->ni->node->release_e2e_entry(node->nid);
+
+            int vn = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
+                      msg->type == S4BXI_PTL_FETCH_ATOMIC)
+                         ? S4BXI_VN_SERVICE_REQUEST
+                         : S4BXI_VN_SERVICE_RESPONSE;
+            if (!req->service_vn)
+                vn += 1; // Switch to compute version
+            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn);
             req->maybe_issue_send();
             req->issue_ack(ni_fail_type);
         } else {
@@ -309,7 +316,14 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             req->process_state = S4BXI_REQ_FINISHED;
             // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
             // although we're currently processing the message at the target side.
-            req->md->ni->node->release_e2e_entry(node->nid);
+
+            int vn = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
+                      msg->type == S4BXI_PTL_FETCH_ATOMIC)
+                         ? S4BXI_VN_SERVICE_REQUEST
+                         : S4BXI_VN_SERVICE_RESPONSE;
+            if (!req->service_vn)
+                vn += 1; // Switch to compute version
+            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn);
             req->maybe_issue_send();
             req->issue_ack(ni_fail_type);
         } else {
@@ -391,8 +405,8 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 
 void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 {
-    node->release_e2e_entry(msg->initiator);
     BxiRequest* req = msg->parent_request;
+    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST);
 
     if (req->process_state > S4BXI_REQ_RECEIVED)
         return;
@@ -427,8 +441,8 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
 {
-    node->release_e2e_entry(msg->initiator);
     auto req = (BxiPutRequest*)msg->parent_request;
+    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST);
 
     if (!S4BXI_CONFIG_OR(req->md->ni->node, e2e_off)) {
         auto bxi_ack            = new BxiMsg(*msg);
@@ -459,8 +473,14 @@ void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
  */
 void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
 {
-    node->release_e2e_entry(msg->initiator);
-    msg->parent_request->process_state = S4BXI_REQ_FINISHED;
+    auto req = msg->parent_request;
+
+    if (req->process_state >= S4BXI_REQ_FINISHED)
+        return;
+
+    req->process_state = S4BXI_REQ_FINISHED;
+
+    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_RESPONSE : S4BXI_VN_COMPUTE_RESPONSE);
 
     // If we have a PUT request, check that the send event was issued at some point
     // (If not, it means we have a put that's not buffered, and we didn't ask for a portals ACK)

@@ -40,6 +40,7 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(user_app, "Messages relative to user app actor");
 #endif
 
 typedef int (*s4bxi_entry_point_type)(int argc, char** argv);
+typedef void (*cpp_platform_callback)();
 
 vector<string> privatize_libs_paths;
 off_t fdin_size;
@@ -257,6 +258,11 @@ int s4bxi_default_main(int argc, char* argv[])
     simgrid::s4u::Engine e(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
 
+    e.set_config("surf/precision:1e-9");
+    e.set_config("network/loopback-lat:0");
+    e.set_config("network/loopback-bw:999e9");
+    e.set_config("network/model:CM02");
+
     char random_characters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B',
                                 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
                                 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
@@ -275,7 +281,18 @@ int s4bxi_default_main(int argc, char* argv[])
     e.register_actor<BxiUserAppActor>("user_app");
 
     /* Load the platform description and then deploy the application */
-    e.load_platform(argv[1]);
+    string platf  = argv[1];
+    string xml = ".xml";
+    // Check if file ends with ".xml"
+    if ((0 == platf.compare(platf.length() - xml.length(), xml.length(), xml))) {
+        e.load_platform(argv[1]);
+    } else { // If it doesn't then it's a C++ platform
+        auto lib = dlopen(platf.c_str(), RTLD_LAZY);
+        auto sym = (cpp_platform_callback)dlsym(lib, "make_platform");
+        sym();
+        if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
+            dlclose(lib);
+    }
     e.load_deployment(argv[2]);
 
     /* Run the simulation */

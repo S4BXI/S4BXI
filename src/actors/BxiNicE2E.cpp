@@ -112,8 +112,10 @@ void BxiNicE2E::operator()()
 
 s4u::Mailbox* BxiNicE2E::get_retransmit_mailbox(const BxiMsg* msg)
 {
-    int vn_num = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET) ? S4BXI_VN_SERVICE_REQUEST
-                                                                            : S4BXI_VN_SERVICE_RESPONSE;
+    int vn_num = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
+                  msg->type == S4BXI_PTL_FETCH_ATOMIC)
+                     ? S4BXI_VN_SERVICE_REQUEST
+                     : S4BXI_VN_SERVICE_RESPONSE;
     if (!msg->parent_request->service_vn)
         vn_num += 1; // Switch to compute version
     auto vn = (bxi_vn)vn_num;
@@ -128,6 +130,8 @@ s4u::Mailbox* BxiNicE2E::get_retransmit_mailbox(const BxiMsg* msg)
  */
 void BxiNicE2E::process_message(BxiMsg* msg)
 {
+    if (!msg->retry_count) // Only take E2E entries for new messages (i.e. retransmissions "re-use" the same entries)
+        node->acquire_e2e_entry(msg);
     ++msg->ref_count;
     msg->send_init_time = s4u::Engine::get_clock();
     queue.put(msg);

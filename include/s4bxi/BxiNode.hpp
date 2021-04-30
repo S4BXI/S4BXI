@@ -41,9 +41,11 @@ class BxiNode {
     s4u::Host* main_host;
     s4u::Host* nic_host;
     s4u::SemaphorePtr e2e_entries;
-    BxiNicE2E* e2e_actor   = nullptr;
-    BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
-    map<ptl_nid_t, s4u::SemaphorePtr> flow_control_semaphores;
+    BxiNicE2E* e2e_actor                                         = nullptr;
+    BxiQueue* tx_queues[4]                                       = {nullptr, nullptr, nullptr, nullptr};
+    map<ptl_nid_t, s4u::SemaphorePtr> flow_control_semaphores[4] = {
+        map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(),
+        map<ptl_nid_t, s4u::SemaphorePtr>()};
 
     // Params
     bool use_real_memory    = true;
@@ -58,8 +60,8 @@ class BxiNode {
     void pci_transfer(ptl_size_t size, bool direction, bxi_log_type type);
     void pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
-    void acquire_e2e_entry(ptl_nid_t target_nid);
-    void release_e2e_entry(ptl_nid_t target_nid);
+    void acquire_e2e_entry(const BxiMsg* msg);
+    void release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn);
 };
 
 #endif // S4BXI_BXINODE_HPP
