@@ -77,6 +77,8 @@ int client(char* target)
         exit(1);
     }
 
+    s4bxi_barrier();
+
     rc = PtlFetchAtomic(mdh, 3 * sizeof(int64_t), mdh, sizeof(int64_t), sizeof(int64_t), peer, 0, 42, 0, nullptr, ~0ULL,
                         PTL_SUM, PTL_INT64_T);
     PtlEQWait(eqh, &ev);
@@ -84,6 +86,9 @@ int client(char* target)
         fprintf(stderr, "Wrong event type, got %u instead of REPLY (%u)", ev.type, PTL_EVENT_REPLY);
         exit(1);
     }
+
+    s4bxi_barrier();
+
     printf("Target value fetched in atomic : %ld\n", *(i64 + 3));
 
     // ==================
@@ -100,6 +105,8 @@ int client(char* target)
         exit(1);
     }
 
+    s4bxi_barrier();
+
     // =================
     // MANAGE_LOCAL test
     // =================
@@ -108,13 +115,14 @@ int client(char* target)
     sleep(1); // Make sure Server is done posting ME
 
     rc = PtlPut(mdh, sizeof(int64_t), sizeof(int64_t), PTL_ACK_REQ, peer, 0, 42, 666 * sizeof(int64_t), nullptr, ~0ULL);
-    rc = PtlPut(mdh, 2 * sizeof(int64_t), sizeof(int64_t), PTL_ACK_REQ, peer, 0, 42, 666 * sizeof(int64_t), nullptr,
-                ~0ULL);
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_ACK) {
         fprintf(stderr, "Wrong event type, got %u instead of ACK (%u)", ev.type, PTL_EVENT_ACK);
         exit(1);
     }
+
+    rc = PtlPut(mdh, 2 * sizeof(int64_t), sizeof(int64_t), PTL_ACK_REQ, peer, 0, 42, 666 * sizeof(int64_t), nullptr,
+                ~0ULL);
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_ACK) {
         fprintf(stderr, "Wrong event type, got %u instead of ACK (%u)", ev.type, PTL_EVENT_ACK);
@@ -204,6 +212,8 @@ int server()
     }
     printf("Target after PUT : %ld\n", *i64);
 
+    s4bxi_barrier();
+
     for (;;) {
         rc = PtlEQPoll(&eqh, 1, 5000, &ev, &which);
         if (rc == PTL_OK)
@@ -214,6 +224,8 @@ int server()
         exit(1);
     }
     printf("Target after FETCH_ATOMIC : %ld\n", *i64);
+
+    s4bxi_barrier();
 
     PtlMEUnlink(*meh_i64);
     S4BXI_SHARED_FREE(i64);
@@ -260,6 +272,8 @@ int server()
     printf("Target[0] after PUT : %ld\n", *i64);
     printf("Target[1] after PUT : %ld\n", *(i64 + 1));
     printf("Target[2] after PUT : %ld\n", *(i64 + 2));
+
+    s4bxi_barrier();
 
     PtlMEUnlink(*meh_i64);
     S4BXI_SHARED_FREE(i64);
@@ -328,8 +342,6 @@ int server()
     printf("Target[1] after GET : %ld\n", *(i64 + 1));
     printf("Target[2] after GET : %ld\n", *(i64 + 2));
     printf("Target[3] after GET : %ld\n", *(i64 + 3));
-
-    sleep(1); // Make sure Client is done copying data (/!\ this should not be necessary)
 
     S4BXI_SHARED_FREE(i64);
     free(meh_i64);

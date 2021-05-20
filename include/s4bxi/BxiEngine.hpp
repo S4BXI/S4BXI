@@ -40,7 +40,6 @@ class BxiEngine {
     ofstream logFile;
 
     BxiEngine();
-    ~BxiEngine();
 
     // Config
     inline char* get_s4bxi_param(const string& name);

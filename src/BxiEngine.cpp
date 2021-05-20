@@ -89,11 +89,6 @@ BxiEngine::BxiEngine()
     LOG_CONFIG(shared_malloc);
 }
 
-BxiEngine::~BxiEngine()
-{
-    end_simulation();
-}
-
 void BxiEngine::end_simulation()
 {
     if (config->log_level)

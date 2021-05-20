@@ -114,9 +114,9 @@ void BxiActor::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
     node->pci_transfer(size, direction, type);
 }
 
-void BxiActor::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
+s4u::CommPtr BxiActor::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
 {
-    node->pci_transfer_async(size, direction, type);
+    return node->pci_transfer_async(size, direction, type);
 }
 
 s4u::Actor* BxiActor::getSimgridActor()

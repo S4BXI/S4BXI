@@ -146,12 +146,12 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             // the "put" event, I don't know if it matters or not (I'm not
             // event sure of how the real world NIC does this)
 
-            issue_event(eq, event);
-
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
             if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-                pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+                pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
             }
+
+            issue_event(eq, event);
         } else {
             BxiME::maybe_auto_unlink(me);
         }
@@ -297,11 +297,12 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             // See comment for put
             BxiME::maybe_auto_unlink(me);
 
-            issue_event(eq, event);
-
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-            if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size)
-                pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+            if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+                pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+            }
+
+            issue_event(eq, event);
         } else {
             BxiME::maybe_auto_unlink(me);
         }
@@ -414,8 +415,9 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
     req->process_state = S4BXI_REQ_ANSWERED;
 
     // Simulate the PCI transfer to write data to memory
-    if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size)
-        pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+    if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+        pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+    }
 
     if (!S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {
         auto bxi_ack            = new BxiMsg(*msg);

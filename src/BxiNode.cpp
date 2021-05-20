@@ -22,20 +22,6 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bxi_node, "Messages specific to BxiNode");
 
 using namespace simgrid;
 
-/**
- * Actor to perform a DMA operation and log it
- *
- * We can't use an async sendto because we need to know when it ends (to write the log), so the only option I see is to
- * have this whole actor just to perform the operation
- */
-void dma_log_actor(vector<string> args)
-{
-    ptl_nid_t nid = atoi(args[2].c_str());
-    S4BXI_STARTLOG((bxi_log_type)atoi(args[3].c_str()), nid, nid)
-    s4u::Comm::sendto(s4u::Actor::self()->get_host(), s4u::Host::by_name(args[1]), atoi(args[0].c_str()));
-    S4BXI_WRITELOG()
-}
-
 BxiNode::BxiNode(int nid) : nid(nid), e2e_entries(s4u::Semaphore::create(MAX_E2E_ENTRIES)) {}
 
 void BxiNode::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
@@ -48,29 +34,26 @@ void BxiNode::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
     S4BXI_WRITELOG()
 }
 
-void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
+s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
 {
     s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
     s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
 
-    if (!S4BXI_GLOBAL_CONFIG(log_level)) {
-        // It's important to do that, instead of sendto_async,
-        // see https://framagit.org/simgrid/simgrid/-/issues/60
-        // (Thanks Martin for your help on this)
-        auto comm = s4u::Comm::sendto_init(source, dest);
-        comm->set_remaining(size);
-        comm->detach();
-        return;
-    }
+    S4BXI_STARTLOG(type, nid, nid)
 
-    // If we want to log things, it is going to be painful
+    // It's important to do that, instead of sendto_async,
+    // see https://framagit.org/simgrid/simgrid/-/issues/60
+    // (Thanks Martin for your help on this)
+    s4u::CommPtr comm = s4u::Comm::sendto_init(source, dest);
+    comm->set_remaining(size);
 
-    vector<string> args(4);
-    args[0] = to_string(size);
-    args[1] = dest->get_name();
-    args[2] = to_string(nid);
-    args[3] = to_string(type);
-    s4u::Actor::create("dma_logger", source, dma_log_actor, args);
+    if (__bxi_log_level)
+        comm->on_completion.connect([__bxi_log_level, __bxi_log](s4u::Comm const&) mutable { S4BXI_WRITELOG(); });
+
+    // Technically `detach` works too but if I do that Augustin wants to physically harm me so I guess I won't
+    comm->start();
+
+    return comm;
 }
 
 void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
