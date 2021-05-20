@@ -223,16 +223,20 @@ void BxiUserAppActor::operator()()
     s4bxi_entry_point_type entry_point = s4bxi_resolve_function(handle);
     xbt_assert(entry_point, "Could not resolve entry point");
 
-    // Run user code
-    int argc    = string_args.size();
-    char** argv = new char*[argc];
+    // copy C strings, we need them writable
+    auto* args4argv = new std::vector<char*>(string_args.size());
+    std::transform(std::begin(string_args), std::end(string_args), begin(*args4argv),
+                   [](const std::string& s) { return xbt_strdup(s.c_str()); });
 
-    argv[0] = new char[user_app_name.length() + 1];
-    strcpy(argv[0], user_app_name.c_str());
-    for (int i = 1; i < string_args.size(); ++i) {
-        argv[i] = new char[string_args[i].size() + 1];
-        strcpy(argv[i], string_args[i].c_str());
-    }
+    // set argv[0] to executable_path
+    xbt_free((*args4argv)[0]);
+    (*args4argv)[0] = xbt_strdup(user_app_name.c_str());
+
+    // take a copy of args4argv to keep reference of the allocated strings
+    const std::vector<char*> args2str(*args4argv);
+    int argc = args4argv->size();
+    args4argv->push_back(nullptr);
+    char** argv = args4argv->data();
 
     const char* prop = self->get_property("delay_start");
     if (prop)
@@ -244,9 +248,9 @@ void BxiUserAppActor::operator()()
 
     s4bxi_bench_end(this);
 
-    for (unsigned long i = 0; i < string_args.size(); ++i)
-        delete[] argv[i];
-    delete[] argv;
+    for (char* s : args2str)
+        xbt_free(s);
+    delete args4argv;
 
     if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
         dlclose(handle);
@@ -281,8 +285,8 @@ int s4bxi_default_main(int argc, char* argv[])
     e.register_actor<BxiUserAppActor>("user_app");
 
     /* Load the platform description and then deploy the application */
-    string platf  = argv[1];
-    string xml = ".xml";
+    string platf = argv[1];
+    string xml   = ".xml";
     // Check if file ends with ".xml"
     if ((0 == platf.compare(platf.length() - xml.length(), xml.length(), xml))) {
         e.load_platform(argv[1]);
