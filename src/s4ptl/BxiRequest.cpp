@@ -56,7 +56,7 @@ BxiPutRequest::BxiPutRequest(BxiMD* md, ptl_size_t payload_size, bool matching, 
 
 void BxiPutRequest::issue_ack(int ni_fail_type)
 {
-    if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_ACK))
+    if (HAS_PTL_OPTION(&md->md, PTL_MD_EVENT_CT_ACK))
         md->increment_ct(payload_size);
     if (ack_req == PTL_ACK_REQ) {
         auto ack           = new ptl_event_t;
@@ -65,7 +65,7 @@ void BxiPutRequest::issue_ack(int ni_fail_type)
         ack->user_ptr      = user_ptr;
         ack->mlength       = mlength;
         ack->remote_offset = target_remote_offset;
-        (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, ack);
+        (md->ni->node)->issue_event((BxiEQ*)md->md.eq_handle, ack);
     }
 }
 
@@ -93,16 +93,16 @@ void BxiPutRequest::maybe_issue_send()
 
     send_event_issued = true;
 
-    if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_SEND))
+    if (HAS_PTL_OPTION(&md->md, PTL_MD_EVENT_CT_SEND))
         md->increment_ct(payload_size);
 
-    if (!HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SEND_DISABLE) && !HAS_PTL_OPTION(md->md, PTL_MD_EVENT_SUCCESS_DISABLE)) {
+    if (!HAS_PTL_OPTION(&md->md, PTL_MD_EVENT_SEND_DISABLE) && !HAS_PTL_OPTION(&md->md, PTL_MD_EVENT_SUCCESS_DISABLE)) {
         auto event          = new ptl_event_t;
         event->type         = PTL_EVENT_SEND;
         event->ni_fail_type = PTL_OK;
         event->user_ptr     = user_ptr;
         event->mlength      = payload_size; // SEND doesn't care about truncated payloads
-        (md->ni->node)->issue_event((BxiEQ*)md->md->eq_handle, event);
+        (md->ni->node)->issue_event((BxiEQ*)md->md.eq_handle, event);
     }
 }
 

@@ -49,7 +49,7 @@ void BxiNicInitiator::operator()()
         case S4BXI_E2E_ACK: // is implemented in reliable_comm
             reliable_comm(msg);
             break;
-        case S4BXI_PTL_RESPONSE:
+        case S4BXI_PTL_GET_RESPONSE:
             handle_get_response(msg);
             break;
         case S4BXI_PTL_FETCH_ATOMIC_RESPONSE:

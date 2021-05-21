@@ -28,7 +28,7 @@ enum bxi_log_type {
     // Same as bxi_msg_type, it's important
     S4BXILOG_E2E_ACK,
     S4BXILOG_PTL_ACK,
-    S4BXILOG_PTL_RESPONSE,
+    S4BXILOG_PTL_GET_RESPONSE,
     S4BXILOG_PTL_PUT,
     S4BXILOG_PTL_GET,
     S4BXILOG_PTL_ATOMIC,

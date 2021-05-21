@@ -40,7 +40,7 @@ using namespace simgrid;
 enum bxi_msg_type {
     S4BXI_E2E_ACK,
     S4BXI_PTL_ACK,
-    S4BXI_PTL_RESPONSE,
+    S4BXI_PTL_GET_RESPONSE,
     S4BXI_PTL_PUT,
     S4BXI_PTL_GET,
     S4BXI_PTL_ATOMIC,
@@ -169,11 +169,10 @@ class BxiEQ {
 class BxiMD {
   public:
     BxiNI* ni;
-    ptl_md_t* md;
+    ptl_md_t md;
 
     BxiMD(ptl_handle_ni_t ni_handle, const ptl_md_t* md_t);
     BxiMD(const BxiMD& md);
-    ~BxiMD();
     void increment_ct(ptl_size_t byte_count);
 };
 

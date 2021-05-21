@@ -58,7 +58,7 @@ void BxiNicTarget::operator()()
         case S4BXI_PTL_FETCH_ATOMIC:
             handle_fetch_atomic_request(msg);
             break;
-        case S4BXI_PTL_RESPONSE:
+        case S4BXI_PTL_GET_RESPONSE:
         case S4BXI_PTL_FETCH_ATOMIC_RESPONSE:
             handle_response(msg, msg->parent_request->md);
             break;
@@ -105,9 +105,9 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
         BxiMD* md  = req->md;
         req->start = me->get_offsetted_addr(msg, true);
-        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length)
+        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length)
             // Here we could copy only the pointer if this piece of memory is read but not written
-            capped_memcpy(req->start, (unsigned char*)md->md->start + req->local_offset, req->mlength);
+            capped_memcpy(req->start, (unsigned char*)md->md.start + req->local_offset, req->mlength);
 
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
@@ -209,7 +209,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
     BxiME* me             = nullptr;
     int ni_fail_type      = match_entry(msg, &me);
     auto response         = new BxiMsg(*msg);
-    response->type        = S4BXI_PTL_RESPONSE;
+    response->type        = S4BXI_PTL_GET_RESPONSE;
     response->initiator   = msg->target;
     response->target      = msg->initiator;
     response->retry_count = 0;
@@ -226,7 +226,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
         response->simulated_size = req->mlength;
 
         if (S4BXI_CONFIG_AND(req->md->ni->node, use_real_memory) && me->me->length)
-            capped_memcpy((unsigned char*)req->md->md->start + req->local_offset, req->start, req->mlength);
+            capped_memcpy((unsigned char*)req->md->md.start + req->local_offset, req->start, req->mlength);
 
         // GET event isn't here, it will be issued by the initiator actor when the response is sent on the BXI cable
         BxiME::maybe_auto_unlink(me);
@@ -264,10 +264,10 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
         BxiMD* md  = req->md;
         req->start = me->get_offsetted_addr(msg, true);
-        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length)
+        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length)
             apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start,
-                            (unsigned char*)md->md->start + req->local_offset,
-                            (unsigned char*)md->md->start + req->local_offset,
+                            (unsigned char*)md->md.start + req->local_offset,
+                            (unsigned char*)md->md.start + req->local_offset,
                             (unsigned char*)req->start /* to have a noop memcpy */, req->mlength);
 
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
@@ -374,17 +374,17 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         req->matched_me = new BxiME(*me);
         req->mlength    = me->get_mlength(req);
         req->start      = me->get_offsetted_addr(msg, true);
-        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md->length) {
+        if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length) {
             if (me->me->length)
-                capped_memcpy((unsigned char*)req->get_md->md->start + req->get_local_offset, req->start, req->mlength);
+                capped_memcpy((unsigned char*)req->get_md->md.start + req->get_local_offset, req->start, req->mlength);
 
             unsigned char* cst = req->is_swap_request()
                                      ? (unsigned char*)&((BxiSwapRequest*)req)->cst
-                                     : (unsigned char*)md->md->start + req->local_offset; // Whatever, won't be used
+                                     : (unsigned char*)md->md.start + req->local_offset; // Whatever, won't be used
 
             apply_atomic_op(
                 req->op, req->datatype, (unsigned char*)req->start, cst,
-                (unsigned char*)md->md->start + req->local_offset,
+                (unsigned char*)md->md.start + req->local_offset,
                 (unsigned char*)req->matched_me->get_offsetted_addr(msg, false), // <<< I'm so unsure about this
                 req->mlength);
         }
@@ -429,7 +429,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
         tx_queue->put(bxi_ack, 0, true);
     }
 
-    if (HAS_PTL_OPTION(md->md, PTL_MD_EVENT_CT_REPLY))
+    if (HAS_PTL_OPTION(&md->md, PTL_MD_EVENT_CT_REPLY))
         md->increment_ct(req->payload_size);
 
     auto reply_evt           = new ptl_event_t;
@@ -438,7 +438,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
     reply_evt->user_ptr      = req->user_ptr;
     reply_evt->mlength       = req->mlength;
     reply_evt->remote_offset = req->target_remote_offset;
-    issue_event((BxiEQ*)md->md->eq_handle, reply_evt);
+    issue_event((BxiEQ*)md->md.eq_handle, reply_evt);
 }
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)

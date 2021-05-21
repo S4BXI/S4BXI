@@ -38,6 +38,7 @@
 #define S4BXI_CONFIG_AND(node, name) (node->name && S4BXI_GLOBAL_CONFIG(name))
 #define S4BXI_CONFIG_OR(node, name)  (node->name || S4BXI_GLOBAL_CONFIG(name))
 
+// int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level) && (log_type == S4BXILOG_PTL_PUT || log_type == S4BXILOG_PTL_GET_RESPONSE)
 #define S4BXI_STARTLOG(log_type, log_initiator, log_target)                                                            \
     BxiLog __bxi_log;                                                                                                  \
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);                                                              \

@@ -73,7 +73,9 @@ void BxiNicE2E::operator()()
             ptl_panic("Negative sleep expected in E2E, this is catastrophic");
         }
 
-        s4u::this_actor::sleep_until(wake_up_time);
+        // If we try to sleep for shorter than the simulation's precision SimGrid explodes
+        if (wake_up_time > s4u::Engine::get_clock() + 1e-9)
+            s4u::this_actor::sleep_until(wake_up_time);
 
         // Message got ACKed in time, ignore E2E processing and go to next one
         if (msg->parent_request->process_state >=
