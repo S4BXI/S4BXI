@@ -656,6 +656,7 @@ void s4bxi_barrier();
 void s4bxi_set_ptl_process_for_rank(ptl_handle_ni_t ni);
 void s4bxi_keyval_store_pointer(char* key, void* value);
 void* s4bxi_keyval_fetch_pointer(int rank, char* key);
+void s4bxi_set_loglevel(int l);
 
 #ifdef __cplusplus
 }
