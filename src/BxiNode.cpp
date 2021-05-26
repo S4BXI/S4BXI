@@ -90,6 +90,7 @@ void BxiNode::acquire_e2e_entry(const BxiMsg* msg)
     s4u::SemaphorePtr flow_control_sem;
     auto it = flow_control_semaphores[vn_num].find(msg->target);
     if (it == flow_control_semaphores[vn_num].end()) {
+        XBT_DEBUG("Making semaphore with max capacity of %d", max_inflight);
         flow_control_sem = s4u::Semaphore::create(max_inflight);
         flow_control_semaphores[vn_num].emplace(msg->target, flow_control_sem);
     } else {
@@ -103,13 +104,17 @@ void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn)
     if (e2e_off || target_nid == nid)
         return;
 
+    int max_inflight = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
     if (S4BXI_GLOBAL_CONFIG(max_inflight_to_target)) {
         auto it = flow_control_semaphores[vn].find(target_nid);
 
         if (it == flow_control_semaphores[vn].end())
             ptl_panic("Trying to release a flow control entry in a non-existing semaphore.");
 
-        it->second->release();
+        auto sem = it->second;
+        sem->release();
+
+        assert(sem->get_capacity() <= max_inflight);
     }
 
     e2e_entries->release();
