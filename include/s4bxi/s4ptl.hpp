@@ -311,6 +311,7 @@ class BxiMsg {
     BxiRequest* parent_request;
     unsigned int ref_count;
     int ni_fail_type = PTL_NI_OK;
+    BxiMsg *answers_msg = nullptr;
 
     BxiMsg(ptl_nid_t initiator, ptl_nid_t target, bxi_msg_type type, ptl_size_t simulated_size,
            BxiRequest* parent_request);
@@ -318,6 +319,7 @@ class BxiMsg {
     ~BxiMsg();
 
     static void unref(BxiMsg* msg);
+    bxi_vn get_vn() const;
 };
 
 #endif // S4BXI_S4PTL_HPP

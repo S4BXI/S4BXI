@@ -61,6 +61,7 @@ BxiEngine::BxiEngine()
     config->shared_malloc_hugepage    = get_string_s4bxi_param("SHARED_MALLOC_HUGEPAGE", "");
     config->shared_malloc_blocksize   = get_long_s4bxi_param("SHARED_MALLOC_BLOCKSIZE", 1048576);
     config->max_inflight_to_target    = get_int_s4bxi_param("MAX_INFLIGHT_TO_TARGET", 0);
+    config->max_inflight_to_process   = get_int_s4bxi_param("MAX_INFLIGHT_TO_PROCESS", 0);
     config->no_dlclose                = get_bool_s4bxi_param("NO_DLCLOSE", false);
     const string s                    = get_string_s4bxi_param("SHARED_MALLOC", "none");
     if (s == "local")
@@ -87,6 +88,10 @@ BxiEngine::BxiEngine()
     LOG_CONFIG(auto_shared_malloc_thresh);
     LOG_STRING_CONFIG(shared_malloc_hugepage);
     LOG_CONFIG(shared_malloc);
+    LOG_CONFIG(shared_malloc_blocksize);
+    LOG_CONFIG(max_inflight_to_target);
+    LOG_CONFIG(max_inflight_to_process);
+    LOG_CONFIG(no_dlclose);
 }
 
 void BxiEngine::end_simulation()

@@ -63,6 +63,8 @@ struct s4bxi_config {
     unsigned long shared_malloc_blocksize;
     /** @brief Maximum number of messages inflight between two nodes (0 to disable) */
     int max_inflight_to_target;
+    /** @brief Maximum number of messages inflight between two processes (0 to disable) */
+    int max_inflight_to_process;
     /** @brief Disable dlclosing libs, which is required to use some tools like Valgrind */
     bool no_dlclose;
 };

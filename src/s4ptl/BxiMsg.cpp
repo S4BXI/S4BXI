@@ -51,6 +51,9 @@ BxiMsg::BxiMsg(const BxiMsg& msg)
  */
 BxiMsg::~BxiMsg()
 {
+    if (answers_msg)
+        unref(answers_msg);
+
     if (!--parent_request->msg_ref_count) {
         switch (parent_request->type) {
         case S4BXI_FETCH_ATOMIC_REQUEST:
@@ -73,4 +76,19 @@ void BxiMsg::unref(BxiMsg* msg)
 {
     if (!--msg->ref_count)
         delete msg;
+}
+
+bxi_vn BxiMsg::get_vn() const
+{
+    int num =
+        (type == S4BXI_PTL_PUT || type == S4BXI_PTL_GET || type == S4BXI_PTL_ATOMIC || type == S4BXI_PTL_FETCH_ATOMIC)
+            ? S4BXI_VN_SERVICE_REQUEST
+            : S4BXI_VN_SERVICE_RESPONSE;
+
+    if (!parent_request->service_vn)
+        num += 1; // Switch to compute version
+
+    assert(num >= 0 && num < 4);
+
+    return (bxi_vn)num;
 }

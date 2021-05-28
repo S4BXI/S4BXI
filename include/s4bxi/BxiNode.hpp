@@ -30,6 +30,17 @@ using namespace std;
 
 class BxiNicE2E;
 
+struct flowctrl_process_id {
+    ptl_pid_t src_pid;
+    ptl_pid_t dst_pid;
+    ptl_nid_t dst_nid;
+    // The struct requires an operator "<" to be usable as a std::map's key
+    bool operator < (const flowctrl_process_id& other) const
+    {
+       return std::tie(src_pid, dst_pid, dst_nid) < std::tie(other.src_pid, other.dst_pid, other.dst_nid); 
+    }
+};
+
 class BxiNode {
   public:
     explicit BxiNode(int nid);
@@ -41,11 +52,16 @@ class BxiNode {
     s4u::Host* main_host;
     s4u::Host* nic_host;
     s4u::SemaphorePtr e2e_entries;
-    BxiNicE2E* e2e_actor                                         = nullptr;
-    BxiQueue* tx_queues[4]                                       = {nullptr, nullptr, nullptr, nullptr};
-    map<ptl_nid_t, s4u::SemaphorePtr> flow_control_semaphores[4] = {
+    BxiNicE2E* e2e_actor   = nullptr;
+    BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
+    // Node level flow control semaphores
+    map<ptl_nid_t, s4u::SemaphorePtr> flowctrl_sems_node[4] = {
         map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(),
         map<ptl_nid_t, s4u::SemaphorePtr>()};
+    // Process level flow control semaphores
+    map<flowctrl_process_id, s4u::SemaphorePtr> flowctrl_sems_process[4] = {
+        map<flowctrl_process_id, s4u::SemaphorePtr>(), map<flowctrl_process_id, s4u::SemaphorePtr>(),
+        map<flowctrl_process_id, s4u::SemaphorePtr>(), map<flowctrl_process_id, s4u::SemaphorePtr>()};
 
     // Params
     bool use_real_memory    = true;
@@ -61,7 +77,7 @@ class BxiNode {
     s4u::CommPtr pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
     void acquire_e2e_entry(const BxiMsg* msg);
-    void release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn);
+    void release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_pid, ptl_pid_t dst_pid);
 };
 
 #endif // S4BXI_BXINODE_HPP

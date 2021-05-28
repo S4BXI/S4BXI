@@ -114,17 +114,11 @@ void BxiNicE2E::operator()()
 
 s4u::Mailbox* BxiNicE2E::get_retransmit_mailbox(const BxiMsg* msg)
 {
-    int vn_num = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
-                  msg->type == S4BXI_PTL_FETCH_ATOMIC)
-                     ? S4BXI_VN_SERVICE_REQUEST
-                     : S4BXI_VN_SERVICE_RESPONSE;
-    if (!msg->parent_request->service_vn)
-        vn_num += 1; // Switch to compute version
-    auto vn = (bxi_vn)vn_num;
+    bxi_vn vn = msg->get_vn();
 
-    if (!nic_cmd_mailboxes[vn_num])
-        nic_cmd_mailboxes[vn_num] = s4u::Mailbox::by_name(nic_tx_mailbox_name(vn));
-    return nic_cmd_mailboxes[vn_num];
+    if (!nic_cmd_mailboxes[vn])
+        nic_cmd_mailboxes[vn] = s4u::Mailbox::by_name(nic_tx_mailbox_name(vn));
+    return nic_cmd_mailboxes[vn];
 }
 
 /**

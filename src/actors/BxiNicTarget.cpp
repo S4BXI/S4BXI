@@ -173,7 +173,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
                          : S4BXI_VN_SERVICE_RESPONSE;
             if (!req->service_vn)
                 vn += 1; // Switch to compute version
-            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn);
+            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn, req->md->ni->pid, req->target_pid);
             req->maybe_issue_send();
             req->issue_ack(ni_fail_type);
         } else {
@@ -186,6 +186,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
             ack->simulated_size = ACK_SIZE;
             ack->retry_count    = 0;
             ack->ni_fail_type   = ni_fail_type;
+            ack->answers_msg    = msg;
+            ++msg->ref_count;
             tx_queue->put(ack, 0, true);
         }
     }
@@ -324,7 +326,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
                          : S4BXI_VN_SERVICE_RESPONSE;
             if (!req->service_vn)
                 vn += 1; // Switch to compute version
-            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn);
+            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn, req->md->ni->pid, req->target_pid);
             req->maybe_issue_send();
             req->issue_ack(ni_fail_type);
         } else {
@@ -337,6 +339,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             ack->simulated_size = ACK_SIZE;
             ack->retry_count    = 0;
             ack->ni_fail_type   = ni_fail_type;
+            ack->answers_msg    = msg;
+            ++msg->ref_count;
             tx_queue->put(ack, 0, true);
         }
     }
@@ -407,7 +411,8 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 {
     BxiRequest* req = msg->parent_request;
-    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST);
+    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST,
+                            req->md->ni->pid, req->target_pid);
 
     if (req->process_state > S4BXI_REQ_RECEIVED)
         return;
@@ -425,7 +430,8 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
         bxi_ack->initiator      = msg->target;
         bxi_ack->target         = msg->initiator;
         bxi_ack->simulated_size = ACK_SIZE;
-
+        bxi_ack->answers_msg    = msg;
+        ++msg->ref_count;
         tx_queue->put(bxi_ack, 0, true);
     }
 
@@ -444,7 +450,8 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
 {
     auto req = (BxiPutRequest*)msg->parent_request;
-    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST);
+    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST,
+                            req->md->ni->pid, req->target_pid);
 
     if (!S4BXI_CONFIG_OR(req->md->ni->node, e2e_off)) {
         auto bxi_ack            = new BxiMsg(*msg);
@@ -452,7 +459,8 @@ void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
         bxi_ack->initiator      = msg->target;
         bxi_ack->target         = msg->initiator;
         bxi_ack->simulated_size = ACK_SIZE;
-
+        bxi_ack->answers_msg    = msg;
+        ++msg->ref_count;
         tx_queue->put(bxi_ack, 0, true);
     }
 
@@ -482,7 +490,15 @@ void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
 
     req->process_state = S4BXI_REQ_FINISHED;
 
-    node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_RESPONSE : S4BXI_VN_COMPUTE_RESPONSE);
+    if (!msg->answers_msg)
+        ptl_panic("E2E ACK without an `answer_msg`");
+
+    bxi_vn vn            = msg->answers_msg->get_vn();
+    bool answers_request = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
+    ptl_pid_t s_pid      = answers_request ? req->md->ni->pid : req->target_pid;
+    ptl_pid_t t_pid      = answers_request ? req->target_pid : req->md->ni->pid;
+
+    node->release_e2e_entry(msg->answers_msg->target, msg->answers_msg->get_vn(), s_pid, t_pid);
 
     // If we have a PUT request, check that the send event was issued at some point
     // (If not, it means we have a put that's not buffered, and we didn't ask for a portals ACK)

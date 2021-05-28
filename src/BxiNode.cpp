@@ -39,7 +39,8 @@ s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_lo
     s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
     s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
 
-    S4BXI_STARTLOG(type, nid, nid)
+    // See comment about broken things below
+    // S4BXI_STARTLOG(type, nid, nid)
 
     // It's important to do that, instead of sendto_async,
     // see https://framagit.org/simgrid/simgrid/-/issues/60
@@ -47,8 +48,12 @@ s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_lo
     s4u::CommPtr comm = s4u::Comm::sendto_init(source, dest);
     comm->set_remaining(size);
 
-    if (__bxi_log_level)
-        comm->on_completion.connect([__bxi_log_level, __bxi_log](s4u::Comm const&) mutable { S4BXI_WRITELOG(); });
+    // This is broken because SimGrid's signals don't do what I was expecting. Disable it completely until I make a 
+    // proper plugin for logging this type of things
+    // if (__bxi_log_level) {
+    //     comm->on_completion.connect([__bxi_log_level, __bxi_log, comm](s4u::Comm const&) mutable { fprintf(stderr,
+    //     "Writing pci_transfer log for comm %p\n", comm); S4BXI_WRITELOG(); });
+    // }
 
     // Technically `detach` works too but if I do that Augustin wants to physically harm me so I guess I won't
     comm->start();
@@ -70,54 +75,93 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
 
 void BxiNode::acquire_e2e_entry(const BxiMsg* msg)
 {
-    if (e2e_off || msg->target == nid)
+    if (e2e_off)
         return;
 
     e2e_entries->acquire();
 
-    int max_inflight = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
+    int max_inflight_to_target = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
 
-    if (!max_inflight)
+    bxi_vn vn = msg->get_vn();
+
+    if (max_inflight_to_target) {
+        s4u::SemaphorePtr flow_control_sem;
+
+        auto it = flowctrl_sems_node[vn].find(msg->target);
+
+        if (it == flowctrl_sems_node[vn].end()) {
+            XBT_DEBUG("Making semaphore %u -> %u with max capacity of %d (node-level)", nid, msg->target,
+                      max_inflight_to_target);
+            flow_control_sem = s4u::Semaphore::create(max_inflight_to_target);
+            flowctrl_sems_node[vn].emplace(msg->target, flow_control_sem);
+        } else {
+            flow_control_sem = it->second;
+        }
+
+        flow_control_sem->acquire();
+    }
+
+    int max_inflight_to_process = S4BXI_GLOBAL_CONFIG(max_inflight_to_process);
+    if (!max_inflight_to_process)
         return;
 
-    int vn_num = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
-                  msg->type == S4BXI_PTL_FETCH_ATOMIC)
-                     ? S4BXI_VN_SERVICE_REQUEST
-                     : S4BXI_VN_SERVICE_RESPONSE;
-    if (!msg->parent_request->service_vn)
-        vn_num += 1; // Switch to compute version
-
     s4u::SemaphorePtr flow_control_sem;
-    auto it = flow_control_semaphores[vn_num].find(msg->target);
-    if (it == flow_control_semaphores[vn_num].end()) {
-        XBT_DEBUG("Making semaphore with max capacity of %d", max_inflight);
-        flow_control_sem = s4u::Semaphore::create(max_inflight);
-        flow_control_semaphores[vn_num].emplace(msg->target, flow_control_sem);
+    flowctrl_process_id f_id = {.src_pid = msg->parent_request->md->ni->pid,
+                                .dst_pid = msg->parent_request->target_pid,
+                                .dst_nid = msg->target};
+
+    auto it = flowctrl_sems_process[vn].find(f_id);
+
+    if (it == flowctrl_sems_process[vn].end()) {
+        XBT_DEBUG("Making semaphore %u:%u -> %u:%u with max capacity of %d (process-level)", nid,
+                  msg->parent_request->md->ni->pid, msg->target, msg->parent_request->target_pid,
+                  max_inflight_to_process);
+        flow_control_sem = s4u::Semaphore::create(max_inflight_to_process);
+        flowctrl_sems_process[vn].emplace(f_id, flow_control_sem);
     } else {
         flow_control_sem = it->second;
     }
+
     flow_control_sem->acquire();
 }
 
-void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn)
+void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_pid, ptl_pid_t dst_pid)
 {
-    if (e2e_off || target_nid == nid)
+    if (e2e_off)
         return;
+
+    e2e_entries->release();
 
     int max_inflight = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
     if (S4BXI_GLOBAL_CONFIG(max_inflight_to_target)) {
-        auto it = flow_control_semaphores[vn].find(target_nid);
+        auto it = flowctrl_sems_node[vn].find(target_nid);
 
-        if (it == flow_control_semaphores[vn].end())
-            ptl_panic("Trying to release a flow control entry in a non-existing semaphore.");
+        if (it == flowctrl_sems_node[vn].end())
+            ptl_panic_fmt("Trying to release a flow control entry in a non-existing semaphore (node-level): %u -> %u",
+                          nid, target_nid);
 
         auto sem = it->second;
         sem->release();
 
-        assert(sem->get_capacity() <= max_inflight);
+        xbt_assert(sem->get_capacity() <= max_inflight,
+                   "Semaphore %u -> %u has more capacity than max inflight (%u > %u)", nid, target_nid,
+                   sem->get_capacity(), max_inflight);
     }
 
-    e2e_entries->release();
+    if (!S4BXI_GLOBAL_CONFIG(max_inflight_to_process))
+        return;
+
+    auto it = flowctrl_sems_process[vn].find({.src_pid = src_pid, .dst_pid = dst_pid, .dst_nid = target_nid});
+
+    if (it == flowctrl_sems_process[vn].end())
+        ptl_panic_fmt(
+            "Trying to release a flow control entry in a non-existing semaphore (process-level): %u:%u -> %u:%u", nid,
+            src_pid, target_nid, dst_pid);
+
+    auto sem = it->second;
+    sem->release();
+
+    assert(sem->get_capacity() <= max_inflight);
 }
 
 BxiNode::~BxiNode()
