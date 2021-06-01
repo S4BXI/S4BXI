@@ -61,7 +61,7 @@ class BxiEngine {
     static s4bxi_config* get_config() { return get_instance()->config; }
 
     BxiNode* get_node(int);
-    void log(BxiLog& log);
+    void log(const BxiLog& log);
     void end_simulation();
     void register_main_actor(BxiMainActor*);
     BxiMainActor* get_current_main_actor();

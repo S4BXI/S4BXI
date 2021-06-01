@@ -205,7 +205,7 @@ string BxiEngine::get_string_s4bxi_param(const string& name, string default_val)
     return env ? string(env) : default_val;
 }
 
-void BxiEngine::log(BxiLog& log)
+void BxiEngine::log(const BxiLog& log)
 {
     bool newFile = false;
     if (logCount == 0) {
