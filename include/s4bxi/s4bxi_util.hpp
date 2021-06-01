@@ -66,6 +66,7 @@
 #define ptl_panic_fmt(fmt, ...)                                                                                        \
     do {                                                                                                               \
         XBT_ERROR(fmt, __VA_ARGS__);                                                                                   \
+        xbt_backtrace_display_current();                                                                               \
         abort();                                                                                                       \
     } while (0)
 
