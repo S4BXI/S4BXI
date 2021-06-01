@@ -72,13 +72,22 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     int inline_size = req->matching ? 8 : 16;
     int PIO_size    = req->matching ? 408 : 416;
 
-    s4u::CommPtr comm = nullptr;
+    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+    if (__bxi_log_level) {
+        msg->bxi_log            = new BxiLog;
+        msg->bxi_log->start     = s4u::Engine::get_clock();
+        msg->bxi_log->type      = S4BXILOG_PTL_PUT;
+        msg->bxi_log->initiator = msg->initiator;
+        msg->bxi_log->target    = msg->target;
+    }
+    s4u::CommPtr comm = reliable_comm_init(msg, false);
 
     if (!msg->retry_count // PIO doesn't make sense for retransmissions
         && S4BXI_CONFIG_AND(node, model_pci) && req->payload_size > inline_size && req->payload_size <= PIO_size) {
         // Second part of PIO command (end of payload)
 
-        comm = pci_transfer_async(req->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+        comm->detach();
+        node->pci_transfer(req->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
 
     } else if (S4BXI_CONFIG_AND(node, model_pci) &&
                (msg->retry_count // Retransmissions are always DMA (even small ones)
@@ -88,8 +97,11 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
         // and I don't know if they weigh 64B or something else. (chunk size is 128, 256,
         // 512 or 1024B)
-        pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
-        comm = pci_transfer_async(req->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
+        node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
+        comm->detach();
+        node->pci_transfer(req->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
+    } else {
+        comm->wait(); // Synchronize on BXI since we don't have a PCI transfer
     }
 
     // Buffered put
@@ -98,11 +110,6 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     // to process more messages in parallel with few actors ?
     if (msg->simulated_size <= 64)
         req->maybe_issue_send();
-
-    reliable_comm(msg);
-
-    if (comm)
-        comm->wait(); // Wait for any memory operation in progress (PIO or DMA)
 }
 
 void BxiNicInitiator::handle_get(BxiMsg* msg)
@@ -115,22 +122,28 @@ void BxiNicInitiator::handle_get(BxiMsg* msg)
 
 void BxiNicInitiator::handle_get_response(BxiMsg* msg)
 {
-    s4u::CommPtr comm = nullptr;
+    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+    if (__bxi_log_level) {
+        msg->bxi_log            = new BxiLog;
+        msg->bxi_log->start     = s4u::Engine::get_clock();
+        msg->bxi_log->type      = S4BXILOG_PTL_GET_RESPONSE;
+        msg->bxi_log->initiator = msg->initiator;
+        msg->bxi_log->target    = msg->target;
+    }
+    s4u::CommPtr comm = reliable_comm_init(msg, false);
 
     if (S4BXI_CONFIG_AND(node, model_pci) &&
         msg->simulated_size) { // Ask for the memory we need to send (Get is always DMA)
-        pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
-        comm = pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
+        node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
+        comm->detach();
+        node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
+    } else {
+        comm->wait();
     }
 
     // Buffered response (just like PtlPuts)
     if (msg->simulated_size <= 64)
         maybe_issue_get((BxiGetRequest*)msg->parent_request);
-
-    reliable_comm(msg);
-
-    if (comm)
-        comm->wait(); // Wait for any memory operation in progress (PIO or DMA)
 
     if (node->e2e_off) // If E2E is off we will never get an E2E ACK, so do this here I guess
         maybe_issue_get((BxiGetRequest*)msg->parent_request);
@@ -138,22 +151,28 @@ void BxiNicInitiator::handle_get_response(BxiMsg* msg)
 
 void BxiNicInitiator::handle_fetch_atomic_response(BxiMsg* msg)
 {
-    s4u::CommPtr comm = nullptr;
+    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+    if (__bxi_log_level) {
+        msg->bxi_log            = new BxiLog;
+        msg->bxi_log->start     = s4u::Engine::get_clock();
+        msg->bxi_log->type      = S4BXILOG_PTL_FETCH_ATOMIC_RESPONSE;
+        msg->bxi_log->initiator = msg->initiator;
+        msg->bxi_log->target    = msg->target;
+    }
+    s4u::CommPtr comm = reliable_comm_init(msg, false);
 
     if (S4BXI_CONFIG_AND(node, model_pci) &&
         msg->simulated_size) { // Ask for the memory we need to send (Response is always DMA)
-        pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
-        comm = pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
+        node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
+        comm->detach();
+        node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
+    } else {
+        comm->wait();
     }
 
     // Buffered response (just like PtlPuts)
     if (msg->simulated_size <= 64)
         maybe_issue_fetch_atomic((BxiFetchAtomicRequest*)msg->parent_request);
-
-    reliable_comm(msg);
-
-    if (comm)
-        comm->wait(); // Wait for any memory operation in progress (PIO or DMA)
 
     if (node->e2e_off) // If E2E is off we will never get an E2E ACK, so do this here I guess
         maybe_issue_fetch_atomic((BxiFetchAtomicRequest*)msg->parent_request);
