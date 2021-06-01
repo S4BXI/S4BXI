@@ -155,10 +155,10 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
             if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-                pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+                node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
             }
 
-            issue_event(eq, event);
+            node->issue_event(eq, event);
         } else {
             BxiME::maybe_auto_unlink(me);
         }
@@ -308,10 +308,10 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
             // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
             if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-                pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+                node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
             }
 
-            issue_event(eq, event);
+            node->issue_event(eq, event);
         } else {
             BxiME::maybe_auto_unlink(me);
         }
@@ -428,7 +428,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
 
     // Simulate the PCI transfer to write data to memory
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-        pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+        node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
     }
 
     if (!S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {
@@ -451,7 +451,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
     reply_evt->user_ptr      = req->user_ptr;
     reply_evt->mlength       = req->mlength;
     reply_evt->remote_offset = req->target_remote_offset;
-    issue_event((BxiEQ*)md->md.eq_handle, reply_evt);
+    node->issue_event((BxiEQ*)md->md.eq_handle, reply_evt);
 }
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)

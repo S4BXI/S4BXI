@@ -39,10 +39,6 @@ class BxiActor {
     // Events
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
 
-    // PCI util
-    void pci_transfer(ptl_size_t size, bool direction, bxi_log_type type);
-    s4u::CommPtr pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
-
   public:
     BxiActor();
     s4u::Actor* getSimgridActor();

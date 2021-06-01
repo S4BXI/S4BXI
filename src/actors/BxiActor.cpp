@@ -109,16 +109,6 @@ void BxiActor::issue_event(BxiEQ* eq, ptl_event_t* ev)
     node->issue_event(eq, ev);
 }
 
-void BxiActor::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
-{
-    node->pci_transfer(size, direction, type);
-}
-
-s4u::CommPtr BxiActor::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
-{
-    return node->pci_transfer_async(size, direction, type);
-}
-
 s4u::Actor* BxiActor::getSimgridActor()
 {
     return self;

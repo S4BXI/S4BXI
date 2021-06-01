@@ -48,7 +48,7 @@ void BxiNicActor::maybe_issue_get(BxiGetRequest* req)
         event->remote_offset = req->remote_offset;
         event->match_bits    = req->match_bits;
         event->start         = req->start;
-        issue_event(req->matched_me->pt->eq, event);
+        node->issue_event(req->matched_me->pt->eq, event);
     }
 }
 
@@ -75,7 +75,7 @@ void BxiNicActor::maybe_issue_fetch_atomic(BxiFetchAtomicRequest* req)
         event->remote_offset = req->remote_offset;
         event->match_bits    = req->match_bits;
         event->start         = req->start;
-        issue_event(req->matched_me->pt->eq, event);
+        node->issue_event(req->matched_me->pt->eq, event);
     }
 }
 

@@ -76,7 +76,7 @@ BxiMainActor::~BxiMainActor()
 void BxiMainActor::issue_portals_command(int simulated_size)
 {
     if (S4BXI_CONFIG_AND(node, model_pci_commands) && simulated_size)
-        pci_transfer(simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_COMMAND);
+        node->pci_transfer(simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_COMMAND);
 }
 
 void BxiMainActor::issue_portals_command()
