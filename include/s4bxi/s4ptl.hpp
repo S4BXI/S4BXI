@@ -26,6 +26,7 @@
 #include "s4bxi_mailbox_pool.hpp"
 
 #include "portals4.h"
+#include "s4bxi/BxiLog.hpp"
 
 // Early declaration in order not to break every single include
 class BxiNode;
@@ -312,6 +313,7 @@ class BxiMsg {
     unsigned int ref_count;
     int ni_fail_type = PTL_NI_OK;
     BxiMsg *answers_msg = nullptr;
+    BxiLog *bxi_log = nullptr;
 
     BxiMsg(ptl_nid_t initiator, ptl_nid_t target, bxi_msg_type type, ptl_size_t simulated_size,
            BxiRequest* parent_request);

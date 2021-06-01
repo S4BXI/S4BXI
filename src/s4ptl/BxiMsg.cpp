@@ -42,6 +42,7 @@ BxiMsg::BxiMsg(const BxiMsg& msg)
     , retry_count(msg.retry_count)
     , parent_request(msg.parent_request)
     , ref_count(1)
+    , bxi_log(nullptr)
 {
     ++parent_request->msg_ref_count;
 }

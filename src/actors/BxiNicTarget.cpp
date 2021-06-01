@@ -45,6 +45,13 @@ void BxiNicTarget::operator()()
 
     for (;;) {
         auto msg = nic_rx_mailbox->get<BxiMsg>();
+
+        if (msg->bxi_log) {
+            msg->bxi_log->end = s4u::Engine::get_clock();
+            BxiEngine::get_instance()->log(*msg->bxi_log);
+            delete msg->bxi_log;
+        }
+
         switch (msg->type) {
         case S4BXI_PTL_PUT:
             handle_put_request(msg);
