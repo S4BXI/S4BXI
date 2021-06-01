@@ -23,8 +23,12 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_initiator, "Messages specific to the NI
 
 BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
 {
-    tx_queue = S4BXI_CONFIG_AND(node, model_pci_commands) ? new BxiQueue(nic_tx_mailbox_name(vn)) : new BxiQueue;
-    node->tx_queues[vn] = tx_queue;
+    if (node->tx_queues[vn]) {
+        tx_queue = node->tx_queues[vn];
+    } else {
+        tx_queue = S4BXI_CONFIG_AND(node, model_pci_commands) ? new BxiQueue(nic_tx_mailbox_name(vn)) : new BxiQueue;
+        node->tx_queues[vn] = tx_queue;
+    }
 }
 
 /**
