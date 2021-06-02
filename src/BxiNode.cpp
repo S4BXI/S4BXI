@@ -106,8 +106,11 @@ void BxiNode::acquire_e2e_entry(const BxiMsg* msg)
         return;
 
     s4u::SemaphorePtr flow_control_sem;
-    flowctrl_process_id f_id = {.src_pid = msg->parent_request->md->ni->pid,
-                                .dst_pid = msg->parent_request->target_pid,
+    ptl_pid_t req_src = msg->parent_request->md->ni->pid;
+    ptl_pid_t req_target = msg->parent_request->target_pid;
+    bool is_request_vn = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
+    flowctrl_process_id f_id = {.src_pid = is_request_vn ? req_src : req_target,
+                                .dst_pid = is_request_vn ? req_target : req_src,
                                 .dst_nid = msg->target};
 
     auto it = flowctrl_sems_process[vn].find(f_id);
