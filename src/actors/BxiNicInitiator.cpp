@@ -39,7 +39,26 @@ BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
 void BxiNicInitiator::operator()()
 {
     for (;;) {
-        auto msg = tx_queue->get();
+        BxiMsg* msg = tx_queue->get();
+        bool flowctrl_check = node->check_process_flowctrl(msg);
+        // vn < 2 = request VN. Obviously never suspend response TX actors or everything deadlocks...
+        if (vn < 2 && !flowctrl_check) {
+            if (find(node->flowctrl_waiting_messages.begin(), node->flowctrl_waiting_messages.end(), msg) ==
+                node->flowctrl_waiting_messages.end()) {
+                node->flowctrl_waiting_messages.push_back(msg);
+            } else {
+                node->flowctrl_waiting_messages.clear();
+                node->initiator_waiting_flowctrl.push_back(self);
+                s4u::this_actor::suspend();
+            }
+            tx_queue->put(msg);
+            continue;
+        }
+
+        if (find(node->flowctrl_waiting_messages.begin(), node->flowctrl_waiting_messages.end(), msg) ==
+            node->flowctrl_waiting_messages.end())
+            node->flowctrl_waiting_messages.clear();
+
         switch (msg->type) {
         case S4BXI_PTL_PUT:
         case S4BXI_PTL_ATOMIC:

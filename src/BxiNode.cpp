@@ -73,6 +73,39 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     eq->mailbox->put_init(ev, 0)->detach();
 }
 
+bool BxiNode::check_process_flowctrl(const BxiMsg* msg)
+{
+    int max_inflight_to_process = S4BXI_GLOBAL_CONFIG(max_inflight_to_process);
+    if (!max_inflight_to_process)
+        return true;
+
+    bxi_vn vn = msg->get_vn();
+    s4u::SemaphorePtr flow_control_sem;
+    ptl_pid_t req_src        = msg->parent_request->md->ni->pid;
+    ptl_pid_t req_target     = msg->parent_request->target_pid;
+    bool is_request_vn       = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
+    flowctrl_process_id f_id = {.src_pid = is_request_vn ? req_src : req_target,
+                                .dst_pid = is_request_vn ? req_target : req_src,
+                                .dst_nid = msg->target};
+
+    auto it = flowctrl_sems_process[vn].find(f_id);
+
+    if (it == flowctrl_sems_process[vn].end()) {
+        XBT_DEBUG("Making semaphore %u:%u -> %u:%u with max capacity of %d (process-level)", nid,
+                  msg->parent_request->md->ni->pid, msg->target, msg->parent_request->target_pid,
+                  max_inflight_to_process);
+        flow_control_sem = s4u::Semaphore::create(max_inflight_to_process);
+        flowctrl_sems_process[vn].emplace(f_id, flow_control_sem);
+    } else {
+        flow_control_sem = it->second;
+    }
+
+    if (flow_control_sem->would_block())
+        return false;
+    flow_control_sem->acquire();
+    return true;
+}
+
 void BxiNode::acquire_e2e_entry(const BxiMsg* msg)
 {
     if (e2e_off)
@@ -100,32 +133,6 @@ void BxiNode::acquire_e2e_entry(const BxiMsg* msg)
 
         flow_control_sem->acquire();
     }
-
-    int max_inflight_to_process = S4BXI_GLOBAL_CONFIG(max_inflight_to_process);
-    if (!max_inflight_to_process)
-        return;
-
-    s4u::SemaphorePtr flow_control_sem;
-    ptl_pid_t req_src = msg->parent_request->md->ni->pid;
-    ptl_pid_t req_target = msg->parent_request->target_pid;
-    bool is_request_vn = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
-    flowctrl_process_id f_id = {.src_pid = is_request_vn ? req_src : req_target,
-                                .dst_pid = is_request_vn ? req_target : req_src,
-                                .dst_nid = msg->target};
-
-    auto it = flowctrl_sems_process[vn].find(f_id);
-
-    if (it == flowctrl_sems_process[vn].end()) {
-        XBT_DEBUG("Making semaphore %u:%u -> %u:%u with max capacity of %d (process-level)", nid,
-                  msg->parent_request->md->ni->pid, msg->target, msg->parent_request->target_pid,
-                  max_inflight_to_process);
-        flow_control_sem = s4u::Semaphore::create(max_inflight_to_process);
-        flowctrl_sems_process[vn].emplace(f_id, flow_control_sem);
-    } else {
-        flow_control_sem = it->second;
-    }
-
-    flow_control_sem->acquire();
 }
 
 void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_pid, ptl_pid_t dst_pid)

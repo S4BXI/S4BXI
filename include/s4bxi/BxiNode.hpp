@@ -54,6 +54,8 @@ class BxiNode {
     s4u::SemaphorePtr e2e_entries;
     BxiNicE2E* e2e_actor   = nullptr;
     BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
+    vector<BxiMsg *> flowctrl_waiting_messages;
+    vector<s4u::Actor *> initiator_waiting_flowctrl;
     // Node level flow control semaphores
     map<ptl_nid_t, s4u::SemaphorePtr> flowctrl_sems_node[4] = {
         map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(),
@@ -76,6 +78,7 @@ class BxiNode {
     void pci_transfer(ptl_size_t size, bool direction, bxi_log_type type);
     s4u::CommPtr pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
+    bool check_process_flowctrl(const BxiMsg* msg);
     void acquire_e2e_entry(const BxiMsg* msg);
     void release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_pid, ptl_pid_t dst_pid);
 };

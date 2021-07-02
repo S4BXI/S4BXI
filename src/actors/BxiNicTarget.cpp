@@ -77,6 +77,11 @@ void BxiNicTarget::operator()()
             break;
         }
 
+        // This is kind of a bad heuristic: resume all TX actor each time we get a message
+        for (auto it : node->initiator_waiting_flowctrl)
+            it->resume();
+        node->initiator_waiting_flowctrl.clear();
+
         BxiMsg::unref(msg);
     }
 }
