@@ -101,6 +101,7 @@ void BxiNicE2E::operator()()
             ++msg->retry_count;
 
             get_retransmit_mailbox(msg)->put_init(new BxiMsg(*msg), 0)->detach();
+            node->resume_waiting_tx_actors();
 
             BxiMsg::unref(msg);
             current_msg = nullptr;

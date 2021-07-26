@@ -311,9 +311,9 @@ class BxiMsg {
     bxi_msg_type type;
     BxiRequest* parent_request;
     unsigned int ref_count;
-    int ni_fail_type = PTL_NI_OK;
-    BxiMsg *answers_msg = nullptr;
-    BxiLog *bxi_log = nullptr;
+    int ni_fail_type    = PTL_NI_OK;
+    BxiMsg* answers_msg = nullptr;
+    BxiLog* bxi_log     = nullptr;
 
     BxiMsg(ptl_nid_t initiator, ptl_nid_t target, bxi_msg_type type, ptl_size_t simulated_size,
            BxiRequest* parent_request);

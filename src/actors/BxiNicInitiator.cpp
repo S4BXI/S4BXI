@@ -40,24 +40,29 @@ void BxiNicInitiator::operator()()
 {
     for (;;) {
         BxiMsg* msg = tx_queue->get();
-        bool flowctrl_check = node->check_process_flowctrl(msg);
-        // vn < 2 = request VN. Obviously never suspend response TX actors or everything deadlocks...
-        if (vn < 2 && !flowctrl_check) {
-            if (find(node->flowctrl_waiting_messages.begin(), node->flowctrl_waiting_messages.end(), msg) ==
-                node->flowctrl_waiting_messages.end()) {
-                node->flowctrl_waiting_messages.push_back(msg);
+
+        // E2E_ACKs don't have any higher level of ACKs, and retries should be prioritary (and they are only processed
+        // once at target so we only get credits back once per message)
+        bool flowctrl_check =
+            (msg->type == S4BXI_E2E_ACK || msg->retry_count) ? true : node->check_process_flowctrl(msg);
+
+        if (!flowctrl_check) {
+            if (find(node->flowctrl_waiting_messages[vn].begin(), node->flowctrl_waiting_messages[vn].end(), msg) ==
+                node->flowctrl_waiting_messages[vn].end()) {
+                node->flowctrl_waiting_messages[vn].push_back(msg);
             } else {
-                node->flowctrl_waiting_messages.clear();
-                node->initiator_waiting_flowctrl.push_back(self);
+                node->flowctrl_waiting_messages[vn].clear();
+                node->initiator_waiting_flowctrl[vn].push_back(self);
+                XBT_INFO("Ran out of flow control because of message %d (am VN %d), go to sleep", msg->type, vn);
                 s4u::this_actor::suspend();
+                XBT_INFO("Someone woke me up");
             }
-            tx_queue->put(msg);
+            tx_queue->put(msg, 0, true);
+            XBT_INFO("Put message back in queue");
             continue;
         }
 
-        if (find(node->flowctrl_waiting_messages.begin(), node->flowctrl_waiting_messages.end(), msg) ==
-            node->flowctrl_waiting_messages.end())
-            node->flowctrl_waiting_messages.clear();
+        node->flowctrl_waiting_messages[vn].clear();
 
         switch (msg->type) {
         case S4BXI_PTL_PUT:
@@ -101,7 +106,8 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     s4u::CommPtr comm = reliable_comm_init(msg, false);
 
     // Set this now, so that acquire_e2e_entry has already been done
-    if (__bxi_log_level) msg->bxi_log->start = s4u::Engine::get_clock();
+    if (__bxi_log_level)
+        msg->bxi_log->start = s4u::Engine::get_clock();
 
     if (!msg->retry_count // PIO doesn't make sense for retransmissions
         && S4BXI_CONFIG_AND(node, model_pci) && req->payload_size > inline_size && req->payload_size <= PIO_size) {
@@ -153,7 +159,8 @@ void BxiNicInitiator::handle_get_response(BxiMsg* msg)
     s4u::CommPtr comm = reliable_comm_init(msg, false);
 
     // Set this now, so that acquire_e2e_entry has already been done
-    if (__bxi_log_level) msg->bxi_log->start = s4u::Engine::get_clock();
+    if (__bxi_log_level)
+        msg->bxi_log->start = s4u::Engine::get_clock();
 
     if (S4BXI_CONFIG_AND(node, model_pci) &&
         msg->simulated_size) { // Ask for the memory we need to send (Get is always DMA)
@@ -184,7 +191,8 @@ void BxiNicInitiator::handle_fetch_atomic_response(BxiMsg* msg)
     s4u::CommPtr comm = reliable_comm_init(msg, false);
 
     // Set this now, so that acquire_e2e_entry has already been done
-    if (__bxi_log_level) msg->bxi_log->start = s4u::Engine::get_clock();
+    if (__bxi_log_level)
+        msg->bxi_log->start = s4u::Engine::get_clock();
 
     if (S4BXI_CONFIG_AND(node, model_pci) &&
         msg->simulated_size) { // Ask for the memory we need to send (Response is always DMA)

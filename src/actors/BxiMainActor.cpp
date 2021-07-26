@@ -377,6 +377,7 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    node->resume_waiting_tx_actors();
     S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
@@ -400,6 +401,7 @@ int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    node->resume_waiting_tx_actors();
     S4BXI_WRITELOG()
 
     return PTL_OK;
@@ -420,6 +422,7 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    node->resume_waiting_tx_actors();
     S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
@@ -445,6 +448,7 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    node->resume_waiting_tx_actors();
     S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
@@ -469,6 +473,7 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
 
     m_put->ni->cq->acquire();
     tx_queue->put(msg, 64); // Send header in a blocking way
+    node->resume_waiting_tx_actors();
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
 

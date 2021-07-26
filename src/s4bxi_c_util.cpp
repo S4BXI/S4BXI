@@ -180,7 +180,8 @@ void* s4bxi_keyval_fetch_pointer(int rank, char* key)
 /**
  * Only allow a positive log level if there is a valid config file
  */
-void s4bxi_set_loglevel(int l) {
-    auto config = BxiEngine::get_config();
+void s4bxi_set_loglevel(int l)
+{
+    auto config       = BxiEngine::get_config();
     config->log_level = config->log_folder != "/dev/null" ? l : 0;
 }

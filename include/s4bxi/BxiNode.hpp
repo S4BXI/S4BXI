@@ -35,9 +35,9 @@ struct flowctrl_process_id {
     ptl_pid_t dst_pid;
     ptl_nid_t dst_nid;
     // The struct requires an operator "<" to be usable as a std::map's key
-    bool operator < (const flowctrl_process_id& other) const
+    bool operator<(const flowctrl_process_id& other) const
     {
-       return std::tie(src_pid, dst_pid, dst_nid) < std::tie(other.src_pid, other.dst_pid, other.dst_nid); 
+        return std::tie(src_pid, dst_pid, dst_nid) < std::tie(other.src_pid, other.dst_pid, other.dst_nid);
     }
 };
 
@@ -54,8 +54,6 @@ class BxiNode {
     s4u::SemaphorePtr e2e_entries;
     BxiNicE2E* e2e_actor   = nullptr;
     BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
-    vector<BxiMsg *> flowctrl_waiting_messages;
-    vector<s4u::Actor *> initiator_waiting_flowctrl;
     // Node level flow control semaphores
     map<ptl_nid_t, s4u::SemaphorePtr> flowctrl_sems_node[4] = {
         map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(),
@@ -64,6 +62,11 @@ class BxiNode {
     map<flowctrl_process_id, s4u::SemaphorePtr> flowctrl_sems_process[4] = {
         map<flowctrl_process_id, s4u::SemaphorePtr>(), map<flowctrl_process_id, s4u::SemaphorePtr>(),
         map<flowctrl_process_id, s4u::SemaphorePtr>(), map<flowctrl_process_id, s4u::SemaphorePtr>()};
+    // Process level miscellaneous things (for cycle detection and processing only)
+    vector<BxiMsg*> flowctrl_waiting_messages[4]      = {vector<BxiMsg*>(), vector<BxiMsg*>(), vector<BxiMsg*>(),
+                                                    vector<BxiMsg*>()};
+    vector<s4u::Actor*> initiator_waiting_flowctrl[4] = {vector<s4u::Actor*>(), vector<s4u::Actor*>(),
+                                                         vector<s4u::Actor*>(), vector<s4u::Actor*>()};
 
     // Params
     bool use_real_memory    = true;
@@ -81,6 +84,7 @@ class BxiNode {
     bool check_process_flowctrl(const BxiMsg* msg);
     void acquire_e2e_entry(const BxiMsg* msg);
     void release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_pid, ptl_pid_t dst_pid);
+    void resume_waiting_tx_actors();
 };
 
 #endif // S4BXI_BXINODE_HPP

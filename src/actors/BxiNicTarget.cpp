@@ -78,9 +78,7 @@ void BxiNicTarget::operator()()
         }
 
         // This is kind of a bad heuristic: resume all TX actor each time we get a message
-        for (auto it : node->initiator_waiting_flowctrl)
-            it->resume();
-        node->initiator_waiting_flowctrl.clear();
+        node->resume_waiting_tx_actors();
 
         BxiMsg::unref(msg);
     }

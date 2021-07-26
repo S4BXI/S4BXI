@@ -170,8 +170,15 @@ void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_p
 
     auto sem = it->second;
     sem->release();
+}
 
-    assert(sem->get_capacity() <= max_inflight);
+void BxiNode::resume_waiting_tx_actors()
+{
+    for (int i = 0; i < 4; ++i) {
+        for (auto it : initiator_waiting_flowctrl[i])
+            it->resume();
+        initiator_waiting_flowctrl[i].clear();
+    }
 }
 
 BxiNode::~BxiNode()
