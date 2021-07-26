@@ -28,6 +28,11 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/plugins/BxiActorExt.hpp"
+#include <smpi/smpi.h>
+
+#include "smpi_coll.hpp"
+
+static const std::string smpi_default_instance_name("smpirun");
 
 using namespace std;
 
@@ -278,6 +283,12 @@ int s4bxi_default_main(int argc, char* argv[])
     user_app_name = string(argv[4]);
     s4bxi_init_privatization_dlopen(executable);
 
+    smpi_init_options();
+
+    simgrid::smpi::colls::set_collectives();
+    simgrid::smpi::colls::smpi_coll_cleanup_callback = nullptr;
+    SMPI_init();
+
     /* Register the classes representing the actors */
     e.register_actor<BxiNicInitiator>("nic_initiator");
     e.register_actor<BxiNicTarget>("nic_target");
@@ -299,8 +310,17 @@ int s4bxi_default_main(int argc, char* argv[])
     }
     e.load_deployment(argv[2]);
 
+    int rank_counts = 0;
+    for (auto actor : e.get_all_actors())
+        if (actor->get_name() == "user_app")
+            rank_counts++;
+
+    SMPI_app_instance_register(smpi_default_instance_name.c_str(), nullptr, rank_counts);
+
     /* Run the simulation */
     e.run();
+
+    SMPI_finalize();
 
     BxiEngine::get_instance()->end_simulation();
 

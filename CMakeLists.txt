@@ -74,7 +74,19 @@ set(SOURCE_FILES
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(SimGrid 3.26 REQUIRED)
+
+# Include directly from SimGrid's code
+
+if(NOT SimGrid_SOURCE)
+    set(SimGrid_SOURCE /home/julien/These/simgrid)
+endif()
 include_directories(${SimGrid_INCLUDE_DIR})
+include_directories(${SimGrid_SOURCE})
+include_directories(${SimGrid_SOURCE}/include)
+include_directories(${SimGrid_SOURCE}/src/smpi/include)
+configure_file("${SimGrid_SOURCE}/src/internal_config.h.in"    "${SimGrid_SOURCE}/src/internal_config.h.generated"    @ONLY IMMEDIATE)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SimGrid_SOURCE}/src/internal_config.h.generated ${SimGrid_SOURCE}/src/internal_config.h)
+file(REMOVE ${SimGrid_SOURCE}/src/internal_config.h.generated)
 
 add_library(${LIBNAME} SHARED ${SOURCE_FILES})
 target_link_libraries(${LIBNAME} ${SimGrid_LIBRARY} ${DL_LIBRARY})

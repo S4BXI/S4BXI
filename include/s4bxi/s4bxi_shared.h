@@ -21,7 +21,9 @@
 
 #ifdef __cplusplus
 
-enum class SharedMallocType { NONE, LOCAL, GLOBAL };
+#ifdef COMPILING_SIMULATOR
+#include "private.hpp"
+#endif
 
 extern "C" {
 
