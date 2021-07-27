@@ -31,6 +31,7 @@
 #include <smpi/smpi.h>
 
 #include "smpi_coll.hpp"
+#include "src/kernel/activity/CommImpl.hpp"
 
 static const std::string smpi_default_instance_name("smpirun");
 
@@ -285,6 +286,8 @@ int s4bxi_default_main(int argc, char* argv[])
 
     smpi_init_options();
 
+    e.set_config("smpi/coll-selector:ompi");
+
     simgrid::smpi::colls::set_collectives();
     simgrid::smpi::colls::smpi_coll_cleanup_callback = nullptr;
     SMPI_init();
@@ -308,12 +311,19 @@ int s4bxi_default_main(int argc, char* argv[])
         if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
             dlclose(lib);
     }
+    
+    simgrid::kernel::activity::CommImpl::set_copy_data_callback(smpi_comm_copy_buffer_callback);
+
     e.load_deployment(argv[2]);
 
     int rank_counts = 0;
-    for (auto actor : e.get_all_actors())
-        if (actor->get_name() == "user_app")
+    for (auto actor : e.get_all_actors()) {
+        if (actor->get_name() == "user_app") {
+            actor->set_property("instance_id", "smpirun");
+            actor->set_property("rank", to_string(rank_counts));
             rank_counts++;
+        }
+    }
 
     SMPI_app_instance_register(smpi_default_instance_name.c_str(), nullptr, rank_counts);
 
