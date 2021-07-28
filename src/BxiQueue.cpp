@@ -31,9 +31,9 @@ void BxiQueue::put(BxiMsg* msg, const uint64_t& size, bool async)
 {
     if (mailbox) {
         if (async)
-            mailbox->put_init(msg, size)->detach();
+            mailbox->put_init(msg, size)->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)->detach();
         else
-            mailbox->put(msg, size);
+            mailbox->put_init(msg, size)->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)->wait();
         return;
     }
 
@@ -43,8 +43,15 @@ void BxiQueue::put(BxiMsg* msg, const uint64_t& size, bool async)
 
 BxiMsg* BxiQueue::get()
 {
-    if (mailbox)
-        return mailbox->get<BxiMsg>();
+    if (mailbox) {
+        BxiMsg* msg;
+        mailbox->get_init()
+            ->set_dst_data(reinterpret_cast<void**>(&msg), sizeof(void*))
+            ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+            ->wait();
+
+        return msg;
+    }
 
     waiting->acquire();
     auto msg = to_process.front();

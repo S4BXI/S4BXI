@@ -44,7 +44,11 @@ void BxiNicTarget::operator()()
     } while (!tx_queue);
 
     for (;;) {
-        auto msg = nic_rx_mailbox->get<BxiMsg>();
+        BxiMsg* msg;
+        nic_rx_mailbox->get_init()
+            ->set_dst_data(reinterpret_cast<void**>(&msg), sizeof(void*))
+            ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+            ->wait();
 
         if (msg->bxi_log) {
             msg->bxi_log->end = s4u::Engine::get_clock();

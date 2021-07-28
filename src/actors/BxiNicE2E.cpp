@@ -100,7 +100,10 @@ void BxiNicE2E::operator()()
             ++node->e2e_retried;
             ++msg->retry_count;
 
-            get_retransmit_mailbox(msg)->put_init(new BxiMsg(*msg), 0)->detach();
+            get_retransmit_mailbox(msg)
+                ->put_init(new BxiMsg(*msg), 0)
+                ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+                ->detach();
             node->resume_waiting_tx_actors();
 
             BxiMsg::unref(msg);

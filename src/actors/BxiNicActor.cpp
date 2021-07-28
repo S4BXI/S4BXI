@@ -104,5 +104,6 @@ s4u::CommPtr BxiNicActor::reliable_comm_init(BxiMsg* msg, bool shallow)
     }
 
     return s4u::Mailbox::by_name(nic_rx_mailbox_name(msg->target, vn))
-        ->put_init(msg, shallow ? 0 : msg->simulated_size);
+        ->put_init(msg, shallow ? 0 : msg->simulated_size)
+        ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback);
 }

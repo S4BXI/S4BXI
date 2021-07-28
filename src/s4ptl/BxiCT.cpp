@@ -45,7 +45,7 @@ void BxiCT::on_update()
                 actor->resume();
             } else if (mailbox) { // Unlock any actor that is waiting on a PtlCTPoll
                 bool garbage = true;
-                mailbox->put(&garbage, 0);
+                mailbox->put_init(&garbage, 0)->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)->wait();
                 free_random_mailbox(mailbox);
             } else {
                 ptl_panic("We have a waiting struct in counter, but no actor to wake up or mailbox to contact");

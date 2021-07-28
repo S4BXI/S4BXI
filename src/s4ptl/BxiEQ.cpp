@@ -40,8 +40,12 @@ int BxiEQ::get(ptl_event_t* event)
 
 int BxiEQ::wait(ptl_event_t* event)
 {
-    auto ev_ptr = mailbox->get<ptl_event_t>();
-    *event      = *ev_ptr;
+    ptl_event_t* ev_ptr;
+    mailbox->get_init()
+        ->set_dst_data(reinterpret_cast<void**>(&ev_ptr), sizeof(void*))
+        ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+        ->wait();
+    *event = *ev_ptr;
     delete ev_ptr;
 
     return PTL_OK;

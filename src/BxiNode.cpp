@@ -70,7 +70,7 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
         pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
     }
 
-    eq->mailbox->put_init(ev, 0)->detach();
+    eq->mailbox->put_init(ev, 0)->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)->detach();
 }
 
 bool BxiNode::check_process_flowctrl(const BxiMsg* msg)

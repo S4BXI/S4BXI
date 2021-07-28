@@ -311,7 +311,7 @@ int s4bxi_default_main(int argc, char* argv[])
         if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
             dlclose(lib);
     }
-    
+
     simgrid::kernel::activity::CommImpl::set_copy_data_callback(smpi_comm_copy_buffer_callback);
 
     e.load_deployment(argv[2]);
