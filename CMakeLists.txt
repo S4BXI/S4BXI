@@ -65,6 +65,7 @@ set(SOURCE_FILES
         src/s4bxi_c_util.cpp
         src/portals4.cpp
         src/s4bxi_util.cpp
+        src/s4bxi_mpi_middleware.cpp
         src/s4bxi_redefine.cpp
         src/s4bxi_mailbox_pool.cpp
         src/s4bxi_shared.cpp

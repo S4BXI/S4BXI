@@ -32,6 +32,7 @@
 
 #include "smpi_coll.hpp"
 #include "src/kernel/activity/CommImpl.hpp"
+#include "s4bxi/s4bxi_mpi_middleware.h"
 
 static const std::string smpi_default_instance_name("smpirun");
 
@@ -179,6 +180,14 @@ void BxiUserAppActor::operator()()
             XBT_DEBUG("Relinking user code:\n → %s\n", sedcommand.c_str());
             int rc = system(sedcommand.c_str());
             xbt_assert(rc == 0, "error while applying sed command %s \n", sedcommand.c_str());
+
+            if (libname == "libmpi.so.40") { // Fetch MPI ops if we are handling the MPI lib
+                auto lib = dlopen(target_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+                set_mpi_middleware_ops(lib, nullptr);
+
+                if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
+                    dlclose(lib);
+            }
         }
     }
 
@@ -312,8 +321,7 @@ int s4bxi_default_main(int argc, char* argv[])
             dlclose(lib);
     }
 
-    simgrid::kernel::activity::CommImpl::set_copy_data_callback(smpi_comm_copy_buffer_callback);
-
+    e.set_default_comm_data_copy_callback(smpi_comm_copy_buffer_callback);
     e.load_deployment(argv[2]);
 
     int rank_counts = 0;

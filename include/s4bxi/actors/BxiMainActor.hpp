@@ -27,6 +27,7 @@
 #include "../s4ptl.hpp"
 #include "../BxiQueue.hpp"
 #include "BxiActor.hpp"
+#include "../s4bxi_mpi_middleware.h"
 
 struct cmp_str {
     bool operator()(char const* a, char const* b) const { return std::strcmp(a, b) < 0; }
@@ -47,6 +48,8 @@ class BxiMainActor : public BxiActor {
     // because there will be zeros in memory wherever this is
     // stored, so if everything breaks blame him
     struct sigaction* registered_signals[33];
+
+    struct s4bxi_mpi_ops bull_mpi_ops;
 
     /**
      * This is actually horrible I think, we shouldn't need this attribute,
