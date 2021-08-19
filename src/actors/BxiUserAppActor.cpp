@@ -182,11 +182,11 @@ void BxiUserAppActor::operator()()
             xbt_assert(rc == 0, "error while applying sed command %s \n", sedcommand.c_str());
 
             if (libname == "libmpi.so.40") { // Fetch MPI ops if we are handling the MPI lib
-                auto lib = dlopen(target_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
-                set_mpi_middleware_ops(lib, nullptr);
-
-                if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
-                    dlclose(lib);
+                auto bull_lib = dlopen(target_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+                auto smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+                set_mpi_middleware_ops(bull_lib, smpi_lib);
+                dlclose(bull_lib);
+                dlclose(smpi_lib);
             }
         }
     }
@@ -327,7 +327,7 @@ int s4bxi_default_main(int argc, char* argv[])
     int rank_counts = 0;
     for (auto actor : e.get_all_actors()) {
         if (actor->get_name() == "user_app") {
-            actor->set_property("instance_id", "smpirun");
+            actor->set_property("instance_id", smpi_default_instance_name.c_str());
             actor->set_property("rank", to_string(rank_counts));
             rank_counts++;
         }

@@ -50,6 +50,7 @@ class BxiMainActor : public BxiActor {
     struct sigaction* registered_signals[33];
 
     struct s4bxi_mpi_ops bull_mpi_ops;
+    struct s4bxi_mpi_ops smpi_mpi_ops;
 
     /**
      * This is actually horrible I think, we shouldn't need this attribute,
