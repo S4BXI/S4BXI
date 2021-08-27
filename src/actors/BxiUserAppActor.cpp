@@ -56,6 +56,8 @@ string user_app_name;
 string executable;
 string simulation_rand_id = "0000000000";
 
+void* smpi_lib;
+
 static void s4bxi_copy_file(const string& src, const string& target, off_t fdin_size)
 {
     int fdin = open(src.c_str(), O_RDONLY);
@@ -183,10 +185,8 @@ void BxiUserAppActor::operator()()
 
             if (libname == "libmpi.so.40") { // Fetch MPI ops if we are handling the MPI lib
                 auto bull_lib = dlopen(target_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
-                auto smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
                 set_mpi_middleware_ops(bull_lib, smpi_lib);
                 dlclose(bull_lib);
-                dlclose(smpi_lib);
             }
         }
     }
@@ -273,6 +273,8 @@ void BxiUserAppActor::operator()()
 
 int s4bxi_default_main(int argc, char* argv[])
 {
+    auto smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+
     s4bxi_actor_ext_plugin_init();
     simgrid::s4u::Engine e(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
@@ -296,26 +298,6 @@ int s4bxi_default_main(int argc, char* argv[])
     smpi_init_options();
 
     e.set_config("smpi/coll-selector:ompi");
-    e.set_config("smpi/"
-                 "os:0:2.2617745265427535e-06:2.703352029721588e-10;392:2.8385604119907807e-06:1.1264760290330328e-10;"
-                 "32712:0.0:0.0;186836:0.0:0.0;1538469:0.0:0.0");
-    e.set_config("smpi/"
-                 "or:0:4.879281137093516e-07:2.2618415203462987e-10;392:5.779857092751072e-07:3.8094447278873e-11;"
-                 "32712:0.0:0.0;186836:0.0:0.0;1538469:0.0:0.0");
-    e.set_config("smpi/"
-                 "ois:0:5.673519212129521e-07:7.174648137343064e-43;392:5.446695252027938e-07:1.9686168165027744e-11;"
-                 "32712:5.536713106693264e-07:5.082661224033066e-13;186836:5.49289659548938e-07:3.189291810074661e-14;"
-                 "1538469:4.306002121584747e-07:4.21325930847998e-14");
-    e.set_config("smpi/"
-                 "bw-factor:0:0.2699228069054274;392:0.7647794357220394;32712:0.9664149337828888;186836:0."
-                 "9243880418172589;1538469:0.9732858005841204");
-    e.set_config("smpi/"
-                 "lat-factor:0:2.7676182391675814;392:3.9432860784637396;32712:10.117401654450653;186836:7."
-                 "810638891189083;1538469:18.84747638996546");
-    e.set_config("smpi/async-small-thresh:32712");
-    e.set_config("smpi/send-is-detached-thresh:32712");
-    e.set_config("smpi/iprobe:1.9586518031175638e-07");
-    e.set_config("smpi/test:1.1523121197560569e-07");
 
     simgrid::smpi::colls::set_collectives();
     simgrid::smpi::colls::smpi_coll_cleanup_callback = nullptr;
@@ -361,6 +343,9 @@ int s4bxi_default_main(int argc, char* argv[])
     SMPI_finalize();
 
     BxiEngine::get_instance()->end_simulation();
+    delete BxiEngine::get_instance();
+
+    dlclose(smpi_lib);
 
     return 0;
 }

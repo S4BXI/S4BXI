@@ -1011,44 +1011,44 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_Comm_split_type            S4BXI_MPI_Comm_split_type
 // #define MPI_Comm_f2c                   S4BXI_MPI_Comm_f2c
 // #define MPI_Comm_c2f                   S4BXI_MPI_Comm_c2f
-// #define MPI_Start                      S4BXI_MPI_Start
-// #define MPI_Startall                   S4BXI_MPI_Startall
-// #define MPI_Request_free               S4BXI_MPI_Request_free
-// #define MPI_Recv                       S4BXI_MPI_Recv
-// #define MPI_Recv_init                  S4BXI_MPI_Recv_init
-// #define MPI_Irecv                      S4BXI_MPI_Irecv
-// #define MPI_Send                       S4BXI_MPI_Send
-// #define MPI_Send_init                  S4BXI_MPI_Send_init
-// #define MPI_Isend                      S4BXI_MPI_Isend
-// #define MPI_Ssend                      S4BXI_MPI_Ssend
-// #define MPI_Ssend_init                 S4BXI_MPI_Ssend_init
-// #define MPI_Issend                     S4BXI_MPI_Issend
-// #define MPI_Bsend                      S4BXI_MPI_Bsend
-// #define MPI_Bsend_init                 S4BXI_MPI_Bsend_init
-// #define MPI_Ibsend                     S4BXI_MPI_Ibsend
-// #define MPI_Rsend                      S4BXI_MPI_Rsend
-// #define MPI_Rsend_init                 S4BXI_MPI_Rsend_init
-// #define MPI_Irsend                     S4BXI_MPI_Irsend
-// #define MPI_Sendrecv                   S4BXI_MPI_Sendrecv
-// #define MPI_Sendrecv_replace           S4BXI_MPI_Sendrecv_replace
-#define MPI_Test S4BXI_MPI_Test
-// #define MPI_Testany                    S4BXI_MPI_Testany
-// #define MPI_Testall                    S4BXI_MPI_Testall
-// #define MPI_Testsome                   S4BXI_MPI_Testsome
-// #define MPI_Test_cancelled             S4BXI_MPI_Test_cancelled
-#define MPI_Wait S4BXI_MPI_Wait
-// #define MPI_Waitany                    S4BXI_MPI_Waitany
-// #define MPI_Waitall                    S4BXI_MPI_Waitall
-// #define MPI_Waitsome                   S4BXI_MPI_Waitsome
-// #define MPI_Iprobe                     S4BXI_MPI_Iprobe
-// #define MPI_Probe                      S4BXI_MPI_Probe
-// #define MPI_Request_f2c                S4BXI_MPI_Request_f2c
-// #define MPI_Request_c2f                S4BXI_MPI_Request_c2f
-// #define MPI_Cancel                     S4BXI_MPI_Cancel
-#define MPI_Bcast    S4BXI_MPI_Bcast
-#define MPI_Barrier  S4BXI_MPI_Barrier
-#define MPI_Ibarrier S4BXI_MPI_Ibarrier
-#define MPI_Ibcast   S4BXI_MPI_Ibcast
+#define MPI_Start            S4BXI_MPI_Start
+#define MPI_Startall         S4BXI_MPI_Startall
+#define MPI_Request_free     S4BXI_MPI_Request_free
+#define MPI_Recv             S4BXI_MPI_Recv
+#define MPI_Recv_init        S4BXI_MPI_Recv_init
+#define MPI_Irecv            S4BXI_MPI_Irecv
+#define MPI_Send             S4BXI_MPI_Send
+#define MPI_Send_init        S4BXI_MPI_Send_init
+#define MPI_Isend            S4BXI_MPI_Isend
+#define MPI_Ssend            S4BXI_MPI_Ssend
+#define MPI_Ssend_init       S4BXI_MPI_Ssend_init
+#define MPI_Issend           S4BXI_MPI_Issend
+#define MPI_Bsend            S4BXI_MPI_Bsend
+#define MPI_Bsend_init       S4BXI_MPI_Bsend_init
+#define MPI_Ibsend           S4BXI_MPI_Ibsend
+#define MPI_Rsend            S4BXI_MPI_Rsend
+#define MPI_Rsend_init       S4BXI_MPI_Rsend_init
+#define MPI_Irsend           S4BXI_MPI_Irsend
+#define MPI_Sendrecv         S4BXI_MPI_Sendrecv
+#define MPI_Sendrecv_replace S4BXI_MPI_Sendrecv_replace
+#define MPI_Test             S4BXI_MPI_Test
+#define MPI_Testany          S4BXI_MPI_Testany
+#define MPI_Testall          S4BXI_MPI_Testall
+#define MPI_Testsome         S4BXI_MPI_Testsome
+#define MPI_Test_cancelled   S4BXI_MPI_Test_cancelled
+#define MPI_Wait             S4BXI_MPI_Wait
+#define MPI_Waitany          S4BXI_MPI_Waitany
+#define MPI_Waitall          S4BXI_MPI_Waitall
+#define MPI_Waitsome         S4BXI_MPI_Waitsome
+#define MPI_Iprobe           S4BXI_MPI_Iprobe
+#define MPI_Probe            S4BXI_MPI_Probe
+// #define MPI_Request_f2c      S4BXI_MPI_Request_f2c
+// #define MPI_Request_c2f      S4BXI_MPI_Request_c2f
+#define MPI_Cancel           S4BXI_MPI_Cancel
+#define MPI_Bcast            S4BXI_MPI_Bcast
+#define MPI_Barrier          S4BXI_MPI_Barrier
+#define MPI_Ibarrier         S4BXI_MPI_Ibarrier
+#define MPI_Ibcast           S4BXI_MPI_Ibcast
 // #define MPI_Igather                    S4BXI_MPI_Igather
 // #define MPI_Igatherv                   S4BXI_MPI_Igatherv
 // #define MPI_Iallgather                 S4BXI_MPI_Iallgather
@@ -1061,9 +1061,9 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_Iexscan                    S4BXI_MPI_Iexscan
 // #define MPI_Ireduce_scatter            S4BXI_MPI_Ireduce_scatter
 // #define MPI_Ireduce_scatter_block      S4BXI_MPI_Ireduce_scatter_block
-// #define MPI_Ialltoall                  S4BXI_MPI_Ialltoall
-// #define MPI_Ialltoallv                 S4BXI_MPI_Ialltoallv
-// #define MPI_Ialltoallw                 S4BXI_MPI_Ialltoallw
+#define MPI_Ialltoall  S4BXI_MPI_Ialltoall
+#define MPI_Ialltoallv S4BXI_MPI_Ialltoallv
+#define MPI_Ialltoallw S4BXI_MPI_Ialltoallw
 #define MPI_Gather     S4BXI_MPI_Gather
 #define MPI_Gatherv    S4BXI_MPI_Gatherv
 #define MPI_Allgather  S4BXI_MPI_Allgather
@@ -1078,7 +1078,7 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_Reduce_scatter_block       S4BXI_MPI_Reduce_scatter_block
 #define MPI_Alltoall  S4BXI_MPI_Alltoall
 #define MPI_Alltoallv S4BXI_MPI_Alltoallv
-// #define MPI_Alltoallw                  S4BXI_MPI_Alltoallw
+#define MPI_Alltoallw S4BXI_MPI_Alltoallw
 // #define MPI_Reduce_local               S4BXI_MPI_Reduce_local
 // #define MPI_Info_create                S4BXI_MPI_Info_create
 // #define MPI_Info_set                   S4BXI_MPI_Info_set
