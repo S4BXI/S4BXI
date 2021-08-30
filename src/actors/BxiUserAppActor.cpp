@@ -144,9 +144,11 @@ BxiUserAppActor::BxiUserAppActor(const vector<string>& args) : BxiMainActor(args
  */
 void BxiUserAppActor::operator()()
 {
-    static size_t rank = 0;
+    my_rank = stoul(string(self->get_property("rank")));
+    XBT_INFO("Init rank %d", my_rank);
+
     // Copy the dynamic library:
-    string target_executable = executable + "_" + simulation_rand_id + "_" + to_string(rank) + ".so";
+    string target_executable = executable + "_" + simulation_rand_id + "_" + to_string(my_rank) + ".so";
 
     s4bxi_copy_file(executable, target_executable, fdin_size);
     // if s4bxi/privatize-libs is set, duplicate pointed lib and link each
@@ -172,8 +174,8 @@ void BxiUserAppActor::operator()()
             unsigned int pad = 7;
             if (libname.length() < pad)
                 pad = libname.length();
-            string target_lib =
-                simulation_rand_id.substr(0, pad - to_string(rank).length()) + to_string(rank) + libname.substr(pad);
+            string target_lib = simulation_rand_id.substr(0, pad - to_string(my_rank).length()) + to_string(my_rank) +
+                                libname.substr(pad);
             target_libs.push_back(target_lib);
             XBT_DEBUG("copy lib %s to %s, with size %lld", libpath.c_str(), target_lib.c_str(), (long long)fdin_size2);
             s4bxi_copy_file(libpath, target_lib, fdin_size2);
@@ -210,8 +212,8 @@ void BxiUserAppActor::operator()()
                 unsigned int pad = 7;
                 if (libname.length() < pad)
                     pad = libname.length();
-                string new_lib_name = simulation_rand_id.substr(0, pad - to_string(rank).length()) + to_string(rank) +
-                                      libname.substr(pad);
+                string new_lib_name = simulation_rand_id.substr(0, pad - to_string(my_rank).length()) +
+                                      to_string(my_rank) + libname.substr(pad);
 
                 string sedcommand = "sed -i -e 's/" + libname + "/" + new_lib_name + "/g' " + relink_me;
                 XBT_DEBUG("Relinking privatized lib:\n → %s\n", sedcommand.c_str());
@@ -222,8 +224,6 @@ void BxiUserAppActor::operator()()
     }
 
     // </custom-things>
-
-    my_rank = rank++;
 
     // Load the copy and resolve the entry point:
     void* handle    = dlopen(target_executable.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);

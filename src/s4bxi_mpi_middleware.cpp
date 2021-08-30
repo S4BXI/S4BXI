@@ -32,16 +32,22 @@ bool USE_SMPI;
 MPI_Datatype* type_array;
 
 #define SETUP_SYMBOLS_IN_IMPLEMS(symbol)                                                                               \
-    main_actor->bull_mpi_ops.symbol = dlsym(bull_libhandle, "MPI_" #symbol);                                           \
-    main_actor->smpi_mpi_ops.symbol = dlsym(smpi_libhandle, "MPI_" #symbol);
+    main_actor->bull_mpi_ops.symbol = dlsym(bull_libhandle, "PMPI_" #symbol);                                          \
+    assert(main_actor->bull_mpi_ops.symbol != nullptr);                                                                \
+    main_actor->smpi_mpi_ops.symbol = dlsym(smpi_libhandle, "PMPI_" #symbol);                                          \
+    assert(main_actor->smpi_mpi_ops.symbol != nullptr);
 
 #define SETUP_DATATYPES_IN_IMPLEMS(lowercase, uppercase)                                                               \
     main_actor->bull_mpi_ops.TYPE_##uppercase = (MPI_Datatype)dlsym(bull_libhandle, "ompi_mpi_" #lowercase);           \
-    main_actor->smpi_mpi_ops.TYPE_##uppercase = (MPI_Datatype)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);
+    assert(main_actor->bull_mpi_ops.TYPE_##uppercase != nullptr);                                                      \
+    main_actor->smpi_mpi_ops.TYPE_##uppercase = (MPI_Datatype)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);           \
+    assert(main_actor->smpi_mpi_ops.TYPE_##uppercase != nullptr);
 
 #define SETUP_OPS_IN_IMPLEMS(lowercase, uppercase)                                                                     \
     main_actor->bull_mpi_ops.OP_##uppercase = (MPI_Op)dlsym(bull_libhandle, "ompi_mpi_op_" #lowercase);                \
-    main_actor->smpi_mpi_ops.OP_##uppercase = (MPI_Op)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);
+    assert(main_actor->bull_mpi_ops.OP_##uppercase != nullptr);                                                        \
+    main_actor->smpi_mpi_ops.OP_##uppercase = (MPI_Op)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);                   \
+    assert(main_actor->smpi_mpi_ops.OP_##uppercase != nullptr);
 
 MPI_Datatype implem_datatype(MPI_Datatype original)
 {
@@ -1084,7 +1090,7 @@ void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
     SETUP_DATATYPES_IN_IMPLEMS(short, SHORT)
     SETUP_DATATYPES_IN_IMPLEMS(int, INT)
     SETUP_DATATYPES_IN_IMPLEMS(long, LONG)
-    SETUP_DATATYPES_IN_IMPLEMS(long_long, LONG_LONG)
+    SETUP_DATATYPES_IN_IMPLEMS(long_long_int, LONG_LONG)
     SETUP_DATATYPES_IN_IMPLEMS(signed_char, SIGNED_CHAR)
     SETUP_DATATYPES_IN_IMPLEMS(unsigned_char, UNSIGNED_CHAR)
     SETUP_DATATYPES_IN_IMPLEMS(unsigned_short, UNSIGNED_SHORT)
@@ -1117,10 +1123,13 @@ void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
     SETUP_DATATYPES_IN_IMPLEMS(double_int, DOUBLE_INT)
     SETUP_DATATYPES_IN_IMPLEMS(short_int, SHORT_INT)
     SETUP_DATATYPES_IN_IMPLEMS(2int, 2INT)
-    SETUP_DATATYPES_IN_IMPLEMS(long_double_int, LONG_DOUBLE_INT)
-    SETUP_DATATYPES_IN_IMPLEMS(2float, 2FLOAT)
-    SETUP_DATATYPES_IN_IMPLEMS(2double, 2DOUBLE)
-    SETUP_DATATYPES_IN_IMPLEMS(2long, 2LONG)
+    SETUP_DATATYPES_IN_IMPLEMS(longdbl_int, LONG_DOUBLE_INT)
+
+    // These don't exist in Bull implem ?
+    // SETUP_DATATYPES_IN_IMPLEMS(2float, 2FLOAT)
+    // SETUP_DATATYPES_IN_IMPLEMS(2double, 2DOUBLE)
+    // SETUP_DATATYPES_IN_IMPLEMS(2long, 2LONG)
+
     SETUP_DATATYPES_IN_IMPLEMS(real, REAL)
     SETUP_DATATYPES_IN_IMPLEMS(real4, REAL4)
     SETUP_DATATYPES_IN_IMPLEMS(real8, REAL8)
