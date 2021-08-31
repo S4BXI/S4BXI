@@ -1,5 +1,11 @@
 #!/bin/bash
 
+go_back_to=$( pwd )
+work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "${work_dir}" || exit 1
+
+source ../s4bxi_env.sh
+
 CORES=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
 
 BAD_OUTPUT=0
@@ -7,7 +13,7 @@ BAD_OUTPUT=0
 mkdir -p build
 cd build || exit 1
 
-cmake .. && make -j $CORES
+cmake .. -DSimGrid_PATH="${S4BXI_INSTALL_ROOT}/simgrid" -DS4BXI_PATH="${S4BXI_INSTALL_ROOT}/s4bxi" && make -j $CORES
 OUTPUT=$?
 if [ $BAD_OUTPUT == 0 ]
 then
@@ -57,3 +63,5 @@ fi
 
 echo -e "| \e[1;32mAll Tests passed :)\e[0m"
 echo "|"
+
+cd "$go_back_to"

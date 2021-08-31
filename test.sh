@@ -1,9 +1,10 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-cd teshsuite || exit 1
-./run.sh
+work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+${work_dir}/teshsuite/run.sh
 OUTPUT=$?
-cd ..
+
 if [ $OUTPUT != 0 ]
 then
     exit $OUTPUT

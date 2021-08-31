@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-S4BXI_INSTALL_ROOT=${S4BXI_INSTALL_ROOT:-"/opt"}
+source ./s4bxi_env.sh
+
 build_type=${1:-RELEASE}
 install_prefix=${2:-${S4BXI_INSTALL_ROOT}/s4bxi}
 CORES=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
