@@ -35,6 +35,11 @@ typedef MPI_Win_errhandler_function MPI_Win_errhandler_fn;
 extern "C" {
 #endif
 
+extern int __s4bxi_use_smpi;
+
+// TO-DO: there are many more constants that we should probably redefine
+#define MPI_IN_PLACE (__s4bxi_use_smpi ? ((void *)-222) : ((void *) 1))
+
 struct s4bxi_mpi_ops {
     void* Init;
     void* Finalize;

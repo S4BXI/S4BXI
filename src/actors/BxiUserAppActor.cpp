@@ -186,9 +186,7 @@ void BxiUserAppActor::operator()()
             xbt_assert(rc == 0, "error while applying sed command %s \n", sedcommand.c_str());
 
             if (libname == "libmpi.so.40") { // Fetch MPI ops if we are handling the MPI lib
-                auto bull_lib = dlopen(target_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
-                set_mpi_middleware_ops(bull_lib, smpi_lib);
-                dlclose(bull_lib);
+                bull_mpi_lib = target_lib;
             }
         }
     }
@@ -228,6 +226,14 @@ void BxiUserAppActor::operator()()
     // Load the copy and resolve the entry point:
     void* handle    = dlopen(target_executable.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
     int saved_errno = errno;
+
+    if (!bull_mpi_lib.empty()) {
+        void* bull_lib = dlopen(bull_mpi_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+        XBT_INFO("Extracting symbols from Bull lib %p (%s) and SMPI lib %p", bull_lib, bull_mpi_lib.c_str(), smpi_lib);
+        set_mpi_middleware_ops(bull_lib, smpi_lib);
+        dlclose(bull_lib);
+    }
+
     if (S4BXI_GLOBAL_CONFIG(keep_temps) == false) {
         unlink(target_executable.c_str());
         for (const string& target_lib : target_libs)
@@ -253,6 +259,8 @@ void BxiUserAppActor::operator()()
     args4argv->push_back(nullptr);
     char** argv = args4argv->data();
 
+    s4bxi_barrier();
+
     const char* prop = self->get_property("delay_start");
     if (prop)
         s4u::this_actor::sleep_for(atof(prop));
@@ -273,7 +281,7 @@ void BxiUserAppActor::operator()()
 
 int s4bxi_default_main(int argc, char* argv[])
 {
-    auto smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+    smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
 
     s4bxi_actor_ext_plugin_init();
     simgrid::s4u::Engine e(&argc, argv);

@@ -29,6 +29,9 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
 {
     BxiEngine::get_instance()->register_main_actor(this);
 
+    bull_mpi_ops = nullptr;
+    smpi_mpi_ops = nullptr;
+
     is_sampling           = 0;
     timer                 = xbt_os_timer_new();
     const char* prop      = self->get_property("use_real_memory");
@@ -71,6 +74,10 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
 BxiMainActor::~BxiMainActor()
 {
     xbt_os_timer_free(timer);
+    if (bull_mpi_ops)
+        delete bull_mpi_ops;
+    if (smpi_mpi_ops)
+        delete smpi_mpi_ops;
 }
 
 void BxiMainActor::issue_portals_command(int simulated_size)

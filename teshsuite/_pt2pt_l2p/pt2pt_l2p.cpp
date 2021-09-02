@@ -83,7 +83,8 @@ int client(char* target)
 
     sleep(1); // Make sure Server is done posting ME
 
-    rc = PtlFetchAtomic(mdh_get, 0, mdh_put, 0, sizeof(int64_t), {.rank = 1}, 0, INT64T_ME, 0, nullptr, 1337, PTL_SUM,
+    ptl_process_t proc = {.rank = 1};
+    rc = PtlFetchAtomic(mdh_get, 0, mdh_put, 0, sizeof(int64_t), proc, 0, INT64T_ME, 0, nullptr, 1337, PTL_SUM,
                         PTL_INT64_T);
 
     PtlEQWait(eqh, &ev);

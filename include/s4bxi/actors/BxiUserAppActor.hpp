@@ -24,6 +24,7 @@
 
 class BxiUserAppActor : public BxiMainActor {
     vector<string> string_args;
+    string bull_mpi_lib = "";
 
   public:
     uint32_t my_rank;
