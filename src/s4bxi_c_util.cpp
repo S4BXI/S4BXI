@@ -185,3 +185,8 @@ void s4bxi_set_loglevel(int l)
     auto config       = BxiEngine::get_config();
     config->log_level = config->log_folder != "/dev/null" ? l : 0;
 }
+
+void s4bxi_use_smpi_implem(int v)
+{
+    GET_CURRENT_MAIN_ACTOR->use_smpi_implem = (bool)v;
+}

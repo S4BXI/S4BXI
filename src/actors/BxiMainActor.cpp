@@ -32,6 +32,9 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
     bull_mpi_ops = nullptr;
     smpi_mpi_ops = nullptr;
 
+    char* env       = getenv("S4BXI_SMPI_IMPLEM");
+    use_smpi_implem = env ? TRUTHY_CHAR(env) : 0;
+
     is_sampling           = 0;
     timer                 = xbt_os_timer_new();
     const char* prop      = self->get_property("use_real_memory");

@@ -28,8 +28,14 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_mpi_middlware, "Messages generated in MPI m
 
 using namespace std;
 
-int __s4bxi_use_smpi;
 MPI_Datatype* type_array;
+
+// "Constants"
+void* S4BXI_MPI_IN_PLACE()
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    return (main_actor->use_smpi_implem ? ((void*)-222) : ((void*)1));
+}
 
 #define SETUP_SYMBOLS_IN_IMPLEMS(symbol)                                                                               \
     main_actor->bull_mpi_ops->symbol = dlsym(bull_libhandle, "PMPI_" #symbol);                                         \
@@ -56,7 +62,7 @@ MPI_Datatype implem_datatype(MPI_Datatype original)
 #define MPI_TYPE_TRANSLATION(type)                                                                                     \
     if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type ||                                 \
         original == main_actor->smpi_mpi_ops->TYPE_##type)                                                             \
-        return (__s4bxi_use_smpi ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->TYPE_##type;
+        return (main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->TYPE_##type;
 
     MPI_TYPE_TRANSLATION(CHAR)
     MPI_TYPE_TRANSLATION(DATATYPE_NULL)
@@ -135,7 +141,7 @@ MPI_Op implem_op(MPI_Op original)
 #define MPI_OP_TRANSLATION(op)                                                                                         \
     if (original == MPI_##op || original == main_actor->bull_mpi_ops->OP_##op ||                                       \
         original == main_actor->smpi_mpi_ops->OP_##op)                                                                 \
-        return (__s4bxi_use_smpi ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->OP_##op;
+        return (main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->OP_##op;
 
     MPI_OP_TRANSLATION(MAX)
     MPI_OP_TRANSLATION(MIN)
@@ -163,7 +169,8 @@ MPI_Comm implem_comm(MPI_Comm original)
 
     if (original == MPI_COMM_WORLD || original == main_actor->bull_mpi_ops->COMM_WORLD ||
         original == main_actor->smpi_mpi_ops->COMM_WORLD)
-        return (__s4bxi_use_smpi ? smpi_process()->comm_world() : GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_WORLD);
+        return (main_actor->use_smpi_implem ? smpi_process()->comm_world()
+                                            : GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_WORLD);
 }
 
 #define S4BXI_MPI_BOTH_IMPLEM(rtype, name, args, argsval)                                                              \
@@ -181,7 +188,8 @@ MPI_Comm implem_comm(MPI_Comm original)
     int S4BXI_MPI_##name args                                                                                          \
     {                                                                                                                  \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
-        return ((name##_func)(__s4bxi_use_smpi ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;   \
+        return ((name##_func)(main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)       \
+                    ->name)argsval;                                                                                    \
     }
 
 // This one is kind of specific, it's only used for [I]alltoallw because of the datatype arrays
@@ -194,7 +202,8 @@ MPI_Comm implem_comm(MPI_Comm original)
         S4BXI_MPI_Comm_size(comm, &size);                                                                              \
         MPI_Datatype sendtypes_arr[size];                                                                              \
         MPI_Datatype recvtypes_arr[size];                                                                              \
-        return ((name##_func)(__s4bxi_use_smpi ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;   \
+        return ((name##_func)(main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)       \
+                    ->name)argsval;                                                                                    \
     }
 
 S4BXI_MPI_BOTH_IMPLEM(int, Init, (int* argc, char*** argv), (argc, argv));
@@ -774,9 +783,6 @@ S4BXI_MPI_W_COLLECTIVE(int, Alltoallw,
 
 void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
 {
-    char* env        = getenv("S4BXI_SMPI_IMPLEM");
-    __s4bxi_use_smpi = env ? TRUTHY_CHAR(env) : 0;
-
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
     main_actor->bull_mpi_ops = new struct s4bxi_mpi_ops;

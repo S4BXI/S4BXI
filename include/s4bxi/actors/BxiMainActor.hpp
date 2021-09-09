@@ -52,6 +52,8 @@ class BxiMainActor : public BxiActor {
     struct s4bxi_mpi_ops *bull_mpi_ops;
     struct s4bxi_mpi_ops *smpi_mpi_ops;
 
+    bool use_smpi_implem;
+
     /**
      * This is actually horrible I think, we shouldn't need this attribute,
      * there is no reason to have a default interface, this is going to
