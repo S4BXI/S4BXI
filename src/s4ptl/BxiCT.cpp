@@ -127,7 +127,7 @@ int BxiCT::poll(const ptl_handle_ct_t* ct_handles, const ptl_size_t* tests, unsi
     }
 
     unsigned int which_ct =
-        timeout == PTL_TIME_FOREVER ? s4u::Comm::wait_any(&comms) : s4u::Comm::wait_any_for(&comms, timeout / 1000.0F);
+        timeout == PTL_TIME_FOREVER ? s4u::Comm::wait_any(comms) : s4u::Comm::wait_any_for(comms, timeout / 1000.0F);
 
     for (const auto& comm : comms)
         comm->cancel();

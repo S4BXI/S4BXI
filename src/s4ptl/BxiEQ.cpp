@@ -102,8 +102,8 @@ int BxiEQ::poll(const ptl_handle_eq_t* eq_handles, unsigned int size, ptl_time_t
     // Get an event or a timeout
     unsigned int which_eq =
         timeout == PTL_TIME_FOREVER
-            ? s4u::Comm::wait_any(&comms)
-            : s4u::Comm::wait_any_for(&comms, timeout / 1000.0F); // Portals time is in ms and SimGrid in s
+            ? s4u::Comm::wait_any(comms)
+            : s4u::Comm::wait_any_for(comms, timeout / 1000.0F); // Portals time is in ms and SimGrid in s
 
     // Thanks millian for the idea of CommPtr->cancel()
     // (it seems safe to cancel all comms, even the one

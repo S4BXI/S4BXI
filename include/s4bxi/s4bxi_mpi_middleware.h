@@ -37,6 +37,10 @@ extern "C" {
 
 void* S4BXI_MPI_IN_PLACE();
 
+#ifdef MPI_IN_PLACE
+// The only reason for this undef is to avoid stupid compiler warnings
+#undef MPI_IN_PLACE
+#endif
 #define MPI_IN_PLACE (S4BXI_MPI_IN_PLACE())
 
 struct s4bxi_mpi_ops {
