@@ -117,7 +117,9 @@ static void s4bxi_init_privatization_dlopen(const string& e)
 
         for (auto const& libname : privatize_libs) {
             // load the library once to add it to the local libs, to get the absolute path
-            void* libhandle = dlopen(libname.c_str(), RTLD_LAZY);
+            void* libhandle;
+            if (!(libhandle = dlopen(libname.c_str(), RTLD_LAZY)))
+                XBT_CRITICAL("dlopen %s error: %s", libname.c_str(), dlerror());
             // get library name from path
             char fullpath[512] = {'\0'};
             strncpy(fullpath, libname.c_str(), 511);
@@ -224,11 +226,15 @@ void BxiUserAppActor::operator()()
     // </custom-things>
 
     // Load the copy and resolve the entry point:
-    void* handle    = dlopen(target_executable.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+    void* handle;
+    if (!(handle = dlopen(target_executable.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
+        XBT_CRITICAL("dlopen %s error: %s", target_executable.c_str(), dlerror());
     int saved_errno = errno;
 
     if (!bull_mpi_lib.empty()) {
-        void* bull_lib = dlopen(bull_mpi_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+        void* bull_lib;
+        if (!(bull_lib = dlopen(bull_mpi_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
+            XBT_CRITICAL("dlopen %s error: %s", bull_mpi_lib.c_str(), dlerror());
         XBT_INFO("Extracting symbols from Bull lib %p (%s) and SMPI lib %p", bull_lib, bull_mpi_lib.c_str(), smpi_lib);
         set_mpi_middleware_ops(bull_lib, smpi_lib);
         dlclose(bull_lib);
@@ -281,7 +287,8 @@ void BxiUserAppActor::operator()()
 
 int s4bxi_default_main(int argc, char* argv[])
 {
-    smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND);
+    if (!(smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
+        XBT_CRITICAL("dlopen %s error: %s", "libsimgrid.so", dlerror());
 
     s4bxi_actor_ext_plugin_init();
     simgrid::s4u::Engine e(&argc, argv);
@@ -324,7 +331,9 @@ int s4bxi_default_main(int argc, char* argv[])
     if ((0 == platf.compare(platf.length() - xml.length(), xml.length(), xml))) {
         e.load_platform(argv[1]);
     } else { // If it doesn't then it's a C++ platform
-        auto lib = dlopen(platf.c_str(), RTLD_LAZY);
+        void* lib;
+        if (!(lib = dlopen(platf.c_str(), RTLD_LAZY)))
+            XBT_CRITICAL("dlopen %s error: %s", platf.c_str(), dlerror());
         auto sym = (cpp_platform_callback)dlsym(lib, "make_platform");
         sym();
         if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
