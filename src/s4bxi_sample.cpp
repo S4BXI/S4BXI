@@ -67,7 +67,7 @@ void s4bxi_sample_1(int global, const char* file, int line, int iters, double th
     BxiMainActor* mainActor = GET_CURRENT_MAIN_ACTOR;
     SampleLocation loc(global, file, line);
     if (not mainActor->sampling()) { /* Only at first call when benchmarking, skip for next ones */
-        s4bxi_bench_end(mainActor);  /* Take time from previous, unrelated computation into account */
+        s4bxi_bench_end();  /* Take time from previous, unrelated computation into account */
         mainActor->set_sampling(1);
     }
 
@@ -117,7 +117,7 @@ int s4bxi_sample_2(int global, const char* file, int line, int iter_count)
         // we need to run a new bench
         XBT_DEBUG("benchmarking: count:%d iter:%d stderr:%f thres:%f; mean:%f; total:%f", data.count, data.iters,
                   data.relstderr, data.threshold, data.mean, data.sum);
-        s4bxi_bench_begin(mainActor);
+        s4bxi_bench_begin();
     } else {
         // Enough data, no more bench (either we got enough data from previous visits to this benched nest, or we just
         // ran one bench and need to bail out now that our job is done). Just sleep instead
@@ -129,8 +129,8 @@ int s4bxi_sample_2(int global, const char* file, int line, int iter_count)
 
             // we ended benchmarking, let's inject all the time, now, and fast forward out of the loop.
             mainActor->set_sampling(0);
-            s4bxi_execute(mainActor, data.mean * iter_count);
-            s4bxi_bench_begin(mainActor);
+            s4bxi_execute(data.mean * iter_count);
+            s4bxi_bench_begin();
             return 0;
         } else {
             XBT_DEBUG("Skipping - Benchmark already performed - accumulating time");
@@ -187,8 +187,8 @@ int s4bxi_sample_exit(int global, const char* file, int line, int iter_count)
         if (mainActor->sampling()) { // end of loop, but still sampling needed
             const LocalData& data = sample->second;
             mainActor->set_sampling(0);
-            s4bxi_execute(mainActor, data.mean * iter_count);
-            s4bxi_bench_begin(mainActor);
+            s4bxi_execute(data.mean * iter_count);
+            s4bxi_bench_begin();
         }
     }
     return 0;

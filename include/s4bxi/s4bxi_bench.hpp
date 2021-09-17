@@ -19,8 +19,8 @@
 
 #include "s4bxi/actors/BxiMainActor.hpp"
 
-void s4bxi_execute(BxiMainActor* main_actor, double duration);
-void s4bxi_bench_begin(BxiMainActor* main_actor);
-void s4bxi_bench_end(BxiMainActor* main_actor);
+void s4bxi_execute(double duration);
+void s4bxi_bench_begin();
+void s4bxi_bench_end();
 
 #endif // S4BXI_S4BXI_BENCH_HPP

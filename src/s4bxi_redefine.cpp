@@ -30,13 +30,13 @@ using namespace simgrid;
 int s4bxi_gettimeofday(struct timeval* tv)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     double simtime = s4u::Engine::get_clock();
     tv->tv_sec     = floor(simtime);
     tv->tv_usec    = round((simtime - tv->tv_sec) * 1e6);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }
@@ -44,11 +44,11 @@ int s4bxi_gettimeofday(struct timeval* tv)
 unsigned int s4bxi_sleep(unsigned int seconds)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     s4u::this_actor::sleep_for(seconds);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }
@@ -56,11 +56,11 @@ unsigned int s4bxi_sleep(unsigned int seconds)
 int s4bxi_usleep(useconds_t usec)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     s4u::this_actor::sleep_for(1e-6 * usec);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }
@@ -68,11 +68,11 @@ int s4bxi_usleep(useconds_t usec)
 int s4bxi_nanosleep(const struct timespec* req, struct timespec* rem)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     s4u::this_actor::sleep_for(req->tv_sec + 1e-9 * req->tv_nsec);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }
@@ -117,7 +117,7 @@ int s4bxi_sigaction(int signum, const struct sigaction* act, struct sigaction* o
 int s4bxi_setitimer(int __which, const struct itimerval* __new, struct itimerval* __old)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     int which;
 
@@ -133,7 +133,7 @@ int s4bxi_setitimer(int __which, const struct itimerval* __new, struct itimerval
         break;
 
     default:
-        s4bxi_bench_begin(main_actor);
+        s4bxi_bench_begin();
 
         return -1;
     }
@@ -145,7 +145,7 @@ int s4bxi_setitimer(int __which, const struct itimerval* __new, struct itimerval
 
     s4u::Actor::create("_setitimer_actor", s4u::Host::current(), &s4bxi_timer_actor, args);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }
@@ -156,7 +156,7 @@ int s4bxi_setitimer(int __which, const struct itimerval* __new, struct itimerval
 unsigned int s4bxi_alarm(unsigned int __seconds) __THROW
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     vector<string> args;
     args.push_back(to_string(__seconds));
@@ -165,7 +165,7 @@ unsigned int s4bxi_alarm(unsigned int __seconds) __THROW
 
     s4u::Actor::create("_alarm_actor", s4u::Host::current(), &s4bxi_timer_actor, args);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }
@@ -181,13 +181,13 @@ int s4bxi_gethostname(char* __name, size_t __len)
 int s4bxi_clock_gettime(clockid_t __clock_id, struct timespec* __tp) __THROW
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     double simtime = s4u::Engine::get_clock();
     __tp->tv_sec   = floor(simtime);
     __tp->tv_nsec  = round((simtime - __tp->tv_sec) * 1e9);
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return 0;
 }

@@ -18,17 +18,17 @@
 #include <smpi/smpi.h>
 #include <private.hpp>
 
-void s4bxi_execute(BxiMainActor* main_actor, double duration)
+void s4bxi_execute(double duration)
 {
     smpi_execute(duration);
 }
 
-void s4bxi_bench_begin(BxiMainActor* main_actor)
+void s4bxi_bench_begin()
 {
     smpi_bench_begin();
 }
 
-void s4bxi_bench_end(BxiMainActor* main_actor)
+void s4bxi_bench_end()
 {
     smpi_bench_end();
 }

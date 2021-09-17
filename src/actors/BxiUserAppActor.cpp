@@ -271,11 +271,11 @@ void BxiUserAppActor::operator()()
     if (prop)
         s4u::this_actor::sleep_for(atof(prop));
 
-    s4bxi_bench_begin(this);
+    s4bxi_bench_begin();
 
     entry_point(argc, argv);
 
-    s4bxi_bench_end(this);
+    s4bxi_bench_end();
 
     for (char* s : args2str)
         xbt_free(s);

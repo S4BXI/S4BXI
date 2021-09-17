@@ -28,23 +28,21 @@ void s4bxi_compute(double flops)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     auto nid = main_actor->getNid();
     S4BXI_STARTLOG(S4BXILOG_COMPUTE, nid, nid)
     s4u::this_actor::execute(flops);
     S4BXI_WRITELOG()
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 }
 
 void s4bxi_compute_s(double seconds)
 {
-    auto main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    s4bxi_bench_end(main_actor);
-    s4bxi_execute(main_actor, seconds);
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_end();
+    s4bxi_execute(seconds);
+    s4bxi_bench_begin();
 }
 
 int s4bxi_fprintf(FILE* stream, const char* fmt, ...)
@@ -123,11 +121,11 @@ double s4bxi_simtime()
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
 
     double res = s4u::Engine::get_clock();
 
-    s4bxi_bench_begin(main_actor);
+    s4bxi_bench_begin();
 
     return res;
 }
@@ -145,7 +143,7 @@ void s4bxi_set_polling(unsigned int p)
 void s4bxi_exit()
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end(main_actor);
+    s4bxi_bench_end();
     s4u::this_actor::exit();
 }
 
