@@ -48,6 +48,13 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(user_app, "Messages relative to user app actor");
 
 typedef int (*s4bxi_entry_point_type)(int argc, char** argv);
 typedef void (*cpp_platform_callback)();
+typedef void (*cpp_config_callback)(const simgrid::s4u::Engine&);
+
+#define S4BXI_ABORT(...)                                                                                               \
+    do {                                                                                                               \
+        XBT_CRITICAL(__VA_ARGS__);                                                                                     \
+        xbt_abort();                                                                                                   \
+    } while (0)
 
 vector<string> privatize_libs_paths;
 off_t fdin_size;
@@ -119,7 +126,7 @@ static void s4bxi_init_privatization_dlopen(const string& e)
             // load the library once to add it to the local libs, to get the absolute path
             void* libhandle;
             if (!(libhandle = dlopen(libname.c_str(), RTLD_LAZY)))
-                XBT_CRITICAL("dlopen %s error: %s", libname.c_str(), dlerror());
+                S4BXI_ABORT("dlopen %s error: %s", libname.c_str(), dlerror());
             // get library name from path
             char fullpath[512] = {'\0'};
             strncpy(fullpath, libname.c_str(), 511);
@@ -228,13 +235,13 @@ void BxiUserAppActor::operator()()
     // Load the copy and resolve the entry point:
     void* handle;
     if (!(handle = dlopen(target_executable.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
-        XBT_CRITICAL("dlopen %s error: %s", target_executable.c_str(), dlerror());
+        S4BXI_ABORT("dlopen %s error: %s", target_executable.c_str(), dlerror());
     int saved_errno = errno;
 
     if (!bull_mpi_lib.empty()) {
         void* bull_lib;
         if (!(bull_lib = dlopen(bull_mpi_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
-            XBT_CRITICAL("dlopen %s error: %s", bull_mpi_lib.c_str(), dlerror());
+            S4BXI_ABORT("dlopen %s error: %s", bull_mpi_lib.c_str(), dlerror());
         XBT_INFO("Extracting symbols from Bull lib %p (%s) and SMPI lib %p", bull_lib, bull_mpi_lib.c_str(), smpi_lib);
         set_mpi_middleware_ops(bull_lib, smpi_lib);
         dlclose(bull_lib);
@@ -288,11 +295,25 @@ void BxiUserAppActor::operator()()
 int s4bxi_default_main(int argc, char* argv[])
 {
     if (!(smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
-        XBT_CRITICAL("dlopen %s error: %s", "libsimgrid.so", dlerror());
+        S4BXI_ABORT("dlopen %s error: %s", "libsimgrid.so", dlerror());
 
     s4bxi_actor_ext_plugin_init();
     simgrid::s4u::Engine e(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
+
+    string platf  = argv[1];
+    string deploy = argv[2];
+    executable    = argv[3];
+    user_app_name = argv[4];
+
+    /* Load the platform description and then deploy the application */
+    string xml      = ".xml";
+    void* platf_lib = nullptr;
+    // Check if file ends with ".xml", if it doesn't it's a dll that we dlopen
+    if (platf.compare(platf.length() - xml.length(), xml.length(), xml)) {
+        if (!(platf_lib = dlopen(platf.c_str(), RTLD_LAZY)))
+            S4BXI_ABORT("dlopen %s error: %s", platf.c_str(), dlerror());
+    }
 
     e.set_config("surf/precision:1e-9");
     e.set_config("network/loopback-lat:0");
@@ -306,11 +327,17 @@ int s4bxi_default_main(int argc, char* argv[])
     for (int i = 0; i < simulation_rand_id.length(); i++)
         simulation_rand_id[i] = random_characters[rand() % 36];
 
-    executable    = string(argv[3]);
-    user_app_name = string(argv[4]);
     s4bxi_init_privatization_dlopen(executable);
 
     smpi_init_options();
+
+    if (platf_lib) {
+        cpp_config_callback sym;
+        if (!(sym = (cpp_config_callback)dlsym(platf_lib, "configure_engine")))
+            XBT_WARN("No engine configuration found in platform (%s)", dlerror());
+        else
+            sym(e);
+    }
 
     e.set_config("smpi/coll-selector:ompi");
 
@@ -325,23 +352,19 @@ int s4bxi_default_main(int argc, char* argv[])
     e.register_actor<BxiUserAppActor>("user_app");
 
     /* Load the platform description and then deploy the application */
-    string platf = argv[1];
-    string xml   = ".xml";
-    // Check if file ends with ".xml"
-    if ((0 == platf.compare(platf.length() - xml.length(), xml.length(), xml))) {
-        e.load_platform(argv[1]);
-    } else { // If it doesn't then it's a C++ platform
-        void* lib;
-        if (!(lib = dlopen(platf.c_str(), RTLD_LAZY)))
-            XBT_CRITICAL("dlopen %s error: %s", platf.c_str(), dlerror());
-        auto sym = (cpp_platform_callback)dlsym(lib, "make_platform");
+    if (platf_lib) { // If we have a dll fetch the symbol, otherwise load the XML
+        cpp_platform_callback sym;
+        if (!(sym = (cpp_platform_callback)dlsym(platf_lib, "make_platform")))
+            S4BXI_ABORT("dlsym %s error: %s", "make_platform", dlerror());
         sym();
         if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
-            dlclose(lib);
+            dlclose(platf_lib);
+    } else {
+        e.load_platform(platf);
     }
 
     e.set_default_comm_data_copy_callback(smpi_comm_copy_buffer_callback);
-    e.load_deployment(argv[2]);
+    e.load_deployment(deploy);
 
     int rank_counts = 0;
     for (auto actor : e.get_all_actors()) {
