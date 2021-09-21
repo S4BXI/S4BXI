@@ -14,7 +14,7 @@
  * Lesser General Public License for more details.
  */
 
-#ifndef S4BXI_MPI_MIDDLEWARE_H
+#if !defined(S4BXI_MPI_MIDDLEWARE_H) && defined(BUILD_MPI_MIDDLEWARE)
 #define S4BXI_MPI_MIDDLEWARE_H
 
 // Inside Bull's OMPI there are already all the type definition we need, steal them in other cases only

@@ -28,11 +28,13 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/plugins/BxiActorExt.hpp"
-#include <smpi/smpi.h>
 
+#ifdef BUILD_MPI_MIDDLEWARE
+#include <smpi/smpi.h>
 #include "smpi_coll.hpp"
 #include "src/kernel/activity/CommImpl.hpp"
 #include "s4bxi/s4bxi_mpi_middleware.h"
+#endif
 
 static const std::string smpi_default_instance_name("smpirun");
 
@@ -238,6 +240,7 @@ void BxiUserAppActor::operator()()
         S4BXI_ABORT("dlopen %s error: %s", target_executable.c_str(), dlerror());
     int saved_errno = errno;
 
+#ifdef BUILD_MPI_MIDDLEWARE
     if (!bull_mpi_lib.empty()) {
         void* bull_lib;
         if (!(bull_lib = dlopen(bull_mpi_lib.c_str(), RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
@@ -246,6 +249,7 @@ void BxiUserAppActor::operator()()
         set_mpi_middleware_ops(bull_lib, smpi_lib);
         dlclose(bull_lib);
     }
+#endif
 
     if (S4BXI_GLOBAL_CONFIG(keep_temps) == false) {
         unlink(target_executable.c_str());
@@ -294,8 +298,10 @@ void BxiUserAppActor::operator()()
 
 int s4bxi_default_main(int argc, char* argv[])
 {
+#ifdef BUILD_MPI_MIDDLEWARE
     if (!(smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
         S4BXI_ABORT("dlopen %s error: %s", "libsimgrid.so", dlerror());
+#endif
 
     s4bxi_actor_ext_plugin_init();
     simgrid::s4u::Engine e(&argc, argv);
@@ -329,7 +335,9 @@ int s4bxi_default_main(int argc, char* argv[])
 
     s4bxi_init_privatization_dlopen(executable);
 
+#ifdef BUILD_MPI_MIDDLEWARE
     smpi_init_options();
+#endif
 
     if (platf_lib) {
         cpp_config_callback sym;
@@ -339,11 +347,13 @@ int s4bxi_default_main(int argc, char* argv[])
             sym(e);
     }
 
+#ifdef BUILD_MPI_MIDDLEWARE
     e.set_config("smpi/coll-selector:ompi");
 
     simgrid::smpi::colls::set_collectives();
     simgrid::smpi::colls::smpi_coll_cleanup_callback = nullptr;
     SMPI_init();
+#endif
 
     /* Register the classes representing the actors */
     e.register_actor<BxiNicInitiator>("nic_initiator");
@@ -363,7 +373,9 @@ int s4bxi_default_main(int argc, char* argv[])
         e.load_platform(platf);
     }
 
+#ifdef BUILD_MPI_MIDDLEWARE
     e.set_default_comm_data_copy_callback(smpi_comm_copy_buffer_callback);
+#endif
     e.load_deployment(deploy);
 
     int rank_counts = 0;
@@ -375,17 +387,21 @@ int s4bxi_default_main(int argc, char* argv[])
         }
     }
 
+#ifdef BUILD_MPI_MIDDLEWARE
     SMPI_app_instance_register(smpi_default_instance_name.c_str(), nullptr, rank_counts);
+#endif
 
     /* Run the simulation */
     e.run();
 
+
+#ifdef BUILD_MPI_MIDDLEWARE
     SMPI_finalize();
+    dlclose(smpi_lib);
+#endif
 
     BxiEngine::get_instance()->end_simulation();
     delete BxiEngine::get_instance();
-
-    dlclose(smpi_lib);
 
     return 0;
 }

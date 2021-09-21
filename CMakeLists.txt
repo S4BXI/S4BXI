@@ -38,6 +38,14 @@ else ()
     add_definitions(-DCOMPILING_SIMULATOR)
 endif()
 
+if(BUILD_MPI_MIDDLEWARE)
+    if (NOT CMAKE_VERSION VERSION_LESS 3.11)
+        add_compile_definitions(BUILD_MPI_MIDDLEWARE)
+    else ()
+        add_definitions(-DBUILD_MPI_MIDDLEWARE)
+    endif()
+endif()
+
 include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -65,30 +73,33 @@ set(SOURCE_FILES
         src/s4bxi_c_util.cpp
         src/portals4.cpp
         src/s4bxi_util.cpp
-        src/s4bxi_mpi_middleware.cpp
         src/s4bxi_redefine.cpp
         src/s4bxi_mailbox_pool.cpp
-        src/s4bxi_shared.cpp
         src/s4bxi_bench.cpp
         src/s4bxi_sample.cpp
         src/plugins/BxiActorExt.cpp)
 
+if(BUILD_MPI_MIDDLEWARE)
+    list(APPEND SOURCE_FILES 
+            src/s4bxi_mpi_middleware.cpp 
+            src/s4bxi_shared.cpp)
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(SimGrid 3.26 REQUIRED)
 
-# Include directly from SimGrid's code
-
-if(NOT SimGrid_SOURCE)
-    set(SimGrid_SOURCE /home/julien/These/simgrid)
-endif()
 include_directories(${SimGrid_INCLUDE_DIR})
-include_directories(${SimGrid_SOURCE})
-include_directories(${SimGrid_SOURCE}/include)
-include_directories(${SimGrid_SOURCE}/src/include)
-include_directories(${SimGrid_SOURCE}/src/smpi/include)
-configure_file("${SimGrid_SOURCE}/src/internal_config.h.in"    "${SimGrid_SOURCE}/src/internal_config.h.generated"    @ONLY IMMEDIATE)
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SimGrid_SOURCE}/src/internal_config.h.generated ${SimGrid_SOURCE}/src/internal_config.h)
-file(REMOVE ${SimGrid_SOURCE}/src/internal_config.h.generated)
+
+# Include directly from SimGrid's code
+if(BUILD_MPI_MIDDLEWARE)
+    include_directories(${SimGrid_SOURCE})
+    include_directories(${SimGrid_SOURCE}/include)
+    include_directories(${SimGrid_SOURCE}/src/include)
+    include_directories(${SimGrid_SOURCE}/src/smpi/include)
+    configure_file("${SimGrid_SOURCE}/src/internal_config.h.in"    "${SimGrid_SOURCE}/src/internal_config.h.generated"    @ONLY IMMEDIATE)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SimGrid_SOURCE}/src/internal_config.h.generated ${SimGrid_SOURCE}/src/internal_config.h)
+    file(REMOVE ${SimGrid_SOURCE}/src/internal_config.h.generated)
+endif()
 
 add_library(${LIBNAME} SHARED ${SOURCE_FILES})
 target_link_libraries(${LIBNAME} ${SimGrid_LIBRARY} ${DL_LIBRARY})

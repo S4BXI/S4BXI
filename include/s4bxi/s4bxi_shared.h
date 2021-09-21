@@ -17,11 +17,14 @@
 #ifndef S4BXI_S4BXI_SHARED_H
 #define S4BXI_S4BXI_SHARED_H
 
+#ifdef BUILD_MPI_MIDDLEWARE
+
 #include <unistd.h>
 
 #ifdef __cplusplus
 
 #ifdef COMPILING_SIMULATOR
+// This file is from SMPI
 #include "private.hpp"
 #endif
 
@@ -64,6 +67,15 @@ void* s4bxi_shared_set_call(const char* func, const char* input, void* data);
 
 #ifdef __cplusplus
 }
+#endif
+
+#else 
+
+#define S4BXI_SHARED_MALLOC(size) malloc(size)
+#define S4BXI_PARTIAL_SHARED_MALLOC(size, shared_block_offsets, nb_shared_blocks) malloc(size)
+#define S4BXI_SHARED_FREE(data) free(data)
+#define S4BXI_SHARED_CALL(func, input, ...) ((func)(__VA_ARGS__))
+
 #endif
 
 #endif // S4BXI_S4BXI_SHARED_H

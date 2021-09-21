@@ -12,7 +12,11 @@ cd build || exit 1
 rm CMakeCache.txt
 
 # Compile and install
-cmake -DSimGrid_SOURCE=~/These/simgrid -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_INSTALL_PREFIX=$install_prefix -DSimGrid_PATH="${S4BXI_INSTALL_ROOT}/simgrid" .. && \
+cmake -DBUILD_MPI_MIDDLEWARE=$BUILD_MPI_MIDDLEWARE \
+      -DCMAKE_BUILD_TYPE=$build_type \
+      -DCMAKE_INSTALL_PREFIX=$install_prefix \
+      -DSimGrid_SOURCE="$SIMGRID_SOURCE" \
+      -DSimGrid_PATH="${S4BXI_INSTALL_ROOT}/simgrid" .. && \
 make -j $CORES && \
 make install
 OUTPUT=$?
