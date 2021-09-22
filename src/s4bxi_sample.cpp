@@ -67,7 +67,7 @@ void s4bxi_sample_1(int global, const char* file, int line, int iters, double th
     BxiMainActor* mainActor = GET_CURRENT_MAIN_ACTOR;
     SampleLocation loc(global, file, line);
     if (not mainActor->sampling()) { /* Only at first call when benchmarking, skip for next ones */
-        s4bxi_bench_end();  /* Take time from previous, unrelated computation into account */
+        s4bxi_bench_end();           /* Take time from previous, unrelated computation into account */
         mainActor->set_sampling(1);
     }
 

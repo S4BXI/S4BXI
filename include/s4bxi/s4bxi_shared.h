@@ -69,12 +69,12 @@ void* s4bxi_shared_set_call(const char* func, const char* input, void* data);
 }
 #endif
 
-#else 
+#else
 
-#define S4BXI_SHARED_MALLOC(size) malloc(size)
+#define S4BXI_SHARED_MALLOC(size)                                                 malloc(size)
 #define S4BXI_PARTIAL_SHARED_MALLOC(size, shared_block_offsets, nb_shared_blocks) malloc(size)
-#define S4BXI_SHARED_FREE(data) free(data)
-#define S4BXI_SHARED_CALL(func, input, ...) ((func)(__VA_ARGS__))
+#define S4BXI_SHARED_FREE(data)                                                   free(data)
+#define S4BXI_SHARED_CALL(func, input, ...)                                       ((func)(__VA_ARGS__))
 
 #endif
 

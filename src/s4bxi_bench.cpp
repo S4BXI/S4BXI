@@ -28,7 +28,7 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bench, "Logging specific to benchmarking");
 void s4bxi_execute(double duration)
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    auto nid = main_actor->getNid();
+    auto nid                 = main_actor->getNid();
     S4BXI_STARTLOG(S4BXILOG_COMPUTE, nid, nid)
     smpi_execute(duration);
     S4BXI_WRITELOG()

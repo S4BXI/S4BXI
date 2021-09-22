@@ -394,7 +394,6 @@ int s4bxi_default_main(int argc, char* argv[])
     /* Run the simulation */
     e.run();
 
-
 #ifdef BUILD_MPI_MIDDLEWARE
     SMPI_finalize();
     dlclose(smpi_lib);

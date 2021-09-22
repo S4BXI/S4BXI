@@ -1052,11 +1052,11 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 #define MPI_Probe            S4BXI_MPI_Probe
 // #define MPI_Request_f2c      S4BXI_MPI_Request_f2c
 // #define MPI_Request_c2f      S4BXI_MPI_Request_c2f
-#define MPI_Cancel           S4BXI_MPI_Cancel
-#define MPI_Bcast            S4BXI_MPI_Bcast
-#define MPI_Barrier          S4BXI_MPI_Barrier
-#define MPI_Ibarrier         S4BXI_MPI_Ibarrier
-#define MPI_Ibcast           S4BXI_MPI_Ibcast
+#define MPI_Cancel   S4BXI_MPI_Cancel
+#define MPI_Bcast    S4BXI_MPI_Bcast
+#define MPI_Barrier  S4BXI_MPI_Barrier
+#define MPI_Ibarrier S4BXI_MPI_Ibarrier
+#define MPI_Ibcast   S4BXI_MPI_Ibcast
 // #define MPI_Igather                    S4BXI_MPI_Igather
 // #define MPI_Igatherv                   S4BXI_MPI_Igatherv
 // #define MPI_Iallgather                 S4BXI_MPI_Iallgather

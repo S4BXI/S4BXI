@@ -48,7 +48,7 @@ s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_lo
     s4u::CommPtr comm = s4u::Comm::sendto_init(source, dest);
     comm->set_remaining(size);
 
-    // This is broken because SimGrid's signals don't do what I was expecting. Disable it completely until I make a 
+    // This is broken because SimGrid's signals don't do what I was expecting. Disable it completely until I make a
     // proper plugin for logging this type of things
     // if (__bxi_log_level) {
     //     comm->on_completion.connect([__bxi_log_level, __bxi_log, comm](s4u::Comm const&) mutable { fprintf(stderr,
