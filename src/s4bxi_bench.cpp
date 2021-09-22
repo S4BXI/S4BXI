@@ -23,7 +23,6 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bench, "Logging specific to benchmarking");
 // If we have SMPI functions available, use them
 #ifdef BUILD_MPI_MIDDLEWARE
 #include <smpi/smpi.h>
-#include <private.hpp>
 
 void s4bxi_execute(double duration)
 {

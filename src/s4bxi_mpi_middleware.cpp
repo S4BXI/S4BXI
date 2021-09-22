@@ -21,7 +21,6 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/actors/BxiMainActor.hpp"
 #include "s4bxi/s4bxi_util.hpp"
-#include <private.hpp>
 #include <smpi_actor.hpp>
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_mpi_middlware, "Messages generated in MPI middleware");
