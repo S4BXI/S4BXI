@@ -14,8 +14,10 @@
  * Lesser General Public License for more details.
  */
 
-#if !defined(S4BXI_MPI_MIDDLEWARE_H) && defined(BUILD_MPI_MIDDLEWARE)
+#ifndef S4BXI_MPI_MIDDLEWARE_H
 #define S4BXI_MPI_MIDDLEWARE_H
+
+#ifdef BUILD_MPI_MIDDLEWARE
 
 // Inside Bull's OMPI there are already all the type definition we need, steal them in other cases only
 #ifndef OMPI_MPI_H
@@ -344,6 +346,7 @@ struct s4bxi_mpi_ops {
 
     // Special communicators
     MPI_Comm COMM_WORLD;
+    MPI_Comm COMM_SELF;
 
     // Datatypes
     MPI_Datatype TYPE_DATATYPE_NULL;
@@ -907,8 +910,6 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 }
 #endif
 
-#endif // S4BXI_MPI_MIDDLEWARE_H
-
 #ifndef COMPILING_SIMULATOR
 
 #define MPI_Init     S4BXI_MPI_Init
@@ -1210,3 +1211,11 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_File_get_errhandler        S4BXI_MPI_File_get_errhandler
 
 #endif
+
+#else // BUILD_MPI_MIDDLEWARE
+
+struct s4bxi_mpi_ops {}; // Needs to be defined for MainActors to compile
+
+#endif
+
+#endif // S4BXI_MPI_MIDDLEWARE_H

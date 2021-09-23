@@ -32,7 +32,6 @@
 #ifdef BUILD_MPI_MIDDLEWARE
 #include <smpi/smpi.h>
 #include "smpi_coll.hpp"
-#include "src/kernel/activity/CommImpl.hpp"
 #include "s4bxi/s4bxi_mpi_middleware.h"
 #endif
 

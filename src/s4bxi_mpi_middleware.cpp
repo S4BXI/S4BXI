@@ -42,6 +42,11 @@ void* S4BXI_MPI_IN_PLACE()
     main_actor->smpi_mpi_ops->symbol = dlsym(smpi_libhandle, "PMPI_" #symbol);                                         \
     assert(main_actor->smpi_mpi_ops->symbol != nullptr);
 
+#define SETUP_COMMS_IN_IMPLEMS(lowercase, uppercase)                                                                   \
+    main_actor->bull_mpi_ops->COMM_##uppercase = (MPI_Comm)dlsym(bull_libhandle, "ompi_mpi_comm_" #lowercase);         \
+    assert(main_actor->bull_mpi_ops->COMM_##uppercase != nullptr);                                                     \
+    main_actor->smpi_mpi_ops->COMM_##uppercase = nullptr;
+
 #define SETUP_DATATYPES_IN_IMPLEMS(lowercase, uppercase)                                                               \
     main_actor->bull_mpi_ops->TYPE_##uppercase = (MPI_Datatype)dlsym(bull_libhandle, "ompi_mpi_" #lowercase);          \
     assert(main_actor->bull_mpi_ops->TYPE_##uppercase != nullptr);                                                     \
@@ -166,10 +171,18 @@ MPI_Comm implem_comm(MPI_Comm original)
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    if (original == MPI_COMM_WORLD || original == main_actor->bull_mpi_ops->COMM_WORLD ||
-        original == main_actor->smpi_mpi_ops->COMM_WORLD)
-        return (main_actor->use_smpi_implem ? smpi_process()->comm_world()
-                                            : GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_WORLD);
+// Inside this cpp file, we are in simulator territory (not in the user app), so the symbols like MPI_COMM_WORLD are
+// only linked with SimGrid, and therefore they refer to the SMPI variant
+#define MPI_COMM_TRANSLATION(comm)                                                                                     \
+    if (original == MPI_COMM_##comm || original == main_actor->bull_mpi_ops->COMM_##comm)                              \
+        return (main_actor->use_smpi_implem ? MPI_COMM_##comm : GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_##comm);
+
+    MPI_COMM_TRANSLATION(WORLD);
+    MPI_COMM_TRANSLATION(SELF);
+
+    // For now communicators are not properly usable across implementations, so returning the original
+    // gives us a solid 50% chance that it will be the correct implementation
+    return original;
 }
 
 #define S4BXI_MPI_BOTH_IMPLEM(rtype, name, args, argsval)                                                              \
@@ -1086,10 +1099,9 @@ void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
     SETUP_SYMBOLS_IN_IMPLEMS(File_get_errhandler)
 
     // Communicators
-    main_actor->bull_mpi_ops->COMM_WORLD = (MPI_Comm)dlsym(bull_libhandle, "ompi_mpi_comm_world");
-    main_actor->smpi_mpi_ops->COMM_WORLD = nullptr;
-    XBT_INFO("Setting up COMM_WORLD (address %p, %p)", main_actor->bull_mpi_ops->COMM_WORLD,
-             main_actor->smpi_mpi_ops->COMM_WORLD);
+
+    SETUP_COMMS_IN_IMPLEMS(world, WORLD)
+    SETUP_COMMS_IN_IMPLEMS(self, SELF)
 
     // Datatypes
     SETUP_DATATYPES_IN_IMPLEMS(char, CHAR)
