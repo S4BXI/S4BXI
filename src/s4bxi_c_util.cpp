@@ -119,12 +119,8 @@ void s4bxi_set_ptl_process_for_rank(ptl_handle_ni_t ni)
 
 double s4bxi_simtime()
 {
-    auto main_actor = GET_CURRENT_MAIN_ACTOR;
-
     s4bxi_bench_end();
-
     double res = s4u::Engine::get_clock();
-
     s4bxi_bench_begin();
 
     return res;

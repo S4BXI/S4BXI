@@ -27,7 +27,7 @@
 #include "../s4ptl.hpp"
 #include "../BxiQueue.hpp"
 #include "BxiActor.hpp"
-#include "../s4bxi_mpi_middleware.h"
+#include "../s4bxi_mpi_ops.h"
 
 struct cmp_str {
     bool operator()(char const* a, char const* b) const { return std::strcmp(a, b) < 0; }
