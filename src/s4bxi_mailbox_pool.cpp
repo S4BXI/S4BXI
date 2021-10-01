@@ -15,6 +15,7 @@
  */
 
 #include "s4bxi/s4bxi_mailbox_pool.hpp"
+#include "s4bxi/s4bxi_util.hpp"
 #include <stack>
 
 static stack<s4u::Mailbox*> pool;
@@ -27,7 +28,7 @@ s4u::Mailbox* get_random_mailbox()
         return m;
     }
 
-    return s4u::Mailbox::by_name("rand_mb_" + to_string(rand()));
+    return s4u::Mailbox::by_name("rand_mb_" + to_string(random_int()));
 }
 
 void free_random_mailbox(s4u::Mailbox* m)

@@ -17,10 +17,12 @@
 #ifndef S4BXI_S4BXI_UTIL_HPP
 #define S4BXI_S4BXI_UTIL_HPP
 
+#include <xbt.h>
+#include <climits>
+
 #include "BxiEngine.hpp"
 #include "BxiLog.hpp"
 #include "s4bxi/plugins/BxiActorExt.hpp"
-#include <xbt.h>
 
 #define GET_CURRENT_MAIN_ACTOR get_cached_current_main_actor()
 
@@ -72,5 +74,7 @@
     } while (0)
 
 int ptl_atsize(enum ptl_datatype atype);
+
+int random_int(int start = 0, int end = INT_MAX);
 
 #endif // S4BXI_S4BXI_UTIL_HPP

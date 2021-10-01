@@ -15,6 +15,7 @@
  */
 
 #include "s4bxi/actors/BxiUserAppActor.hpp"
+#include "s4bxi/s4bxi_util.hpp"
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -328,9 +329,8 @@ int s4bxi_default_main(int argc, char* argv[])
     char random_characters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B',
                                 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
                                 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-    srand(getpid());
     for (int i = 0; i < simulation_rand_id.length(); i++)
-        simulation_rand_id[i] = random_characters[rand() % 36];
+        simulation_rand_id[i] = random_characters[random_int(0, 35)];
 
     s4bxi_init_privatization_dlopen(executable);
 

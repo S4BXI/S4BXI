@@ -14,11 +14,15 @@
  * Lesser General Public License for more details.
  */
 
+#include <random>
+
 #include "s4bxi/s4bxi_util.hpp"
 #include "portals4.h"
 #include "s4bxi/s4bxi_xbt_log.h"
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_util, "Messages generated in util functions");
+
+using namespace std;
 
 /*
  * Return the size in bytes of the given atomic type.
@@ -56,4 +60,13 @@ int ptl_atsize(enum ptl_datatype atype)
         ptl_panic("ptl_atsize: unknown type\n");
         return 0; /* Suppress compilation warning */
     }
+}
+
+int random_int(int start, int end)
+{
+    static random_device dev;
+    static mt19937 rng(dev());
+    uniform_int_distribution<mt19937::result_type> dist(start, end); // Distribution in range [start, end]
+
+    return dist(rng);
 }
