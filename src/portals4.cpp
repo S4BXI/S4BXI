@@ -67,19 +67,16 @@ void PtlFini(void)
 int PtlSetMemOps(struct ptl_mem_ops* ops)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlActivateHookAdd(void (*cb)(void*, unsigned int, int), void* arg, struct ptl_activate_hook** rh)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlActivateHookRemove(struct ptl_activate_hook* h)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlNIInit(ptl_interface_t nic, unsigned int vni, ptl_pid_t pid, const struct ptl_ni_limits* desired,
@@ -96,7 +93,6 @@ int PtlNIFini(ptl_handle_ni_t nih)
 int PtlNIHandle(ptl_handle_any_t hdl, ptl_handle_ni_t* ret)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlHandleIsEqual(ptl_handle_any_t handle1, ptl_handle_any_t handle2)
@@ -107,7 +103,6 @@ int PtlHandleIsEqual(ptl_handle_any_t handle1, ptl_handle_any_t handle2)
 int PtlNIStatus(ptl_handle_ni_t nih, ptl_sr_index_t sr, ptl_sr_value_t* rval)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlSetMap(ptl_handle_ni_t nih, ptl_size_t size, const union ptl_process* map)
@@ -168,7 +163,6 @@ int PtlGetPhysId(ptl_handle_ni_t nih, union ptl_process* pid)
 int PtlGetHwid(ptl_handle_ni_t nih, uint64_t* hwid, uint64_t* capabilities)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlMDBind(ptl_handle_ni_t nih, const struct ptl_md* mdpar, ptl_handle_md_t* ret)
@@ -179,7 +173,6 @@ int PtlMDBind(ptl_handle_ni_t nih, const struct ptl_md* mdpar, ptl_handle_md_t* 
 int PtlMDBindNB(ptl_handle_ni_t nih, const struct ptl_md* mdpar, ptl_handle_md_t* ret)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlMDRelease(ptl_handle_md_t mdh)
@@ -197,7 +190,6 @@ int PtlMEAppendNB(ptl_handle_ni_t nih, ptl_pt_index_t pte, const struct ptl_me* 
                   ptl_handle_me_t* mehret)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlMEUnlink(ptl_handle_me_t meh)
@@ -208,13 +200,11 @@ int PtlMEUnlink(ptl_handle_me_t meh)
 int PtlMESearch(ptl_handle_ni_t nih, ptl_pt_index_t pte, const ptl_me_t* me, ptl_search_op_t op, void* arg)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlMESearchNB(ptl_handle_ni_t nih, ptl_pt_index_t pte, const ptl_me_t* me, ptl_search_op_t op, void* arg)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlLEAppend(ptl_handle_ni_t nih, ptl_pt_index_t pte, const struct ptl_me* me, int list, void* arg,
@@ -227,7 +217,6 @@ int PtlLEAppendNB(ptl_handle_ni_t nih, ptl_pt_index_t pte, const struct ptl_me* 
                   ptl_handle_me_t* mehret)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlLEUnlink(ptl_handle_me_t meh)
@@ -238,20 +227,17 @@ int PtlLEUnlink(ptl_handle_me_t meh)
 int PtlLESearch(ptl_handle_ni_t nih, ptl_pt_index_t pte, const ptl_me_t* me, ptl_search_op_t op, void* arg)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlLESearchNB(ptl_handle_ni_t nih, ptl_pt_index_t pte, const ptl_me_t* me, ptl_search_op_t op, void* arg)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlEQAllocAsync(ptl_handle_ni_t nih, ptl_size_t size, ptl_handle_eq_t* reteqh, void (*cb)(void*, ptl_handle_eq_t),
                     void* arg, int hint)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlEQAlloc(ptl_handle_ni_t nih, ptl_size_t count, ptl_handle_eq_t* reteqh)
@@ -321,7 +307,6 @@ int PtlCTInc(ptl_handle_ct_t cth, struct ptl_ct_event arg)
 int PtlCTCancelTriggered(ptl_handle_ct_t cth)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlPut(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, int ack, union ptl_process rank, ptl_pt_index_t pte,
@@ -399,7 +384,6 @@ int PtlTriggeredPut(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, int a
                     ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredPutNB(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, int ack, union ptl_process rank,
@@ -407,21 +391,18 @@ int PtlTriggeredPutNB(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, int
                       ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredGet(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, union ptl_process rank, ptl_pt_index_t pte,
                     ptl_match_bits_t bits, ptl_size_t roffs, void* arg, ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredGetNB(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, union ptl_process rank, ptl_pt_index_t pte,
                       ptl_match_bits_t bits, ptl_size_t roffs, void* arg, ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredAtomic(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, ptl_ack_req_t ack, ptl_process_t rank,
@@ -429,7 +410,6 @@ int PtlTriggeredAtomic(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, pt
                        ptl_op_t aop, ptl_datatype_t atype, ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredAtomicNB(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, ptl_ack_req_t ack, ptl_process_t rank,
@@ -437,7 +417,6 @@ int PtlTriggeredAtomicNB(ptl_handle_md_t mdh, ptl_size_t loffs, ptl_size_t len, 
                          ptl_op_t aop, ptl_datatype_t atype, ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh,
@@ -446,7 +425,6 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_h
                             ptl_datatype_t atype, ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredFetchAtomicNB(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh,
@@ -455,7 +433,6 @@ int PtlTriggeredFetchAtomicNB(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl
                               ptl_datatype_t atype, ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh, ptl_size_t put_loffs,
@@ -464,7 +441,6 @@ int PtlTriggeredSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_m
                      ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredSwapNB(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle_md_t put_mdh, ptl_size_t put_loffs,
@@ -473,31 +449,26 @@ int PtlTriggeredSwapNB(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_handle
                        ptl_handle_ct_t cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredCTSet(ptl_handle_ct_t cth, struct ptl_ct_event newval, ptl_handle_ct_t trig_cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredCTSetNB(ptl_handle_ct_t cth, struct ptl_ct_event newval, ptl_handle_ct_t trig_cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredCTInc(ptl_handle_ct_t cth, struct ptl_ct_event delta, ptl_handle_ct_t trig_cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlTriggeredCTIncNB(ptl_handle_ct_t cth, struct ptl_ct_event delta, ptl_handle_ct_t trig_cth, ptl_size_t thres)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 /**
@@ -514,35 +485,29 @@ int PtlAtomicSync(void)
 int PtlNIAtomicSync(ptl_handle_ni_t nih)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlNFDs(ptl_handle_ni_t nih)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlPollFDs(ptl_handle_ni_t nih, struct pollfd* pfds, int events)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlPollEvents(ptl_handle_ni_t nih, struct pollfd* pfds)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlStartBundle(ptl_handle_ni_t nih)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
 
 int PtlEndBundle(ptl_handle_ni_t nih)
 {
     THROW_UNIMPLEMENTED;
-    return 1;
 }
