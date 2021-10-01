@@ -31,6 +31,7 @@ class BxiNicInitiator : public BxiNicActor {
 
     void handle_put(BxiMsg* msg);
     void handle_get(BxiMsg* msg);
+    void handle_response(BxiMsg* msg, bxi_log_type type);
     void handle_get_response(BxiMsg* msg);
     void handle_fetch_atomic_response(BxiMsg* msg);
 

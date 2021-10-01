@@ -145,14 +145,12 @@ void BxiNicInitiator::handle_get(BxiMsg* msg)
     reliable_comm(msg);
 }
 
-// TO-DO: factorise code below
-
-void BxiNicInitiator::handle_get_response(BxiMsg* msg)
+void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
 {
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (__bxi_log_level) {
         msg->bxi_log            = new BxiLog;
-        msg->bxi_log->type      = S4BXILOG_PTL_GET_RESPONSE;
+        msg->bxi_log->type      = type;
         msg->bxi_log->initiator = msg->initiator;
         msg->bxi_log->target    = msg->target;
     }
@@ -170,6 +168,11 @@ void BxiNicInitiator::handle_get_response(BxiMsg* msg)
     } else {
         comm->wait();
     }
+}
+
+void BxiNicInitiator::handle_get_response(BxiMsg* msg)
+{
+    handle_response(msg, S4BXILOG_PTL_GET_RESPONSE);
 
     // Buffered response (just like PtlPuts)
     if (msg->simulated_size <= 64)
@@ -181,27 +184,7 @@ void BxiNicInitiator::handle_get_response(BxiMsg* msg)
 
 void BxiNicInitiator::handle_fetch_atomic_response(BxiMsg* msg)
 {
-    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
-    if (__bxi_log_level) {
-        msg->bxi_log            = new BxiLog;
-        msg->bxi_log->type      = S4BXILOG_PTL_FETCH_ATOMIC_RESPONSE;
-        msg->bxi_log->initiator = msg->initiator;
-        msg->bxi_log->target    = msg->target;
-    }
-    s4u::CommPtr comm = reliable_comm_init(msg, false);
-
-    // Set this now, so that acquire_e2e_entry has already been done
-    if (__bxi_log_level)
-        msg->bxi_log->start = s4u::Engine::get_clock();
-
-    if (S4BXI_CONFIG_AND(node, model_pci) &&
-        msg->simulated_size) { // Ask for the memory we need to send (Response is always DMA)
-        node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
-        comm->detach();
-        node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
-    } else {
-        comm->wait();
-    }
+    handle_response(msg, S4BXILOG_PTL_FETCH_ATOMIC_RESPONSE);
 
     // Buffered response (just like PtlPuts)
     if (msg->simulated_size <= 64)
