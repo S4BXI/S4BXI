@@ -51,7 +51,7 @@ int s4bxi_fprintf(FILE* stream, const char* fmt, ...)
     if (isatty(fileno(stream))) {
         // Start at 36 and go in reverse, to avoid red and green as much as possible
         // (they could be misleading since they evoke success or failure)
-        fprintf(stream, "[\e[1;%dm%f - %s:%d\e[0m] ", 36 - (rank % 6), s4u::Engine::get_clock(),
+        fprintf(stream, "[\033[1;%dm%f - %s:%d\033[0m] ", 36 - (rank % 6), s4u::Engine::get_clock(),
                 s4u::Actor::self()->get_host()->get_cname(), rank);
     } else {
         fprintf(stream, "[%f - %s:%d] ", s4u::Engine::get_clock(), s4u::Actor::self()->get_host()->get_cname(), rank);
@@ -74,7 +74,7 @@ int s4bxi_printf(const char* fmt, ...)
     int rank = s4bxi_get_my_rank();
 
     if (isatty(fileno(stdout))) {
-        printf("[\e[1;%dm%f - %s:%d\e[0m] ", 36 - (rank % 6), s4u::Engine::get_clock(),
+        printf("[\033[1;%dm%f - %s:%d\033[0m] ", 36 - (rank % 6), s4u::Engine::get_clock(),
                s4u::Actor::self()->get_host()->get_cname(), rank);
     } else {
         printf("[%f - %s:%d] ", s4u::Engine::get_clock(), s4u::Actor::self()->get_host()->get_cname(), rank);

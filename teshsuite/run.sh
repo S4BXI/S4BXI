@@ -24,7 +24,7 @@ cd ..
 
 if [ $BAD_OUTPUT != 0 ]
 then
-  echo -e "| \e[1;31mCompilation failed :(\e[0m"
+  echo -e "| \033[1;31mCompilation failed :(\033[0m"
   exit $BAD_OUTPUT
 fi
 
@@ -38,9 +38,9 @@ for d in _*/ ; do # Run all
     echo "|"
     if [ $OUTPUT == 0 ]
     then
-      echo -e "| \e[1;32mTest $d passed\e[0m"
+      echo -e "| \033[1;32mTest $d passed\033[0m"
     else
-      echo -e "| \e[1;31mTest $d failed\e[0m"
+      echo -e "| \033[1;31mTest $d failed\033[0m"
     fi
 
     if [ $BAD_OUTPUT == 0 ]
@@ -56,12 +56,12 @@ echo "|"
 
 if [ $BAD_OUTPUT != 0 ]
 then
-  echo -e "| \e[1;31mSome tests failed :(\e[0m"
+  echo -e "| \033[1;31mSome tests failed :(\033[0m"
   echo "|"
   exit 142
 fi
 
-echo -e "| \e[1;32mAll Tests passed :)\e[0m"
+echo -e "| \033[1;32mAll Tests passed :)\033[0m"
 echo "|"
 
 cd "$go_back_to"

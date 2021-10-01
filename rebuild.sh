@@ -26,6 +26,6 @@ cd ..
 # In case of compilation error, return an appropriate error code
 if [ $OUTPUT != 0 ]
 then
-  echo -e "\e[1;31mCompilation failed :(\e[0m"
+  echo -e "\033[1;31mCompilation failed :(\033[0m"
   exit $OUTPUT
 fi
