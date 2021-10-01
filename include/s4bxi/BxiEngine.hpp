@@ -28,26 +28,25 @@
 #include "s4bxi_config.hpp"
 #include "s4bxi_util.hpp"
 
-using namespace std;
 class BxiMainActor;
 
 class BxiEngine {
     static BxiEngine* instance;
-    map<int, BxiNode*> nodes;
-    map<aid_t, BxiMainActor*> actors;
+    std::map<int, BxiNode*> nodes;
+    std::map<aid_t, BxiMainActor*> actors;
     s4bxi_config* config;
     unsigned long logCount = 0;
-    ofstream logFile;
+    std::ofstream logFile;
 
     BxiEngine();
 
     // Config
-    inline char* get_s4bxi_param(const string& name);
-    double get_double_s4bxi_param(const string& name, double default_val);
-    int get_int_s4bxi_param(const string& name, int default_val);
-    long get_long_s4bxi_param(const string& name, int default_val);
-    bool get_bool_s4bxi_param(const string& name, bool default_val);
-    string get_string_s4bxi_param(const string& name, string default_val);
+    inline char* get_s4bxi_param(const std::string& name);
+    double get_double_s4bxi_param(const std::string& name, double default_val);
+    int get_int_s4bxi_param(const std::string& name, int default_val);
+    long get_long_s4bxi_param(const std::string& name, int default_val);
+    bool get_bool_s4bxi_param(const std::string& name, bool default_val);
+    std::string get_string_s4bxi_param(const std::string& name, std::string default_val);
 
   public:
     static BxiEngine* get_instance()

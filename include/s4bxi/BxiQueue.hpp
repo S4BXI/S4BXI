@@ -21,8 +21,6 @@
 #include <queue>
 #include "s4ptl.hpp"
 
-using namespace std;
-
 /**
  * @brief FIFO structure with variable timing
  *
@@ -36,13 +34,13 @@ using namespace std;
  *   simulated-world semaphore)
  */
 class BxiQueue {
-    queue<BxiMsg*> to_process;
-    s4u::SemaphorePtr waiting;
-    s4u::Mailbox* mailbox;
+    std::queue<BxiMsg*> to_process;
+    simgrid::s4u::SemaphorePtr waiting;
+    simgrid::s4u::Mailbox* mailbox;
 
   public:
     BxiQueue();
-    explicit BxiQueue(const string& mailbox_name);
+    explicit BxiQueue(const std::string& mailbox_name);
 
     void put(BxiMsg* msg, const uint64_t& size = 0, bool async = false);
     BxiMsg* get();

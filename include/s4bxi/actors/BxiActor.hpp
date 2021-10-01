@@ -26,24 +26,24 @@
 
 class BxiActor {
   protected:
-    string slug;
+    std::string slug;
     BxiNode* node;
-    s4u::Actor* self;
+    simgrid::s4u::Actor* self;
 
     // Mailbox names
-    string nic_rx_mailbox_name(const bxi_vn);
-    string nic_tx_mailbox_name(const bxi_vn);
-    static string nic_rx_mailbox_name(const int, const bxi_vn);
-    static string nic_tx_mailbox_name(const int, const bxi_vn);
+    std::string nic_rx_mailbox_name(const bxi_vn);
+    std::string nic_tx_mailbox_name(const bxi_vn);
+    static std::string nic_rx_mailbox_name(const int, const bxi_vn);
+    static std::string nic_tx_mailbox_name(const int, const bxi_vn);
 
     // Events
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
 
   public:
     BxiActor();
-    s4u::Actor* getSimgridActor();
+    simgrid::s4u::Actor* getSimgridActor();
     ptl_nid_t getNid();
-    string getSlug();
+    std::string getSlug();
     const BxiNode* getNode();
 };
 

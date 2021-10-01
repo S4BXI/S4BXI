@@ -22,15 +22,15 @@
 #include "../BxiQueue.hpp"
 
 class BxiNicE2E : public BxiActor {
-    s4u::Mailbox* nic_cmd_mailboxes[4] = {nullptr};
-    BxiMsg* current_msg                = nullptr;
+    simgrid::s4u::Mailbox* nic_cmd_mailboxes[4] = {nullptr};
+    BxiMsg* current_msg                         = nullptr;
     BxiQueue queue;
 
   public:
-    explicit BxiNicE2E(const vector<string>& args);
+    explicit BxiNicE2E(const std::vector<std::string>& args);
 
     void operator()();
-    s4u::Mailbox* get_retransmit_mailbox(const BxiMsg* msg);
+    simgrid::s4u::Mailbox* get_retransmit_mailbox(const BxiMsg* msg);
     void process_message(BxiMsg* msg);
 };
 

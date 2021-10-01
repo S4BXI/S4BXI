@@ -16,6 +16,9 @@
 
 #include "s4bxi/BxiQueue.hpp"
 
+using namespace std;
+using namespace simgrid;
+
 BxiQueue::BxiQueue() : mailbox(nullptr)
 {
     waiting = s4u::Semaphore::create(0);

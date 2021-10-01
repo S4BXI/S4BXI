@@ -30,9 +30,9 @@ class BxiNicActor : public BxiActor {
     void maybe_issue_fetch_atomic(BxiFetchAtomicRequest* req);
     void reliable_comm(BxiMsg* msg);
     void shallow_reliable_comm(BxiMsg* msg);
-    s4u::CommPtr reliable_comm_init(BxiMsg* msg, bool shallow);
+    simgrid::s4u::CommPtr reliable_comm_init(BxiMsg* msg, bool shallow);
 
   public:
-    BxiNicActor(const vector<string>& args);
+    BxiNicActor(const std::vector<std::string>& args);
 };
 #endif // S4BXI_BXINICACTOR_HPP

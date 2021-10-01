@@ -27,6 +27,9 @@
 
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_engine, "Messages specific to BXI engine");
 
 #define LOGS_IN_FILE 10000

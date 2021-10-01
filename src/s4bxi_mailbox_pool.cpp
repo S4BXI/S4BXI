@@ -18,6 +18,9 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include <stack>
 
+using namespace std;
+using namespace simgrid;
+
 static stack<s4u::Mailbox*> pool;
 
 s4u::Mailbox* get_random_mailbox()

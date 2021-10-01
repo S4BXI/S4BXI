@@ -22,8 +22,6 @@
 
 #include "s4ptl.hpp"
 
-using namespace std;
-
 enum bxi_log_type {
     // Same as bxi_msg_type, it's important
     S4BXILOG_E2E_ACK,
@@ -55,7 +53,7 @@ class BxiLog {
     ptl_nid_t initiator;
     ptl_nid_t target;
 
-    friend ostream& operator<<(ostream& os, BxiLog const& log)
+    friend std::ostream& operator<<(std::ostream& os, BxiLog const& log)
     {
         int precision    = 9;
         unsigned int tmp = (unsigned int)log.start;
@@ -64,7 +62,7 @@ class BxiLog {
             ++precision;
         }
 
-        os << setprecision(precision) << log.type << ',' << log.initiator << ',' << log.target << ',' << log.start
+        os << std::setprecision(precision) << log.type << ',' << log.initiator << ',' << log.target << ',' << log.start
            << ',' << log.end;
 
         return os;

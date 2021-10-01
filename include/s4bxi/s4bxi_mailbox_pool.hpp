@@ -19,12 +19,9 @@
 
 #include <simgrid/s4u/Mailbox.hpp>
 
-using namespace simgrid;
-using namespace std;
+simgrid::s4u::Mailbox* get_random_mailbox();
 
-s4u::Mailbox* get_random_mailbox();
-
-void free_random_mailbox(s4u::Mailbox* m);
+void free_random_mailbox(simgrid::s4u::Mailbox* m);
 
 void free_mailbox_pool();
 

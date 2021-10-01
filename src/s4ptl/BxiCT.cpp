@@ -20,6 +20,9 @@
 
 #include <xbt.h>
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_ct, "Messages specific to s4ptl CT implementation");
 
 BxiCT::BxiCT()

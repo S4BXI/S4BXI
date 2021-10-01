@@ -18,6 +18,9 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_pt, "Messages specific to s4ptl PT implementation");
 
 BxiPT::BxiPT(ptl_handle_ni_t ni_handle, ptl_handle_eq_t eq_handle, ptl_index_t index, unsigned int options)

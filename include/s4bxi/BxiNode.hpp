@@ -26,8 +26,6 @@
 #include "s4bxi/BxiLog.hpp"
 #include "s4bxi/BxiQueue.hpp"
 
-using namespace std;
-
 class BxiNicE2E;
 
 struct flowctrl_process_id {
@@ -46,27 +44,30 @@ class BxiNode {
     explicit BxiNode(int nid);
     ~BxiNode();
 
-    vector<int> used_pids;
-    vector<BxiNI*> ni_handles;
+    std::vector<int> used_pids;
+    std::vector<BxiNI*> ni_handles;
     ptl_nid_t nid;
-    s4u::Host* main_host;
-    s4u::Host* nic_host;
-    s4u::SemaphorePtr e2e_entries;
+    simgrid::s4u::Host* main_host;
+    simgrid::s4u::Host* nic_host;
+    simgrid::s4u::SemaphorePtr e2e_entries;
     BxiNicE2E* e2e_actor   = nullptr;
     BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
     // Node level flow control semaphores
-    map<ptl_nid_t, s4u::SemaphorePtr> flowctrl_sems_node[4] = {
-        map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(), map<ptl_nid_t, s4u::SemaphorePtr>(),
-        map<ptl_nid_t, s4u::SemaphorePtr>()};
+    std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr> flowctrl_sems_node[4] = {
+        std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(), std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(),
+        std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(), std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>()};
     // Process level flow control semaphores
-    map<flowctrl_process_id, s4u::SemaphorePtr> flowctrl_sems_process[4] = {
-        map<flowctrl_process_id, s4u::SemaphorePtr>(), map<flowctrl_process_id, s4u::SemaphorePtr>(),
-        map<flowctrl_process_id, s4u::SemaphorePtr>(), map<flowctrl_process_id, s4u::SemaphorePtr>()};
+    std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr> flowctrl_sems_process[4] = {
+        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>(),
+        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>(),
+        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>(),
+        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>()};
     // Process level miscellaneous things (for cycle detection and processing only)
-    vector<BxiMsg*> flowctrl_waiting_messages[4]      = {vector<BxiMsg*>(), vector<BxiMsg*>(), vector<BxiMsg*>(),
-                                                    vector<BxiMsg*>()};
-    vector<s4u::Actor*> initiator_waiting_flowctrl[4] = {vector<s4u::Actor*>(), vector<s4u::Actor*>(),
-                                                         vector<s4u::Actor*>(), vector<s4u::Actor*>()};
+    std::vector<BxiMsg*> flowctrl_waiting_messages[4]               = {std::vector<BxiMsg*>(), std::vector<BxiMsg*>(),
+                                                         std::vector<BxiMsg*>(), std::vector<BxiMsg*>()};
+    std::vector<simgrid::s4u::Actor*> initiator_waiting_flowctrl[4] = {
+        std::vector<simgrid::s4u::Actor*>(), std::vector<simgrid::s4u::Actor*>(), std::vector<simgrid::s4u::Actor*>(),
+        std::vector<simgrid::s4u::Actor*>()};
 
     // Params
     bool use_real_memory    = true;
@@ -79,7 +80,7 @@ class BxiNode {
     unsigned long e2e_gave_up = 0;
 
     void pci_transfer(ptl_size_t size, bool direction, bxi_log_type type);
-    s4u::CommPtr pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
+    simgrid::s4u::CommPtr pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
     bool check_process_flowctrl(const BxiMsg* msg);
     void acquire_e2e_entry(const BxiMsg* msg);

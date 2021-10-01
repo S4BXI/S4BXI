@@ -31,7 +31,7 @@
  * them to issue the correct event and/or send a response
  */
 class BxiNicTarget : public BxiNicActor {
-    s4u::Mailbox* nic_rx_mailbox;
+    simgrid::s4u::Mailbox* nic_rx_mailbox;
     BxiQueue* tx_queue;
 
     void handle_put_request(BxiMsg* msg);
@@ -50,7 +50,7 @@ class BxiNicTarget : public BxiNicActor {
     void send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type);
 
   public:
-    BxiNicTarget(const vector<string>& args);
+    BxiNicTarget(const std::vector<std::string>& args);
 
     void operator()();
 };

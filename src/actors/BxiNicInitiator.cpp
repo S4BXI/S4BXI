@@ -19,6 +19,9 @@
 #include <utility>
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_initiator, "Messages specific to the NIC initiator");
 
 BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)

@@ -23,6 +23,9 @@
 // VVVVV geteuid VVVVV
 #include <unistd.h>
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_main_actor, "Messages specific to the main actor")
 
 BxiMainActor::BxiMainActor(const vector<string>& args)

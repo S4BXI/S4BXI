@@ -20,6 +20,9 @@
 #include <complex.h>
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_target, "Messages specific to the NIC target");
 
 BxiNicTarget::BxiNicTarget(const vector<string>& args) : BxiNicActor(args)
@@ -209,7 +212,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         ack_type = S4BXI_PTL_ACK;
     }
 
-    if (need_ack) 
+    if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
 }
 
@@ -333,7 +336,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         ack_type = S4BXI_PTL_ACK;
     }
 
-    if (need_ack) 
+    if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
 }
 

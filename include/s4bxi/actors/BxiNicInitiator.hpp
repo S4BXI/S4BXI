@@ -36,7 +36,7 @@ class BxiNicInitiator : public BxiNicActor {
     void handle_fetch_atomic_response(BxiMsg* msg);
 
   public:
-    explicit BxiNicInitiator(const vector<string>& args);
+    explicit BxiNicInitiator(const std::vector<std::string>& args);
     void operator()();
 };
 

@@ -63,14 +63,14 @@ class BxiMainActor : public BxiActor {
     BxiNI* default_ni;
     double cpu_accumulator = 0;
 
-    map<char*, void*, cmp_str> keyval_store;
+    std::map<char*, void*, cmp_str> keyval_store;
 
     xbt_os_timer_t timer;
     unsigned int is_polling = 0;
     int optind              = 0;
     uint8_t sampling();
     void set_sampling(uint8_t s);
-    explicit BxiMainActor(const vector<string>& args);
+    explicit BxiMainActor(const std::vector<std::string>& args);
     ~BxiMainActor();
 
     // ===== Portals implementation =====

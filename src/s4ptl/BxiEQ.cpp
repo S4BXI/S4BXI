@@ -17,6 +17,9 @@
 #include "s4bxi/s4ptl.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_eq, "Messages specific to s4ptl EQ implementation");
 
 BxiEQ::BxiEQ()
@@ -90,7 +93,7 @@ int BxiEQ::poll(const ptl_handle_eq_t* eq_handles, unsigned int size, ptl_time_t
         }
     }
 
-    auto comms = vector<s4u::CommPtr>(size);
+    auto comms          = vector<s4u::CommPtr>(size);
     ptl_event_t* ev_ptr = nullptr;
 
     // Issue a get_async to the mailbox of each EQ,

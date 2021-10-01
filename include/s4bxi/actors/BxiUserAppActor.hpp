@@ -23,13 +23,13 @@
 #include "BxiMainActor.hpp"
 
 class BxiUserAppActor : public BxiMainActor {
-    vector<string> string_args;
-    string bull_mpi_lib = "";
+    std::vector<std::string> string_args;
+    std::string bull_mpi_lib = "";
 
   public:
     uint32_t my_rank;
 
-    explicit BxiUserAppActor(const vector<string>& args);
+    explicit BxiUserAppActor(const std::vector<std::string>& args);
 
     void operator()();
 };

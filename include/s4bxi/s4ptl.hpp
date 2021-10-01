@@ -35,9 +35,6 @@ class BxiNode;
 #define EVENT_SIZE   96 // Currently equal to `sizeof(ptl_event_t)`
 #define COMMAND_SIZE 64
 
-using namespace std;
-using namespace simgrid;
-
 enum bxi_msg_type {
     S4BXI_E2E_ACK,
     S4BXI_PTL_ACK,
@@ -72,8 +69,8 @@ enum bxi_vn {
 
 class ActorWaitingCT {
   public:
-    s4u::Actor* actor;
-    s4u::Mailbox* mailbox;
+    simgrid::s4u::Actor* actor;
+    simgrid::s4u::Mailbox* mailbox;
     ptl_size_t test;
 };
 
@@ -89,14 +86,14 @@ class BxiME;
 class BxiRequest;
 class BxiMsg;
 
-typedef vector<BxiME*> BxiList;
+typedef std::vector<BxiME*> BxiList;
 // typedef shared_ptr<BxiList> BxiListPtr;
 
 class BxiPT {
   public:
-    BxiList* priority_list;             // Stores both ME and LE
-    BxiList* overflow_list;             // Same
-    vector<BxiMsg*> unexpected_headers; // On the NIC UH are a type of ME, but for us I think a BxiMsg is easier
+    BxiList* priority_list;                  // Stores both ME and LE
+    BxiList* overflow_list;                  // Same
+    std::vector<BxiMsg*> unexpected_headers; // On the NIC UH are a type of ME, but for us I think a BxiMsg is easier
     BxiEQ* eq;
     BxiNI* ni;
     unsigned int options;
@@ -124,9 +121,9 @@ class BxiNI {
     unsigned int options;
     ptl_ni_limits* limits;
     ptl_pid_t pid;
-    s4u::SemaphorePtr cq;
-    map<ptl_pt_index_t, BxiPT*> pt_indexes;
-    vector<ptl_process_t> l2p_map;
+    simgrid::s4u::SemaphorePtr cq;
+    std::map<ptl_pt_index_t, BxiPT*> pt_indexes;
+    std::vector<ptl_process_t> l2p_map;
 
     BxiNI(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits);
 
@@ -141,7 +138,7 @@ class BxiNI {
 class BxiCT {
   public:
     void on_update();
-    vector<ActorWaitingCT> waiting;
+    std::vector<ActorWaitingCT> waiting;
     ptl_ct_event_t event;
 
     BxiCT();
@@ -156,7 +153,7 @@ class BxiCT {
 
 class BxiEQ {
   public:
-    s4u::Mailbox* mailbox;
+    simgrid::s4u::Mailbox* mailbox;
 
     BxiEQ();
     ~BxiEQ();
@@ -230,7 +227,7 @@ class BxiRequest {
     ptl_size_t target_remote_offset;
     ptl_addr_t start; // "start" as in a ptl_event_t, it's easier to store it in the request than to re-compute it when
                       // issuing events, so there it is
-    unique_ptr<BxiME> matched_me = nullptr; // Unused for PUT and ATOMIC on priority list
+    std::unique_ptr<BxiME> matched_me = nullptr; // Unused for PUT and ATOMIC on priority list
 
     BxiRequest(bxi_req_type type, BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
                ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn, ptl_size_t local_offset,

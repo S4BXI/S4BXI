@@ -18,6 +18,9 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_util.hpp"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_ni, "Messages specific to s4ptl NI implementation");
 
 BxiNI::BxiNI(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits)

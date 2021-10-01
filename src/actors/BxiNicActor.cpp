@@ -17,6 +17,9 @@
 #include "s4bxi/actors/BxiNicActor.hpp"
 #include "s4bxi/actors/BxiNicE2E.hpp"
 
+using namespace std;
+using namespace simgrid;
+
 BxiNicActor::BxiNicActor(const vector<string>& args) : BxiActor()
 {
     xbt_assert(args.size() == 1, "NIC actors expect no arguments");

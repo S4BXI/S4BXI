@@ -36,11 +36,11 @@ struct s4bxi_config {
     /** @brief Disable all E2E processing globally */
     bool e2e_off;
     /** @brief Output folder for CSV logging */
-    string log_folder;
+    std::string log_folder;
     /** @brief Set to 0 to diable logging (computed based on log_folder) */
     int log_level;
     /** @brief Shared libraries to privatize and re-link to user code at runtime */
-    string privatize_libs;
+    std::string privatize_libs;
     /** @brief Disable deleting temporary libraries created by S4BXI */
     bool keep_temps;
     /** @brief Maximum amount of payload to copy on message reception */
@@ -58,7 +58,7 @@ struct s4bxi_config {
     /** @brief Type of shared malloc (global, local or none) */
     int shared_malloc;
     /** @brief Huge page mount point (used for global shared mem) */
-    string shared_malloc_hugepage;
+    std::string shared_malloc_hugepage;
     /** @brief Blocksize used for global shared mem */
     unsigned long shared_malloc_blocksize;
     /** @brief Maximum number of messages inflight between two nodes (0 to disable) */

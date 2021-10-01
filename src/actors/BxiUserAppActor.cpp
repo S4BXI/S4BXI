@@ -39,6 +39,7 @@
 static const std::string smpi_default_instance_name("smpirun");
 
 using namespace std;
+using namespace simgrid;
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(user_app, "Messages relative to user app actor");
 

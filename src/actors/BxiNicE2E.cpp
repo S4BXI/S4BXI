@@ -17,6 +17,9 @@
 #include "s4bxi/actors/BxiNicE2E.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+using namespace simgrid;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_nic_e2e, "Messages specific to the NIC E2E circuit");
 
 BxiNicE2E::BxiNicE2E(const vector<string>& args) : BxiActor()
