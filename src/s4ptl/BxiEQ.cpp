@@ -91,7 +91,7 @@ int BxiEQ::poll(const ptl_handle_eq_t* eq_handles, unsigned int size, ptl_time_t
     }
 
     auto comms = vector<s4u::CommPtr>(size);
-    ptl_event_t* ev_ptr;
+    ptl_event_t* ev_ptr = nullptr;
 
     // Issue a get_async to the mailbox of each EQ,
     // directly redirected to the user provided event
@@ -113,7 +113,7 @@ int BxiEQ::poll(const ptl_handle_eq_t* eq_handles, unsigned int size, ptl_time_t
 
     // I don't know what the exact rule is here, and gdb
     // didn't help me that much, so this condition will do
-    if (which_eq < 0 || which_eq >= comms.size())
+    if (which_eq < 0 || which_eq >= comms.size() || !ev_ptr)
         return PTL_EQ_EMPTY;
 
     *event = *ev_ptr;
