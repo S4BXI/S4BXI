@@ -160,8 +160,7 @@ unsigned int s4bxi_alarm(unsigned int __seconds) __THROW
 
 int s4bxi_gethostname(char* __name, size_t __len)
 {
-    const char* name = GET_CURRENT_MAIN_ACTOR->getSlug().c_str();
-    strncpy(__name, name, __len);
+    strncpy(__name, GET_CURRENT_MAIN_ACTOR->getSlug().c_str(), __len);
 
     return 0;
 }
