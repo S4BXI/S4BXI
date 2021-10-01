@@ -185,16 +185,6 @@ MPI_Comm implem_comm(MPI_Comm original)
     return original;
 }
 
-#define S4BXI_MPI_BOTH_IMPLEM(rtype, name, args, argsval)                                                              \
-    typedef rtype(*name##_func) args;                                                                                  \
-    rtype S4BXI_MPI_##name args                                                                                        \
-    {                                                                                                                  \
-        BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
-        int bull                 = ((name##_func)main_actor->bull_mpi_ops->name)argsval;                               \
-        int smpi                 = ((name##_func)main_actor->smpi_mpi_ops->name)argsval;                               \
-        return bull > smpi ? bull : smpi;                                                                              \
-    }
-
 #define S4BXI_MPI_ONE_IMPLEM(rtype, name, args, argsval)                                                               \
     typedef rtype(*name##_func) args;                                                                                  \
     int S4BXI_MPI_##name args                                                                                          \
@@ -218,8 +208,30 @@ MPI_Comm implem_comm(MPI_Comm original)
                     ->name)argsval;                                                                                    \
     }
 
-S4BXI_MPI_BOTH_IMPLEM(int, Init, (int* argc, char*** argv), (argc, argv));
-S4BXI_MPI_BOTH_IMPLEM(int, Finalize, (void), ());
+typedef int (*Init_func)(int* argc, char*** argv);
+int S4BXI_MPI_Init(int* argc, char*** argv)
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    int bull                 = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
+    int smpi                 = ((Init_func)main_actor->smpi_mpi_ops->Init)(argc, argv);
+    XBT_INFO("Barrier in Init");
+    s4bxi_barrier();
+
+    return bull > smpi ? bull : smpi;
+}
+
+typedef int (*Finalize_func)(void);
+int S4BXI_MPI_Finalize(void)
+{
+    XBT_INFO("Barrier in Finalize");
+    s4bxi_barrier();
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
+    int smpi                 = ((Finalize_func)main_actor->smpi_mpi_ops->Finalize)();
+
+    return bull > smpi ? bull : smpi;
+}
+
 // S4BXI_MPI_ONE_IMPLEM(int, Finalized, (int* flag));
 // S4BXI_MPI_ONE_IMPLEM(int, Init_thread, (int* argc, char*** argv, int required, int* provided));
 // S4BXI_MPI_ONE_IMPLEM(int, Initialized, (int* flag));
