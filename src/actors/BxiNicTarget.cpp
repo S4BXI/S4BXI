@@ -111,7 +111,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
-            req->matched_me = new BxiME(*me);
+            req->matched_me = make_unique<BxiME>(*me);
 
         req->process_state = S4BXI_REQ_RECEIVED;
 
@@ -232,7 +232,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
 
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
-        req->matched_me    = new BxiME(*me);
+        req->matched_me    = make_unique<BxiME>(*me);
         req->mlength       = me->get_mlength(req);
         req->start         = me->get_offsetted_addr(msg, true);
 
@@ -273,7 +273,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
-            req->matched_me = new BxiME(*me);
+            req->matched_me = make_unique<BxiME>(*me);
 
         req->process_state = S4BXI_REQ_RECEIVED;
         req->mlength       = me->get_mlength(req);
@@ -389,7 +389,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
         req->process_state = S4BXI_REQ_RECEIVED;
 
         BxiMD* md       = req->md;
-        req->matched_me = new BxiME(*me);
+        req->matched_me = make_unique<BxiME>(*me);
         req->mlength    = me->get_mlength(req);
         req->start      = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length) {

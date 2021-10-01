@@ -230,7 +230,7 @@ class BxiRequest {
     ptl_size_t target_remote_offset;
     ptl_addr_t start; // "start" as in a ptl_event_t, it's easier to store it in the request than to re-compute it when
                       // issuing events, so there it is
-    BxiME* matched_me = nullptr; // Unused for PUT and ATOMIC on priority list
+    unique_ptr<BxiME> matched_me = nullptr; // Unused for PUT and ATOMIC on priority list
 
     BxiRequest(bxi_req_type type, BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
                ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn, ptl_size_t local_offset,
@@ -273,7 +273,6 @@ class BxiFetchAtomicRequest : public BxiAtomicRequest {
                           ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn,
                           ptl_size_t local_offset, ptl_size_t remote_offset, ptl_hdr_data_t hdr, ptl_op_t op,
                           ptl_datatype_t datatype, BxiMD* get_md, ptl_size_t get_local_offset);
-    ~BxiFetchAtomicRequest();
     bool is_swap_request();
 };
 
@@ -285,7 +284,6 @@ class BxiSwapRequest : public BxiFetchAtomicRequest {
                    ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn,
                    ptl_size_t local_offset, ptl_size_t remote_offset, ptl_hdr_data_t hdr, ptl_op_t op,
                    ptl_datatype_t datatype, BxiMD* get_md, ptl_size_t get_local_offset, const void* cst);
-    ~BxiSwapRequest();
 };
 
 class BxiGetRequest : public BxiRequest {
@@ -295,7 +293,6 @@ class BxiGetRequest : public BxiRequest {
     BxiGetRequest(BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits, ptl_pid_t target_pid,
                   ptl_pt_index_t pt_index, void* user_ptr, bool service_vn, ptl_size_t local_offset,
                   ptl_size_t remote_offset);
-    ~BxiGetRequest();
 };
 
 /**
