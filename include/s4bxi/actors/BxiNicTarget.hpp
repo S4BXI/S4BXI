@@ -47,6 +47,7 @@ class BxiNicTarget : public BxiNicActor {
     void apply_atomic_op(int op, int type, unsigned char* me, unsigned char* cst, unsigned char* rx, unsigned char* tx,
                          size_t len);
     void capped_memcpy(void* dest, const void* src, size_t n);
+    void send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type);
 
   public:
     BxiNicTarget(const vector<string>& args);

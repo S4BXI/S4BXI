@@ -88,6 +88,41 @@ void BxiNicTarget::operator()()
     }
 }
 
+void BxiNicTarget::send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type)
+{
+    auto req = (BxiPutRequest*)msg->parent_request;
+
+    if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
+        // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
+        req->process_state = S4BXI_REQ_FINISHED;
+        // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
+        // although we're currently processing the message at the target side.
+
+        int vn = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
+                  msg->type == S4BXI_PTL_FETCH_ATOMIC)
+                     ? S4BXI_VN_SERVICE_REQUEST
+                     : S4BXI_VN_SERVICE_RESPONSE;
+        if (!req->service_vn)
+            vn += 1; // Switch to compute version
+        req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn, req->md->ni->pid, req->target_pid);
+        req->maybe_issue_send();
+        req->issue_ack(ni_fail_type);
+    } else {
+        BxiMsg* ack = new BxiMsg(*msg);
+        ack->type   = ack_type;
+        // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
+        // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
+        ack->initiator      = msg->target;
+        ack->target         = msg->initiator;
+        ack->simulated_size = ACK_SIZE;
+        ack->retry_count    = 0;
+        ack->ni_fail_type   = ni_fail_type;
+        ack->answers_msg    = msg;
+        ++msg->ref_count;
+        tx_queue->put(ack, 0, true);
+    }
+}
+
 /**
  * Handles a Put request
  *
@@ -174,37 +209,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         ack_type = S4BXI_PTL_ACK;
     }
 
-    if (need_ack) {
-        if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
-            // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
-            req->process_state = S4BXI_REQ_FINISHED;
-            // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
-            // although we're currently processing the message at the target side.
-
-            int vn = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
-                      msg->type == S4BXI_PTL_FETCH_ATOMIC)
-                         ? S4BXI_VN_SERVICE_REQUEST
-                         : S4BXI_VN_SERVICE_RESPONSE;
-            if (!req->service_vn)
-                vn += 1; // Switch to compute version
-            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn, req->md->ni->pid, req->target_pid);
-            req->maybe_issue_send();
-            req->issue_ack(ni_fail_type);
-        } else {
-            BxiMsg* ack = new BxiMsg(*msg);
-            ack->type   = ack_type;
-            // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
-            // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
-            ack->initiator      = msg->target;
-            ack->target         = msg->initiator;
-            ack->simulated_size = ACK_SIZE;
-            ack->retry_count    = 0;
-            ack->ni_fail_type   = ni_fail_type;
-            ack->answers_msg    = msg;
-            ++msg->ref_count;
-            tx_queue->put(ack, 0, true);
-        }
-    }
+    if (need_ack) 
+        send_ack(msg, ack_type, ni_fail_type);
 }
 
 /**
@@ -327,37 +333,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         ack_type = S4BXI_PTL_ACK;
     }
 
-    if (need_ack) {
-        if (S4BXI_GLOBAL_CONFIG(quick_acks)) {
-            // Fast-forward this request, we're not sending real ACKs (neither PTL nor BXI)
-            req->process_state = S4BXI_REQ_FINISHED;
-            // Thanks to simulated world's magic, we can trigger the ACK and / or SEND at the initiator side
-            // although we're currently processing the message at the target side.
-
-            int vn = (msg->type == S4BXI_PTL_PUT || msg->type == S4BXI_PTL_GET || msg->type == S4BXI_PTL_ATOMIC ||
-                      msg->type == S4BXI_PTL_FETCH_ATOMIC)
-                         ? S4BXI_VN_SERVICE_REQUEST
-                         : S4BXI_VN_SERVICE_RESPONSE;
-            if (!req->service_vn)
-                vn += 1; // Switch to compute version
-            req->md->ni->node->release_e2e_entry(node->nid, (bxi_vn)vn, req->md->ni->pid, req->target_pid);
-            req->maybe_issue_send();
-            req->issue_ack(ni_fail_type);
-        } else {
-            BxiMsg* ack = new BxiMsg(*msg);
-            ack->type   = ack_type;
-            // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
-            // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
-            ack->initiator      = msg->target;
-            ack->target         = msg->initiator;
-            ack->simulated_size = ACK_SIZE;
-            ack->retry_count    = 0;
-            ack->ni_fail_type   = ni_fail_type;
-            ack->answers_msg    = msg;
-            ++msg->ref_count;
-            tx_queue->put(ack, 0, true);
-        }
-    }
+    if (need_ack) 
+        send_ack(msg, ack_type, ni_fail_type);
 }
 
 /**
