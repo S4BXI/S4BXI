@@ -116,7 +116,7 @@ class BxiPT {
 
 class BxiNI {
   public:
-    BxiNode* node;
+    std::shared_ptr<BxiNode> node;
     ptl_interface_t iface;
     unsigned int options;
     ptl_ni_limits* limits;
@@ -125,9 +125,9 @@ class BxiNI {
     std::map<ptl_pt_index_t, BxiPT*> pt_indexes;
     std::vector<ptl_process_t> l2p_map;
 
-    BxiNI(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits);
+    BxiNI(std::shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits);
 
-    static BxiNI* init(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
+    static BxiNI* init(std::shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
                        const ptl_ni_limits_t* desired, ptl_ni_limits_t* actual);
     static void fini(ptl_handle_ni_t handle);
     bool can_match_request(BxiRequest* req);

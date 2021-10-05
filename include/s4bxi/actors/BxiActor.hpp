@@ -27,7 +27,7 @@
 class BxiActor {
   protected:
     std::string slug;
-    BxiNode* node;
+    std::shared_ptr<BxiNode> node;
     simgrid::s4u::Actor* self;
 
     // Mailbox names
@@ -44,7 +44,7 @@ class BxiActor {
     simgrid::s4u::Actor* getSimgridActor();
     ptl_nid_t getNid();
     std::string getSlug();
-    const BxiNode* getNode();
+    const std::shared_ptr<BxiNode> getNode();
 };
 
 #endif // S4BXI_BXIACTOR_HPP

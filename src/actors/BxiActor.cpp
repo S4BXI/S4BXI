@@ -127,7 +127,7 @@ string BxiActor::getSlug()
     return slug;
 }
 
-const BxiNode* BxiActor::getNode()
+const shared_ptr<BxiNode> BxiActor::getNode()
 {
     return node;
 }

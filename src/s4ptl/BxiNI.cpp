@@ -23,7 +23,7 @@ using namespace simgrid;
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_ni, "Messages specific to s4ptl NI implementation");
 
-BxiNI::BxiNI(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits)
+BxiNI::BxiNI(shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits)
     : node(node)
     , iface(iface)
     , options(options)
@@ -33,7 +33,7 @@ BxiNI::BxiNI(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid
 {
 }
 
-BxiNI* BxiNI::init(BxiNode* node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
+BxiNI* BxiNI::init(shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
                    const ptl_ni_limits_t* desired, ptl_ni_limits_t* actual)
 {
     ptl_ni_limits_t tmp_limits;

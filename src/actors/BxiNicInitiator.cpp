@@ -29,7 +29,8 @@ BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
     if (node->tx_queues[vn]) {
         tx_queue = node->tx_queues[vn];
     } else {
-        tx_queue = S4BXI_CONFIG_AND(node, model_pci_commands) ? new BxiQueue(nic_tx_mailbox_name(vn)) : new BxiQueue;
+        tx_queue = S4BXI_CONFIG_AND(node, model_pci_commands) ? make_shared<BxiQueue>(nic_tx_mailbox_name(vn))
+                                                              : make_shared<BxiQueue>();
         node->tx_queues[vn] = tx_queue;
     }
 }

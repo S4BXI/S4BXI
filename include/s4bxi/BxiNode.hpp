@@ -42,7 +42,6 @@ struct flowctrl_process_id {
 class BxiNode {
   public:
     explicit BxiNode(int nid);
-    ~BxiNode();
 
     std::vector<int> used_pids;
     std::vector<BxiNI*> ni_handles;
@@ -51,7 +50,7 @@ class BxiNode {
     simgrid::s4u::Host* nic_host;
     simgrid::s4u::SemaphorePtr e2e_entries;
     BxiNicE2E* e2e_actor   = nullptr;
-    BxiQueue* tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
+    std::shared_ptr<BxiQueue> tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
     // Node level flow control semaphores
     std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr> flowctrl_sems_node[4] = {
         std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(), std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(),

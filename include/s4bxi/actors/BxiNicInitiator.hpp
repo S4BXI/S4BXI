@@ -27,7 +27,7 @@
  * them to send the correct message on the BXI network
  */
 class BxiNicInitiator : public BxiNicActor {
-    BxiQueue* tx_queue;
+    std::shared_ptr<BxiQueue> tx_queue;
 
     void handle_put(BxiMsg* msg);
     void handle_get(BxiMsg* msg);

@@ -400,7 +400,6 @@ int s4bxi_default_main(int argc, char* argv[])
 #endif
 
     BxiEngine::get_instance()->end_simulation();
-    delete BxiEngine::get_instance();
 
     return 0;
 }

@@ -180,9 +180,3 @@ void BxiNode::resume_waiting_tx_actors()
         initiator_waiting_flowctrl[i].clear();
     }
 }
-
-BxiNode::~BxiNode()
-{
-    for (auto& tx_queue : tx_queues)
-        delete tx_queue;
-}

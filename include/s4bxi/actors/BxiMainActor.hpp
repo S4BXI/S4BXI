@@ -36,7 +36,7 @@ struct cmp_str {
 class BxiMainActor : public BxiActor {
   protected:
     bool service_mode;
-    BxiQueue* tx_queue;
+    std::shared_ptr<BxiQueue> tx_queue;
     unsigned int poll_count = 0;
     uint8_t is_sampling;
 

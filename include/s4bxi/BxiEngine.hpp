@@ -32,9 +32,9 @@ class BxiMainActor;
 
 class BxiEngine {
     static BxiEngine* instance;
-    std::map<int, BxiNode*> nodes;
+    std::map<int, std::shared_ptr<BxiNode>> nodes;
     std::map<aid_t, BxiMainActor*> actors;
-    s4bxi_config* config;
+    std::shared_ptr<s4bxi_config> config;
     unsigned long logCount = 0;
     std::ofstream logFile;
 
@@ -57,9 +57,9 @@ class BxiEngine {
         return instance;
     }
 
-    static s4bxi_config* get_config() { return get_instance()->config; }
+    static std::shared_ptr<s4bxi_config> get_config();
 
-    BxiNode* get_node(int);
+    std::shared_ptr<BxiNode> get_node(int);
     void log(const BxiLog& log);
     void end_simulation();
     void register_main_actor(BxiMainActor*);

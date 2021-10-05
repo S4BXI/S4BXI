@@ -43,7 +43,7 @@ BxiEngine* BxiEngine::instance = nullptr;
 
 BxiEngine::BxiEngine()
 {
-    config = new s4bxi_config;
+    config = make_shared<s4bxi_config>();
 
     config->max_retries               = get_int_s4bxi_param("MAX_RETRIES", 5);
     config->retry_timeout             = get_double_s4bxi_param("RETRY_TIMEOUT", 10.0F);
@@ -102,21 +102,20 @@ void BxiEngine::end_simulation()
     if (config->log_level)
         logFile.close();
 
-    delete config;
-    for (auto pair : nodes)
-        delete pair.second;
     nodes.clear();
 
     free_mailbox_pool();
+
+    delete instance;
 }
 
-BxiNode* BxiEngine::get_node(int nid)
+std::shared_ptr<BxiNode> BxiEngine::get_node(int nid)
 {
     auto nodeIt = nodes.find(nid);
-    BxiNode* node;
+    shared_ptr<BxiNode> node;
 
     if (nodeIt == nodes.end()) {
-        node = new BxiNode(nid);
+        node = make_shared<BxiNode>(nid);
         nodes.emplace(nid, node);
 
         // For some mysterious reason everything blocks if we initialize that in
@@ -225,4 +224,9 @@ void BxiEngine::log(const BxiLog& log)
 
     logFile << log << endl;
     ++logCount;
+}
+
+shared_ptr<s4bxi_config> BxiEngine::get_config()
+{
+    return get_instance()->config;
 }

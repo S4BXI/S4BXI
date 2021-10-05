@@ -32,7 +32,7 @@
  */
 class BxiNicTarget : public BxiNicActor {
     simgrid::s4u::Mailbox* nic_rx_mailbox;
-    BxiQueue* tx_queue;
+    std::shared_ptr<BxiQueue> tx_queue;
 
     void handle_put_request(BxiMsg* msg);
     void handle_get_request(BxiMsg* msg);
