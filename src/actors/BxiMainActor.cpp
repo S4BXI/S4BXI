@@ -33,7 +33,6 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
     BxiEngine::get_instance()->register_main_actor(this);
 
     bull_mpi_ops = nullptr;
-    smpi_mpi_ops = nullptr;
 
     char* env       = getenv("S4BXI_SMPI_IMPLEM");
     use_smpi_implem = env ? TRUTHY_CHAR(env) : 0;
@@ -80,10 +79,6 @@ BxiMainActor::BxiMainActor(const vector<string>& args)
 BxiMainActor::~BxiMainActor()
 {
     xbt_os_timer_free(timer);
-    if (bull_mpi_ops)
-        delete bull_mpi_ops;
-    if (smpi_mpi_ops)
-        delete smpi_mpi_ops;
 }
 
 void BxiMainActor::issue_portals_command(int simulated_size)

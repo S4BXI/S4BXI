@@ -29,6 +29,8 @@ using namespace std;
 
 MPI_Datatype* type_array;
 
+std::unique_ptr<struct s4bxi_mpi_ops> smpi_mpi_ops = nullptr;
+
 // "Constants"
 void* S4BXI_MPI_IN_PLACE()
 {
@@ -39,25 +41,32 @@ void* S4BXI_MPI_IN_PLACE()
 #define SETUP_SYMBOLS_IN_IMPLEMS(symbol)                                                                               \
     main_actor->bull_mpi_ops->symbol = dlsym(bull_libhandle, "PMPI_" #symbol);                                         \
     assert(main_actor->bull_mpi_ops->symbol != nullptr);                                                               \
-    main_actor->smpi_mpi_ops->symbol = dlsym(smpi_libhandle, "PMPI_" #symbol);                                         \
-    assert(main_actor->smpi_mpi_ops->symbol != nullptr);
+    if (setup_smpi) {                                                                                                  \
+        smpi_mpi_ops->symbol = dlsym(smpi_libhandle, "PMPI_" #symbol);                                                 \
+        assert(smpi_mpi_ops->symbol != nullptr);                                                                       \
+    }
 
 #define SETUP_COMMS_IN_IMPLEMS(lowercase, uppercase)                                                                   \
     main_actor->bull_mpi_ops->COMM_##uppercase = (MPI_Comm)dlsym(bull_libhandle, "ompi_mpi_comm_" #lowercase);         \
     assert(main_actor->bull_mpi_ops->COMM_##uppercase != nullptr);                                                     \
-    main_actor->smpi_mpi_ops->COMM_##uppercase = nullptr;
+    if (setup_smpi)                                                                                                    \
+        smpi_mpi_ops->COMM_##uppercase = nullptr;
 
 #define SETUP_DATATYPES_IN_IMPLEMS(lowercase, uppercase)                                                               \
     main_actor->bull_mpi_ops->TYPE_##uppercase = (MPI_Datatype)dlsym(bull_libhandle, "ompi_mpi_" #lowercase);          \
     assert(main_actor->bull_mpi_ops->TYPE_##uppercase != nullptr);                                                     \
-    main_actor->smpi_mpi_ops->TYPE_##uppercase = (MPI_Datatype)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);          \
-    assert(main_actor->smpi_mpi_ops->TYPE_##uppercase != nullptr);
+    if (setup_smpi) {                                                                                                  \
+        smpi_mpi_ops->TYPE_##uppercase = (MPI_Datatype)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);                  \
+        assert(smpi_mpi_ops->TYPE_##uppercase != nullptr);                                                             \
+    }
 
 #define SETUP_OPS_IN_IMPLEMS(lowercase, uppercase)                                                                     \
     main_actor->bull_mpi_ops->OP_##uppercase = (MPI_Op)dlsym(bull_libhandle, "ompi_mpi_op_" #lowercase);               \
     assert(main_actor->bull_mpi_ops->OP_##uppercase != nullptr);                                                       \
-    main_actor->smpi_mpi_ops->OP_##uppercase = (MPI_Op)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);                  \
-    assert(main_actor->smpi_mpi_ops->OP_##uppercase != nullptr);
+    if (setup_smpi) {                                                                                                  \
+        smpi_mpi_ops->OP_##uppercase = (MPI_Op)dlsym(smpi_libhandle, "smpi_MPI_" #uppercase);                          \
+        assert(smpi_mpi_ops->OP_##uppercase != nullptr);                                                               \
+    }
 
 MPI_Datatype implem_datatype(MPI_Datatype original)
 {
@@ -65,8 +74,8 @@ MPI_Datatype implem_datatype(MPI_Datatype original)
 
 #define MPI_TYPE_TRANSLATION(type)                                                                                     \
     if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type ||                                 \
-        original == main_actor->smpi_mpi_ops->TYPE_##type)                                                             \
-        return (main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->TYPE_##type;
+        original == smpi_mpi_ops->TYPE_##type)                                                                         \
+        return (main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->TYPE_##type;
 
     MPI_TYPE_TRANSLATION(CHAR)
     MPI_TYPE_TRANSLATION(DATATYPE_NULL)
@@ -143,9 +152,8 @@ MPI_Op implem_op(MPI_Op original)
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
 #define MPI_OP_TRANSLATION(op)                                                                                         \
-    if (original == MPI_##op || original == main_actor->bull_mpi_ops->OP_##op ||                                       \
-        original == main_actor->smpi_mpi_ops->OP_##op)                                                                 \
-        return (main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)->OP_##op;
+    if (original == MPI_##op || original == main_actor->bull_mpi_ops->OP_##op || original == smpi_mpi_ops->OP_##op)    \
+        return (main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->OP_##op;
 
     MPI_OP_TRANSLATION(MAX)
     MPI_OP_TRANSLATION(MIN)
@@ -190,8 +198,7 @@ MPI_Comm implem_comm(MPI_Comm original)
     int S4BXI_MPI_##name args                                                                                          \
     {                                                                                                                  \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
-        return ((name##_func)(main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)       \
-                    ->name)argsval;                                                                                    \
+        return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
     }
 
 // This one is kind of specific, it's only used for [I]alltoallw because of the datatype arrays
@@ -204,8 +211,7 @@ MPI_Comm implem_comm(MPI_Comm original)
         S4BXI_MPI_Comm_size(comm, &size);                                                                              \
         MPI_Datatype sendtypes_arr[size];                                                                              \
         MPI_Datatype recvtypes_arr[size];                                                                              \
-        return ((name##_func)(main_actor->use_smpi_implem ? main_actor->smpi_mpi_ops : main_actor->bull_mpi_ops)       \
-                    ->name)argsval;                                                                                    \
+        return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
     }
 
 typedef int (*Init_func)(int* argc, char*** argv);
@@ -213,7 +219,7 @@ int S4BXI_MPI_Init(int* argc, char*** argv)
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     int bull                 = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
-    int smpi                 = ((Init_func)main_actor->smpi_mpi_ops->Init)(argc, argv);
+    int smpi                 = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
     XBT_INFO("Barrier in Init");
     s4bxi_barrier();
 
@@ -227,7 +233,7 @@ int S4BXI_MPI_Finalize(void)
     s4bxi_barrier();
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
-    int smpi                 = ((Finalize_func)main_actor->smpi_mpi_ops->Finalize)();
+    int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)();
 
     return bull > smpi ? bull : smpi;
 }
@@ -809,8 +815,10 @@ void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    main_actor->bull_mpi_ops = new struct s4bxi_mpi_ops;
-    main_actor->smpi_mpi_ops = new struct s4bxi_mpi_ops;
+    main_actor->bull_mpi_ops = make_unique<struct s4bxi_mpi_ops>();
+    bool setup_smpi          = smpi_mpi_ops == nullptr;
+    if (setup_smpi)
+        smpi_mpi_ops = make_unique<struct s4bxi_mpi_ops>();
 
     SETUP_SYMBOLS_IN_IMPLEMS(Init)
     SETUP_SYMBOLS_IN_IMPLEMS(Finalize)
