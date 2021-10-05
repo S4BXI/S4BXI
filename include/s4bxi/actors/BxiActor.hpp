@@ -44,7 +44,7 @@ class BxiActor {
     simgrid::s4u::Actor* getSimgridActor();
     ptl_nid_t getNid();
     std::string getSlug();
-    const std::shared_ptr<BxiNode> getNode();
+    std::shared_ptr<BxiNode> getNode();
 };
 
 #endif // S4BXI_BXIACTOR_HPP
