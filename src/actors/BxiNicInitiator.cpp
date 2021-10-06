@@ -94,8 +94,7 @@ void BxiNicInitiator::operator()()
 void BxiNicInitiator::handle_put(BxiMsg* msg)
 {
     auto req  = (BxiPutRequest*)msg->parent_request;
-    BxiMD* md = req->md;
-    md->ni->cq->release();
+    req->md->ni->cq->release();
 
     int inline_size = req->matching ? 8 : 16;
     int PIO_size    = req->matching ? 408 : 416;

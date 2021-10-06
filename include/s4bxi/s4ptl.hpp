@@ -213,7 +213,7 @@ class BxiRequest {
     ptl_size_t mlength;
     bxi_req_type type;
     uint64_t payload_size; // In bytes
-    BxiMD* md;
+    std::shared_ptr<BxiMD> md;
     bool matching;
     ptl_match_bits_t match_bits;
     ptl_pid_t target_pid;
@@ -232,7 +232,6 @@ class BxiRequest {
     BxiRequest(bxi_req_type type, BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
                ptl_pid_t target_pid, ptl_pt_index_t pt_index, void* user_ptr, bool service_vn, ptl_size_t local_offset,
                ptl_size_t remote_offset);
-    ~BxiRequest();
 };
 
 class BxiPutRequest : public BxiRequest {

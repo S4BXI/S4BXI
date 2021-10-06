@@ -111,8 +111,8 @@ void BxiNicTarget::send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type
         req->maybe_issue_send();
         req->issue_ack(ni_fail_type);
     } else {
-        auto ack = new BxiMsg(*msg);
-        ack->type   = ack_type;
+        auto ack  = new BxiMsg(*msg);
+        ack->type = ack_type;
         // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
         // the state of the request to BXI_MSG_ACKED when it will be received at the initiator
         ack->initiator      = msg->target;
@@ -155,8 +155,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
         req->mlength = me->get_mlength(req);
 
-        BxiMD* md  = req->md;
-        req->start = me->get_offsetted_addr(msg, true);
+        shared_ptr<BxiMD> md = req->md;
+        req->start           = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length)
             // Here we could copy only the pointer if this piece of memory is read but not written
             capped_memcpy(req->start, (unsigned char*)md->md.start + req->local_offset, req->mlength);
@@ -287,8 +287,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         req->process_state = S4BXI_REQ_RECEIVED;
         req->mlength       = me->get_mlength(req);
 
-        BxiMD* md  = req->md;
-        req->start = me->get_offsetted_addr(msg, true);
+        shared_ptr<BxiMD> md = req->md;
+        req->start           = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length)
             apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start,
                             (unsigned char*)md->md.start + req->local_offset,
@@ -368,10 +368,10 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
 
-        BxiMD* md       = req->md;
-        req->matched_me = make_unique<BxiME>(*me);
-        req->mlength    = me->get_mlength(req);
-        req->start      = me->get_offsetted_addr(msg, true);
+        shared_ptr<BxiMD> md = req->md;
+        req->matched_me      = make_unique<BxiME>(*me);
+        req->mlength         = me->get_mlength(req);
+        req->start           = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length) {
             if (me->me->length)
                 capped_memcpy((unsigned char*)req->get_md->md.start + req->get_local_offset, req->start, req->mlength);
@@ -402,7 +402,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     tx_queue->put(response, 0, true);
 }
 
-void BxiNicTarget::handle_response(BxiMsg* msg, BxiMD* md)
+void BxiNicTarget::handle_response(BxiMsg* msg, shared_ptr<BxiMD> md)
 {
     BxiRequest* req = msg->parent_request;
     node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST,

@@ -18,6 +18,8 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_util.hpp"
 
+using namespace std;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_request, "Messages specific to s4ptl request implementation");
 
 BxiRequest::BxiRequest(bxi_req_type type, BxiMD* md, ptl_size_t payload_size, bool matching,
@@ -25,7 +27,7 @@ BxiRequest::BxiRequest(bxi_req_type type, BxiMD* md, ptl_size_t payload_size, bo
                        bool service_vn, ptl_size_t local_offset, ptl_size_t remote_offset)
     : type(type)
     , payload_size(payload_size)
-    , md(new BxiMD(*md))
+    , md(make_shared<BxiMD>(*md))
     , matching(matching)
     , match_bits(match_bits)
     , target_pid(target_pid)
@@ -36,11 +38,6 @@ BxiRequest::BxiRequest(bxi_req_type type, BxiMD* md, ptl_size_t payload_size, bo
     , local_offset(local_offset)
     , remote_offset(remote_offset)
 {
-}
-
-BxiRequest::~BxiRequest()
-{
-    delete md;
 }
 
 BxiPutRequest::BxiPutRequest(BxiMD* md, ptl_size_t payload_size, bool matching, ptl_match_bits_t match_bits,
