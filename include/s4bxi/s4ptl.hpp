@@ -178,14 +178,13 @@ class BxiME {
   public:
     bool used = false;
     BxiPT* pt;
-    ptl_me_t* me; // Both LE and ME are ptl_me internally (cf Portals typedefs)
+    std::unique_ptr<ptl_me_t> me; // Both LE and ME are ptl_me internally (cf Portals typedefs)
     void* user_ptr;
     ptl_size_t manage_local_offset = 0;
     ptl_list_t list;
 
     BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr);
     BxiME(const BxiME& me);
-    ~BxiME();
     void increment_ct(ptl_size_t byte_count);
     bool matches_request(BxiRequest* req);
     ptl_addr_t get_offsetted_addr(BxiMsg* msg, bool update_manage_local_offset = false);

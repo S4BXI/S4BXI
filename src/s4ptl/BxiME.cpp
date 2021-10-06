@@ -23,22 +23,17 @@ using namespace std;
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_me, "Messages specific to s4ptl ME implementation");
 
 BxiME::BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr)
-    : pt(pt), me(new ptl_me_t(*me_t)), list(list), user_ptr(user_ptr)
+    : pt(pt), me(make_unique<ptl_me_t>(*me_t)), list(list), user_ptr(user_ptr)
 {
 }
 
 BxiME::BxiME(const BxiME& me)
     : pt(me.pt)
-    , me(new ptl_me_t(*me.me))
+    , me(make_unique<ptl_me_t>(*me.me))
     , list(me.list)
     , user_ptr(me.user_ptr)
     , manage_local_offset(me.manage_local_offset)
 {
-}
-
-BxiME::~BxiME()
-{
-    delete me;
 }
 
 /**
