@@ -21,6 +21,7 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/actors/BxiMainActor.hpp"
 #include "s4bxi/s4bxi_util.hpp"
+#include "s4bxi/s4bxi_mpi_comm.hpp"
 #include <smpi_actor.hpp>
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_mpi_middlware, "Messages generated in MPI middleware");
@@ -183,14 +184,44 @@ MPI_Comm implem_comm(MPI_Comm original)
 // only linked with SimGrid, and therefore they refer to the SMPI variant
 #define MPI_COMM_TRANSLATION(comm)                                                                                     \
     if (original == MPI_COMM_##comm || original == main_actor->bull_mpi_ops->COMM_##comm)                              \
-        return (main_actor->use_smpi_implem ? MPI_COMM_##comm : GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_##comm);
+        return (main_actor->use_smpi_implem ? MPI_COMM_##comm : main_actor->bull_mpi_ops->COMM_##comm);
 
     MPI_COMM_TRANSLATION(WORLD);
     MPI_COMM_TRANSLATION(SELF);
 
-    // For now communicators are not properly usable across implementations, so returning the original
-    // gives us a solid 50% chance that it will be the correct implementation
-    return original;
+    auto s4bxi_comm = (BxiMpiComm*)original;
+
+    return main_actor->use_smpi_implem ? s4bxi_comm->smpi_comm : s4bxi_comm->bull_comm;
+}
+
+MPI_Comm implem_comm_bull(MPI_Comm original)
+{
+#define MPI_COMM_BULL(comm)                                                                                            \
+    if (original == MPI_COMM_##comm || original == GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_##comm)                  \
+        return GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_##comm;
+
+    MPI_COMM_BULL(WORLD);
+    MPI_COMM_BULL(SELF);
+
+    auto s4bxi_comm = (BxiMpiComm*)original;
+
+    return s4bxi_comm->bull_comm;
+}
+
+MPI_Comm implem_comm_smpi(MPI_Comm original)
+{
+// Inside this cpp file, we are in simulator territory (not in the user app), so the symbols like MPI_COMM_WORLD are
+// only linked with SimGrid, and therefore they refer to the SMPI variant
+#define MPI_COMM_SMPI(comm)                                                                                            \
+    if (original == MPI_COMM_##comm || original == GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->COMM_##comm)                  \
+        return MPI_COMM_##comm;
+
+    MPI_COMM_SMPI(WORLD);
+    MPI_COMM_SMPI(SELF);
+
+    auto s4bxi_comm = (BxiMpiComm*)original;
+
+    return s4bxi_comm->smpi_comm;
 }
 
 #define S4BXI_MPI_ONE_IMPLEM(rtype, name, args, argsval)                                                               \
@@ -371,9 +402,39 @@ S4BXI_MPI_ONE_IMPLEM(int, Comm_size, (MPI_Comm comm, int* size), (implem_comm(co
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_compare, (MPI_Comm comm1, MPI_Comm comm2, int* result));
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_create, (MPI_Comm comm, MPI_Group group, MPI_Comm* newcomm));
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_create_group, (MPI_Comm comm, MPI_Group group, int tag, MPI_Comm* newcomm));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_free, (MPI_Comm * comm));
+typedef int (*Comm_free_func)(MPI_Comm* comm);
+int S4BXI_MPI_Comm_free(MPI_Comm* comm)
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    // We should probably check that the comm is not WORLD or SELF, but I feel that it's the user app problem if someone
+    // tried to free WORLD or SELF...
+    auto s4bxi_comm = (BxiMpiComm*)(*comm);
+    int bull        = ((Comm_free_func)(main_actor->bull_mpi_ops->Comm_free))(&s4bxi_comm->bull_comm);
+    int smpi        = ((Comm_free_func)(smpi_mpi_ops->Comm_free))(&s4bxi_comm->smpi_comm);
+    delete s4bxi_comm;
+
+    return bull > smpi ? bull : smpi;
+}
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_disconnect, (MPI_Comm * comm));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_split, (MPI_Comm comm, int color, int key, MPI_Comm* comm_out));
+typedef int (*Comm_split_func)(MPI_Comm comm, int color, int key, MPI_Comm* comm_out);
+int S4BXI_MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm* comm_out)
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    MPI_Comm comm_in_bull    = implem_comm_bull(comm);
+    MPI_Comm comm_in_smpi    = implem_comm_smpi(comm);
+    MPI_Comm comm_out_bull;
+    MPI_Comm comm_out_smpi;
+
+    int bull = ((Comm_split_func)(main_actor->bull_mpi_ops->Comm_split))(comm_in_bull, color, key, &comm_out_bull);
+    int smpi = ((Comm_split_func)(smpi_mpi_ops->Comm_split))(comm_in_smpi, color, key, &comm_out_smpi);
+
+    auto s4bxi_comm_out       = new BxiMpiComm;
+    s4bxi_comm_out->bull_comm = comm_out_bull;
+    s4bxi_comm_out->smpi_comm = comm_out_smpi;
+    *comm_out                 = (MPI_Comm)s4bxi_comm_out;
+
+    return bull > smpi ? bull : smpi;
+}
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_set_info, (MPI_Comm comm, MPI_Info info));
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_get_info, (MPI_Comm comm, MPI_Info* info));
 // S4BXI_MPI_ONE_IMPLEM(int, Comm_split_type, (MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm*

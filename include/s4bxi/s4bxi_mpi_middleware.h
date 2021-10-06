@@ -616,8 +616,8 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_Group_range_excl           S4BXI_MPI_Group_range_excl
 // #define MPI_Group_f2c                  S4BXI_MPI_Group_f2c
 // #define MPI_Group_c2f                  S4BXI_MPI_Group_c2f
-// #define MPI_Comm_rank                  S4BXI_MPI_Comm_rank
-// #define MPI_Comm_size                  S4BXI_MPI_Comm_size
+#define MPI_Comm_rank S4BXI_MPI_Comm_rank
+#define MPI_Comm_size S4BXI_MPI_Comm_size
 // #define MPI_Comm_get_name              S4BXI_MPI_Comm_get_name
 // #define MPI_Comm_set_name              S4BXI_MPI_Comm_set_name
 // #define MPI_Comm_dup                   S4BXI_MPI_Comm_dup
@@ -631,9 +631,9 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_Comm_compare               S4BXI_MPI_Comm_compare
 // #define MPI_Comm_create                S4BXI_MPI_Comm_create
 // #define MPI_Comm_create_group          S4BXI_MPI_Comm_create_group
-// #define MPI_Comm_free                  S4BXI_MPI_Comm_free
+#define MPI_Comm_free S4BXI_MPI_Comm_free
 // #define MPI_Comm_disconnect            S4BXI_MPI_Comm_disconnect
-// #define MPI_Comm_split                 S4BXI_MPI_Comm_split
+#define MPI_Comm_split S4BXI_MPI_Comm_split
 // #define MPI_Comm_set_info              S4BXI_MPI_Comm_set_info
 // #define MPI_Comm_get_info              S4BXI_MPI_Comm_get_info
 // #define MPI_Comm_split_type            S4BXI_MPI_Comm_split_type
