@@ -26,14 +26,8 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_pt, "Messages specific to s4ptl PT impl
 BxiPT::BxiPT(ptl_handle_ni_t ni_handle, ptl_handle_eq_t eq_handle, ptl_index_t index, unsigned int options)
     : ni((BxiNI*)ni_handle), eq((BxiEQ*)eq_handle), index(index), options(options)
 {
-    priority_list = new BxiList;
-    overflow_list = new BxiList;
-}
-
-BxiPT::~BxiPT()
-{
-    delete priority_list;
-    delete overflow_list;
+    priority_list = make_shared<BxiList>();
+    overflow_list = make_shared<BxiList>();
 }
 
 /**

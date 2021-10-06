@@ -91,8 +91,8 @@ typedef std::vector<BxiME*> BxiList;
 
 class BxiPT {
   public:
-    BxiList* priority_list;                  // Stores both ME and LE
-    BxiList* overflow_list;                  // Same
+    std::shared_ptr<BxiList> priority_list;  // Stores both ME and LE
+    std::shared_ptr<BxiList> overflow_list;  // Same
     std::vector<BxiMsg*> unexpected_headers; // On the NIC UH are a type of ME, but for us I think a BxiMsg is easier
     BxiEQ* eq;
     BxiNI* ni;
@@ -101,7 +101,6 @@ class BxiPT {
     ptl_index_t index;
 
     BxiPT(ptl_handle_ni_t ni_handle, ptl_handle_eq_t eq_handle, ptl_index_t index, unsigned int options);
-    ~BxiPT();
 
     static int alloc(ptl_handle_ni_t ni_handle, unsigned int options, ptl_handle_eq_t eq_handle, ptl_index_t desired,
                      ptl_index_t* actual);
@@ -190,8 +189,8 @@ class BxiME {
     void increment_ct(ptl_size_t byte_count);
     bool matches_request(BxiRequest* req);
     ptl_addr_t get_offsetted_addr(BxiMsg* msg, bool update_manage_local_offset = false);
-    BxiList* get_list();
-    BxiList* get_list(BxiPT* pt);
+    std::shared_ptr<BxiList> get_list();
+    std::shared_ptr<BxiList> get_list(BxiPT* pt);
     ptl_size_t get_mlength(const BxiRequest* req);
 
     static void append(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr, ptl_handle_me_t* me_handle);

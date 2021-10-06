@@ -18,6 +18,8 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
 
+using namespace std;
+
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_me, "Messages specific to s4ptl ME implementation");
 
 BxiME::BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr)
@@ -130,7 +132,7 @@ ptl_addr_t BxiME::get_offsetted_addr(BxiMsg* msg, bool update_manage_local_offse
     return addr;
 }
 
-BxiList* BxiME::get_list()
+shared_ptr<BxiList> BxiME::get_list()
 {
     return get_list(pt);
 }
@@ -138,7 +140,7 @@ BxiList* BxiME::get_list()
 /**
  * Used in case the PT has not been set in the ME yet
  */
-BxiList* BxiME::get_list(BxiPT* considered_pt)
+shared_ptr<BxiList> BxiME::get_list(BxiPT* considered_pt)
 {
     return list == PTL_PRIORITY_LIST ? considered_pt->priority_list : considered_pt->overflow_list;
 }
