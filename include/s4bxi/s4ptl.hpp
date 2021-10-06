@@ -125,7 +125,8 @@ class BxiNI {
     std::map<ptl_pt_index_t, BxiPT*> pt_indexes;
     std::vector<ptl_process_t> l2p_map;
 
-    BxiNI(std::shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid, ptl_ni_limits_t* limits);
+    BxiNI(std::shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
+          ptl_ni_limits_t* limits);
 
     static BxiNI* init(std::shared_ptr<BxiNode> node, ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
                        const ptl_ni_limits_t* desired, ptl_ni_limits_t* actual);
@@ -305,9 +306,9 @@ class BxiMsg {
     bxi_msg_type type;
     BxiRequest* parent_request;
     unsigned int ref_count;
-    int ni_fail_type    = PTL_NI_OK;
-    BxiMsg* answers_msg = nullptr;
-    BxiLog* bxi_log     = nullptr;
+    int ni_fail_type                = PTL_NI_OK;
+    BxiMsg* answers_msg             = nullptr;
+    std::shared_ptr<BxiLog> bxi_log = nullptr;
 
     BxiMsg(ptl_nid_t initiator, ptl_nid_t target, bxi_msg_type type, ptl_size_t simulated_size,
            BxiRequest* parent_request);

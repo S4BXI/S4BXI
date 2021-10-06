@@ -92,7 +92,7 @@ static void s4bxi_copy_file(const string& src, const string& target, off_t fdin_
 
 static int visit_libs(struct dl_phdr_info* info, size_t, void* data)
 {
-    char* libname    = (char*)(data);
+    auto libname     = (char*)(data);
     const char* path = info->dlpi_name;
     if (strstr(path, libname)) {
         strncpy(libname, path, 512);
@@ -104,7 +104,7 @@ static int visit_libs(struct dl_phdr_info* info, size_t, void* data)
 
 static s4bxi_entry_point_type s4bxi_resolve_function(void* handle)
 {
-    s4bxi_entry_point_type entry_point = (s4bxi_entry_point_type)dlsym(handle, "main");
+    auto entry_point = (s4bxi_entry_point_type)dlsym(handle, "main");
     if (entry_point != nullptr) {
         return entry_point;
     }

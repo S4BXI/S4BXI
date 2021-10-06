@@ -56,7 +56,7 @@ void BxiNicTarget::operator()()
         if (msg->bxi_log) {
             msg->bxi_log->end = s4u::Engine::get_clock();
             BxiEngine::get_instance()->log(*msg->bxi_log);
-            delete msg->bxi_log;
+            msg->bxi_log = nullptr;
         }
 
         switch (msg->type) {
@@ -111,7 +111,7 @@ void BxiNicTarget::send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type
         req->maybe_issue_send();
         req->issue_ack(ni_fail_type);
     } else {
-        BxiMsg* ack = new BxiMsg(*msg);
+        auto ack = new BxiMsg(*msg);
         ack->type   = ack_type;
         // If no Portals ACK needs to be sent, we still need to send an E2E ACK, which will fast-forward
         // the state of the request to BXI_MSG_ACKED when it will be received at the initiator

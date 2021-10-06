@@ -102,7 +102,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
 
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (__bxi_log_level) {
-        msg->bxi_log            = new BxiLog;
+        msg->bxi_log            = make_shared<BxiLog>();
         msg->bxi_log->type      = S4BXILOG_PTL_PUT;
         msg->bxi_log->initiator = msg->initiator;
         msg->bxi_log->target    = msg->target;
@@ -153,7 +153,7 @@ void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
 {
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (__bxi_log_level) {
-        msg->bxi_log            = new BxiLog;
+        msg->bxi_log            = make_shared<BxiLog>();
         msg->bxi_log->type      = type;
         msg->bxi_log->initiator = msg->initiator;
         msg->bxi_log->target    = msg->target;
