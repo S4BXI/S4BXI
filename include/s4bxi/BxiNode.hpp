@@ -49,7 +49,7 @@ class BxiNode {
     simgrid::s4u::Host* main_host;
     simgrid::s4u::Host* nic_host;
     simgrid::s4u::SemaphorePtr e2e_entries;
-    BxiNicE2E* e2e_actor   = nullptr;
+    BxiNicE2E* e2e_actor                   = nullptr;
     std::shared_ptr<BxiQueue> tx_queues[4] = {nullptr, nullptr, nullptr, nullptr};
     // Node level flow control semaphores
     std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr> flowctrl_sems_node[4] = {

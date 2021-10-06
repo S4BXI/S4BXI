@@ -33,7 +33,7 @@
 #ifdef BUILD_MPI_MIDDLEWARE
 #include <smpi/smpi.h>
 #include "smpi_coll.hpp"
-#include "s4bxi/s4bxi_mpi_middleware.h"
+#include "s4bxi/mpi_middleware/s4bxi_mpi_middleware.h"
 #endif
 
 static const std::string smpi_default_instance_name("smpirun");

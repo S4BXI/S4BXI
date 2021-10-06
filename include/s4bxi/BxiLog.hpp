@@ -55,8 +55,8 @@ class BxiLog {
 
     friend std::ostream& operator<<(std::ostream& os, BxiLog const& log)
     {
-        int precision    = 9;
-        auto tmp = (unsigned int)log.start;
+        int precision = 9;
+        auto tmp      = (unsigned int)log.start;
         while (tmp >= 1) {
             tmp /= 10;
             ++precision;

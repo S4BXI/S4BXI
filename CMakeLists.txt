@@ -81,7 +81,8 @@ set(SOURCE_FILES
 
 if(BUILD_MPI_MIDDLEWARE)
     list(APPEND SOURCE_FILES 
-            src/s4bxi_mpi_middleware.cpp 
+            src/mpi_middleware/s4bxi_mpi_middleware.cpp 
+            src/mpi_middleware/BxiMpiComm.cpp 
             src/s4bxi_shared.cpp)
 endif()
 
