@@ -46,7 +46,7 @@ int BxiEQ::wait(ptl_event_t* event)
     ptl_event_t* ev_ptr;
     mailbox->get_init()
         ->set_dst_data(reinterpret_cast<void**>(&ev_ptr), sizeof(void*))
-        ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+        ->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)
         ->wait();
     *event = *ev_ptr;
     delete ev_ptr;

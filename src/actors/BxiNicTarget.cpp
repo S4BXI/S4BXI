@@ -50,7 +50,7 @@ void BxiNicTarget::operator()()
         BxiMsg* msg;
         nic_rx_mailbox->get_init()
             ->set_dst_data(reinterpret_cast<void**>(&msg), sizeof(void*))
-            ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+            ->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)
             ->wait();
 
         if (msg->bxi_log) {

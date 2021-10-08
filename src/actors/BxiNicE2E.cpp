@@ -105,7 +105,7 @@ void BxiNicE2E::operator()()
 
             get_retransmit_mailbox(msg)
                 ->put_init(new BxiMsg(*msg), 0)
-                ->set_copy_data_callback(&SIMIX_comm_copy_pointer_callback)
+                ->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)
                 ->detach();
             node->resume_waiting_tx_actors();
 
