@@ -391,6 +391,12 @@ int s4bxi_default_main(int argc, char* argv[])
     SMPI_app_instance_register(smpi_default_instance_name.c_str(), nullptr, rank_counts);
 #endif
 
+    // By default the simulation fails "silently" (shows an error message but returns with code 0) in case of deadlock.
+    // Throwing an error allows us to see what was going at the time of deadlock in GDB
+    e.on_deadlock.connect([]() {
+        abort();
+    });
+
     /* Run the simulation */
     e.run();
 
