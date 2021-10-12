@@ -101,8 +101,8 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
 
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (__bxi_log_level) {
-        msg->bxi_log            = make_shared<BxiLog>();
-        msg->bxi_log->type      = S4BXILOG_PTL_PUT;
+        msg->bxi_log       = make_shared<BxiLog>();
+        msg->bxi_log->type = (bxi_log_type)msg->type; // Highly unsafe cast, see comment in BxiNicActor::reliable_comm
         msg->bxi_log->initiator = msg->initiator;
         msg->bxi_log->target    = msg->target;
     }

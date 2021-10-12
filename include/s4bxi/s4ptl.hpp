@@ -260,7 +260,7 @@ class BxiAtomicRequest : public BxiPutRequest {
 
 class BxiFetchAtomicRequest : public BxiAtomicRequest {
   public:
-    BxiMD* get_md;
+    std::shared_ptr<BxiMD> get_md;
     ptl_size_t get_local_offset;
     bool fetch_atomic_event_issued = false;
 

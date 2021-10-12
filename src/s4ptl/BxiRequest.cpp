@@ -122,7 +122,7 @@ BxiFetchAtomicRequest::BxiFetchAtomicRequest(BxiMD* md, ptl_size_t payload_size,
                                              ptl_datatype_t datatype, BxiMD* get_md, ptl_size_t get_local_offset)
     : BxiAtomicRequest(md, payload_size, matching, match_bits, target_pid, pt_index, user_ptr, service_vn, local_offset,
                        remote_offset, PTL_NO_ACK_REQ /* unused, there will be a reply anyway */, hdr, op, datatype)
-    , get_md(get_md)
+    , get_md(make_shared<BxiMD>(*get_md))
     , get_local_offset(get_local_offset)
 {
     type = S4BXI_FETCH_ATOMIC_REQUEST; // Overwrite what ATOMIC constructor did

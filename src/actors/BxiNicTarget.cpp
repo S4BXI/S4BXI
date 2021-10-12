@@ -74,7 +74,7 @@ void BxiNicTarget::operator()()
             break;
         case S4BXI_PTL_GET_RESPONSE:
         case S4BXI_PTL_FETCH_ATOMIC_RESPONSE:
-            handle_response(msg, msg->parent_request->md);
+            handle_response(msg);
             break;
         case S4BXI_PTL_ACK:
             handle_ptl_ack(msg);
@@ -231,13 +231,13 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    BxiME* me             = nullptr;
-    int ni_fail_type      = match_entry(msg, &me);
-    auto response         = new BxiMsg(*msg);
-    response->type        = S4BXI_PTL_GET_RESPONSE;
-    response->initiator   = msg->target;
-    response->target      = msg->initiator;
-    response->retry_count = 0;
+    BxiME* me              = nullptr;
+    auto response          = new BxiMsg(*msg);
+    response->type         = S4BXI_PTL_GET_RESPONSE;
+    response->initiator    = msg->target;
+    response->target       = msg->initiator;
+    response->retry_count  = 0;
+    response->ni_fail_type = match_entry(msg, &me);
 
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
@@ -274,8 +274,11 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    bool need_ack         = false;
-    bxi_msg_type ack_type = S4BXI_PTL_ACK;
+    shared_ptr<BxiMD> md = req->md;
+
+    bool need_portals_ack = req->ack_req != PTL_NO_ACK_REQ;
+    bool need_ack         = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
+    bxi_msg_type ack_type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
     BxiME* me        = nullptr;
     int ni_fail_type = match_entry(msg, &me);
@@ -287,8 +290,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         req->process_state = S4BXI_REQ_RECEIVED;
         req->mlength       = me->get_mlength(req);
 
-        shared_ptr<BxiMD> md = req->md;
-        req->start           = me->get_offsetted_addr(msg, true);
+        req->start = me->get_offsetted_addr(msg, true);
         if (S4BXI_CONFIG_AND(node, use_real_memory) && md->md.length)
             apply_atomic_op(req->op, req->datatype, (unsigned char*)req->start,
                             (unsigned char*)md->md.start + req->local_offset,
@@ -298,9 +300,11 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         if (HAS_PTL_OPTION(me->me, PTL_ME_EVENT_CT_COMM))
             me->increment_ct(req->payload_size);
 
-        bool need_portals_ack = !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE) && req->ack_req != PTL_NO_ACK_REQ;
-        need_ack              = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
-        ack_type              = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
+        // Update portals ack status based on ME
+        need_portals_ack = need_portals_ack && !HAS_PTL_OPTION(me->me, PTL_ME_ACK_DISABLE);
+        // Refresh need_ack and ack_type based on portals ack status
+        need_ack = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
+        ack_type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
         if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
             !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
@@ -331,9 +335,6 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         } else {
             BxiME::maybe_auto_unlink(me);
         }
-    } else if (req->ack_req != PTL_NO_ACK_REQ) {
-        need_ack = true;
-        ack_type = S4BXI_PTL_ACK;
     }
 
     if (need_ack)
@@ -357,13 +358,13 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     if (req->process_state > S4BXI_REQ_CREATED)
         return; // Don't process the same message twice
 
-    BxiME* me             = nullptr;
-    int ni_fail_type      = match_entry(msg, &me);
-    auto response         = new BxiMsg(*msg);
-    response->type        = S4BXI_PTL_FETCH_ATOMIC_RESPONSE;
-    response->initiator   = msg->target;
-    response->target      = msg->initiator;
-    response->retry_count = 0;
+    BxiME* me              = nullptr;
+    auto response          = new BxiMsg(*msg);
+    response->type         = S4BXI_PTL_FETCH_ATOMIC_RESPONSE;
+    response->initiator    = msg->target;
+    response->target       = msg->initiator;
+    response->retry_count  = 0;
+    response->ni_fail_type = match_entry(msg, &me);
 
     if (me) {
         req->process_state = S4BXI_REQ_RECEIVED;
@@ -402,9 +403,11 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     tx_queue->put(response, 0, true);
 }
 
-void BxiNicTarget::handle_response(BxiMsg* msg, shared_ptr<BxiMD> md)
+void BxiNicTarget::handle_response(BxiMsg* msg)
 {
     BxiRequest* req = msg->parent_request;
+    shared_ptr<BxiMD> md =
+        req->type == S4BXI_FETCH_ATOMIC_REQUEST ? ((BxiFetchAtomicRequest*)msg->parent_request)->get_md : req->md;
     node->release_e2e_entry(msg->initiator, req->service_vn ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST,
                             req->md->ni->pid, req->target_pid);
 
@@ -515,8 +518,8 @@ void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
  * That's a lot of nested `for`s, but usually we will have only one ni and one pt, so it will be fast
  *
  * @param msg Incoming message
- * @param matching Whether we are trying to match a LE or a ME
- * @return Pointer to the entry, or nullptr if none found
+ * @param me Output ME if matching succeeded
+ * @return Portals' NI status code
  */
 int BxiNicTarget::match_entry(BxiMsg* msg, BxiME** me)
 {
