@@ -34,6 +34,8 @@ struct cmp_str {
 };
 
 class BxiMainActor : public BxiActor {
+    static simgrid::s4u::BarrierPtr _barrier;
+
   protected:
     bool service_mode;
     std::shared_ptr<BxiQueue> tx_queue;
@@ -69,6 +71,8 @@ class BxiMainActor : public BxiActor {
     int optind              = 0;
     uint8_t sampling();
     void set_sampling(uint8_t s);
+    static void setup_barrier();
+    static void barrier();
     explicit BxiMainActor(const std::vector<std::string>& args);
     ~BxiMainActor();
 

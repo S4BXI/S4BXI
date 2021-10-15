@@ -145,17 +145,7 @@ void s4bxi_exit()
 
 void s4bxi_barrier()
 {
-    static s4u::SemaphorePtr sem   = s4u::Semaphore::create(0);
-    static unsigned int proc_count = 0;
-
-    if (proc_count < s4bxi_get_rank_number() - 1) { // Not everyone has arrived, register and wait
-        ++proc_count;
-        sem->acquire();
-    } else { // Everyone is here, unblock all waiting processes (so all minus ourself)
-        for (; proc_count; --proc_count) {
-            sem->release();
-        }
-    }
+    BxiMainActor::barrier();
 }
 
 void s4bxi_keyval_store_pointer(char* key, void* value)

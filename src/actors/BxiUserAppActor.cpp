@@ -159,6 +159,8 @@ void BxiUserAppActor::operator()()
     my_rank = stoul(string(self->get_property("rank")));
     XBT_INFO("Init rank %d", my_rank);
 
+    setup_barrier();
+
     // Copy the dynamic library:
     string target_executable = executable + "_" + simulation_rand_id + "_" + to_string(my_rank) + ".so";
 

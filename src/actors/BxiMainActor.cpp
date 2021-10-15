@@ -28,6 +28,8 @@ using namespace simgrid;
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_main_actor, "Messages specific to the main actor")
 
+s4u::BarrierPtr BxiMainActor::_barrier = nullptr;
+
 BxiMainActor::BxiMainActor(const vector<string>& args)
 {
     BxiEngine::get_instance()->register_main_actor(this);
@@ -100,6 +102,22 @@ uint8_t BxiMainActor::sampling()
 void BxiMainActor::set_sampling(uint8_t s)
 {
     is_sampling = s;
+}
+
+void BxiMainActor::setup_barrier()
+{
+    // If we don't yield a lot for some reason actors start to wait on the Barrier before it's properly constructed. In
+    // my opinion this makes no sense but I'm not going to question it: it works well with 2 yields and as this function
+    // is only called once per MainActor the overhead is totally negligible
+    s4u::this_actor::yield();
+    if (!_barrier)
+        _barrier = s4u::Barrier::create(s4bxi_get_rank_number());
+    s4u::this_actor::yield();
+}
+
+void BxiMainActor::barrier()
+{
+    _barrier->wait();
 }
 
 // ==================================
