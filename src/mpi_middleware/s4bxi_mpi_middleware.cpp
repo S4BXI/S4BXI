@@ -201,10 +201,11 @@ typedef int (*Init_func)(int* argc, char*** argv);
 int S4BXI_MPI_Init(int* argc, char*** argv)
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    int bull                 = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
-    int smpi                 = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
-    XBT_INFO("Barrier in Init");
-    s4bxi_barrier();
+
+    XBT_INFO("Init SMPI");
+    int smpi = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
+    XBT_INFO("Init Bull MPI");
+    int bull = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
 
     return bull > smpi ? bull : smpi;
 }
@@ -214,9 +215,10 @@ int S4BXI_MPI_Finalize(void)
 {
     XBT_INFO("Barrier in Finalize");
     s4bxi_barrier();
+    
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
     int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)();
+    int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
 
     return bull > smpi ? bull : smpi;
 }
