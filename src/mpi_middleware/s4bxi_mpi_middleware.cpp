@@ -215,7 +215,7 @@ int S4BXI_MPI_Finalize(void)
 {
     XBT_INFO("Barrier in Finalize");
     s4bxi_barrier();
-    
+
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)();
     int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();

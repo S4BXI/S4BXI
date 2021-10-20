@@ -26,6 +26,7 @@
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <boost/algorithm/string.hpp>
+#include <csignal>
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/plugins/BxiActorExt.hpp"
@@ -297,6 +298,35 @@ void BxiUserAppActor::operator()()
 
     if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
         dlclose(handle);
+
+    s4bxi_barrier();
+}
+
+/**
+ * See segvhandler in SimGrid's EngineImpl.cpp, we're modifying it to display the current backtrace
+ */
+void app_signal_handler(int nSignum, siginfo_t* siginfo, void* vcontext)
+{
+    if ((siginfo->si_signo == SIGSEGV && siginfo->si_code == SEGV_ACCERR) || siginfo->si_signo == SIGBUS) {
+        XBT_CRITICAL("Access violation or Bus error detected.\n"
+                     "This probably comes from a programming error in your code, or from a stack\n"
+                     "overflow. If you are certain of your code, try increasing the stack size\n"
+                     "   --cfg=contexts/stack-size:XXX.\n"
+                     "\n"
+                     "If it does not help, this may have one of the following causes:\n"
+                     "a bug in SimGrid, a bug in the OS or a bug in a third-party libraries.\n"
+                     "Failing hardware can sometimes generate such errors too.\n"
+                     "\n"
+                     "If you think you've found a bug in SimGrid, please report it along with a\n"
+                     "Minimal Working Example (MWE) reproducing your problem and a full backtrace\n"
+                     "of the fault captured with gdb or valgrind.");
+    } else if (siginfo->si_signo == SIGSEGV) {
+        XBT_CRITICAL("Segmentation fault.");
+        xbt_backtrace_display_current();
+    }
+
+    // See https://stackoverflow.com/a/39269908
+    _exit(128 + nSignum);
 }
 
 int s4bxi_default_main(int argc, char* argv[])
@@ -307,7 +337,7 @@ int s4bxi_default_main(int argc, char* argv[])
 #endif
 
     s4bxi_actor_ext_plugin_init();
-    simgrid::s4u::Engine e(&argc, argv);
+    auto simgrid_engine = new simgrid::s4u::Engine(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
 
     string platf  = argv[1];
@@ -324,16 +354,17 @@ int s4bxi_default_main(int argc, char* argv[])
             S4BXI_ABORT("dlopen %s error: %s", platf.c_str(), dlerror());
     }
 
-    e.set_config("surf/precision:1e-9");
-    e.set_config("network/loopback-lat:0");
-    e.set_config("network/loopback-bw:999e9");
-    e.set_config("network/model:CM02");
+    simgrid_engine->set_config("surf/precision:1e-9");
+    simgrid_engine->set_config("network/loopback-lat:0");
+    simgrid_engine->set_config("network/loopback-bw:999e9");
+    simgrid_engine->set_config("network/model:CM02");
 
-    char random_characters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B',
-                                'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-                                'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+    char random_characters[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                                'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                                'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
     for (int i = 0; i < simulation_rand_id.length(); i++)
-        simulation_rand_id[i] = random_characters[random_int(0, 35)];
+        simulation_rand_id[i] = random_characters[random_int(0, 51)];
 
     s4bxi_init_privatization_dlopen(executable);
 
@@ -346,11 +377,11 @@ int s4bxi_default_main(int argc, char* argv[])
         if (!(sym = (cpp_config_callback)dlsym(platf_lib, "configure_engine")))
             XBT_WARN("No engine configuration found in platform (%s)", dlerror());
         else
-            sym(e);
+            sym(*simgrid_engine);
     }
 
 #ifdef BUILD_MPI_MIDDLEWARE
-    e.set_config("smpi/coll-selector:ompi");
+    simgrid_engine->set_config("smpi/coll-selector:ompi");
 
     simgrid::smpi::colls::set_collectives();
     simgrid::smpi::colls::smpi_coll_cleanup_callback = nullptr;
@@ -358,10 +389,10 @@ int s4bxi_default_main(int argc, char* argv[])
 #endif
 
     /* Register the classes representing the actors */
-    e.register_actor<BxiNicInitiator>("nic_initiator");
-    e.register_actor<BxiNicTarget>("nic_target");
-    e.register_actor<BxiNicE2E>("nic_e2e");
-    e.register_actor<BxiUserAppActor>("user_app");
+    simgrid_engine->register_actor<BxiNicInitiator>("nic_initiator");
+    simgrid_engine->register_actor<BxiNicTarget>("nic_target");
+    simgrid_engine->register_actor<BxiNicE2E>("nic_e2e");
+    simgrid_engine->register_actor<BxiUserAppActor>("user_app");
 
     /* Load the platform description and then deploy the application */
     if (platf_lib) { // If we have a dll fetch the symbol, otherwise load the XML
@@ -372,16 +403,16 @@ int s4bxi_default_main(int argc, char* argv[])
         if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
             dlclose(platf_lib);
     } else {
-        e.load_platform(platf);
+        simgrid_engine->load_platform(platf);
     }
 
 #ifdef BUILD_MPI_MIDDLEWARE
-    e.set_default_comm_data_copy_callback(smpi_comm_copy_buffer_callback);
+    simgrid_engine->set_default_comm_data_copy_callback(smpi_comm_copy_buffer_callback);
 #endif
-    e.load_deployment(deploy);
+    simgrid_engine->load_deployment(deploy);
 
     int rank_counts = 0;
-    for (auto actor : e.get_all_actors()) {
+    for (auto actor : simgrid_engine->get_all_actors()) {
         if (actor->get_name() == "user_app") {
             actor->set_property("instance_id", smpi_default_instance_name.c_str());
             actor->set_property("rank", to_string(rank_counts));
@@ -395,12 +426,19 @@ int s4bxi_default_main(int argc, char* argv[])
 
     // By default the simulation fails "silently" (shows an error message but returns with code 0) in case of deadlock.
     // Throwing an error allows us to see what was going at the time of deadlock in GDB
-    e.on_deadlock.connect([]() {
-        abort();
-    });
+    simgrid_engine->on_deadlock.connect([]() { abort(); });
+
+    struct sigaction app_action;
+    memset(&app_action, 0, sizeof(struct sigaction));
+    app_action.sa_flags     = SA_SIGINFO;
+    app_action.sa_sigaction = app_signal_handler;
+    sigaction(SIGSEGV, &app_action, NULL);
 
     /* Run the simulation */
-    e.run();
+    simgrid_engine->run();
+
+    // Remove our signal (reset the default one)
+    signal(SIGSEGV, SIG_DFL);
 
 #ifdef BUILD_MPI_MIDDLEWARE
     SMPI_finalize();
@@ -408,6 +446,8 @@ int s4bxi_default_main(int argc, char* argv[])
 #endif
 
     BxiEngine::get_instance()->end_simulation();
+
+    delete simgrid_engine;
 
     return 0;
 }
