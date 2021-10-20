@@ -168,45 +168,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         need_ack              = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
         ack_type              = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
-        if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
-            !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
-            me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have a PUT_OVERFLOW later
-            auto eq              = me->pt->eq;
-            auto event           = new ptl_event_t;
-            event->initiator     = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
-            event->type          = PTL_EVENT_PUT;
-            event->ni_fail_type  = PTL_OK;
-            event->pt_index      = me->pt->index;
-            event->user_ptr      = me->user_ptr;
-            event->hdr_data      = req->hdr;
-            event->rlength       = req->payload_size;
-            event->mlength       = req->mlength;
-            event->remote_offset = req->remote_offset;
-            event->match_bits    = req->match_bits;
-            event->start         = req->start;
-
-            // We need to auto_unlink at this precise moment, otherwise on rare
-            // occasions the ME could be already gone by the time we check if
-            // it has the "auto unlink" option (if the user got the event and
-            // manually unlinked the ME before this actor was scheduled again
-            // and executed this). So if we were to put the auto_unlink after
-            // the issue_event, we could have an invalid read when doing
-            // `HAS_PTL_OPTION(...)` at the beginning of maybe_auto_unlink_me
-            // (thanks valgrind for pointing this out)
-            BxiME::maybe_auto_unlink(me);
-            // ... But by doing this the "auto unlink" event is issued before
-            // the "put" event, I don't know if it matters or not (I'm not
-            // event sure of how the real world NIC does this)
-
-            // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-            if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-                node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
-            }
-
-            node->issue_event(eq, event);
-        } else {
-            BxiME::maybe_auto_unlink(me);
-        }
+        put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
     } else if (req->ack_req != PTL_NO_ACK_REQ) {
         need_ack = true;
         ack_type = S4BXI_PTL_ACK;
@@ -306,35 +268,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         need_ack = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
         ack_type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
-        if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) &&
-            !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
-            me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have an ATOMIC_OVERFLOW later
-            auto eq              = me->pt->eq;
-            auto event           = new ptl_event_t;
-            event->initiator     = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
-            event->type          = PTL_EVENT_ATOMIC;
-            event->ni_fail_type  = PTL_OK;
-            event->pt_index      = me->pt->index;
-            event->user_ptr      = me->user_ptr;
-            event->hdr_data      = req->hdr;
-            event->rlength       = req->payload_size;
-            event->mlength       = req->mlength;
-            event->remote_offset = req->remote_offset;
-            event->match_bits    = req->match_bits;
-            event->start         = req->start;
-
-            // See comment for put
-            BxiME::maybe_auto_unlink(me);
-
-            // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-            if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-                node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
-            }
-
-            node->issue_event(eq, event);
-        } else {
-            BxiME::maybe_auto_unlink(me);
-        }
+        put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
     }
 
     if (need_ack)
@@ -542,6 +476,50 @@ int BxiNicTarget::match_entry(BxiMsg* msg, BxiME** me)
     }
 
     return PTL_NI_TARGET_INVALID;
+}
+
+void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg *msg, ptl_event_kind ev_kind)
+{
+    auto req = (BxiPutRequest*)msg->parent_request;
+
+    if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) && !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
+        me->list == PTL_PRIORITY_LIST) { // OVERFLOW ME will have a PUT_OVERFLOW later
+        auto eq              = me->pt->eq;
+        auto event           = new ptl_event_t;
+        event->initiator     = ptl_process_t{.phys{.nid = req->md->ni->node->nid, .pid = req->md->ni->pid}};
+        event->type          = ev_kind;
+        event->ni_fail_type  = PTL_OK;
+        event->pt_index      = me->pt->index;
+        event->user_ptr      = me->user_ptr;
+        event->hdr_data      = req->hdr;
+        event->rlength       = req->payload_size;
+        event->mlength       = req->mlength;
+        event->remote_offset = req->remote_offset;
+        event->match_bits    = req->match_bits;
+        event->start         = req->start;
+
+        // We need to auto_unlink at this precise moment, otherwise on rare
+        // occasions the ME could be already gone by the time we check if
+        // it has the "auto unlink" option (if the user got the event and
+        // manually unlinked the ME before this actor was scheduled again
+        // and executed this). So if we were to put the auto_unlink after
+        // the issue_event, we could have an invalid read when doing
+        // `HAS_PTL_OPTION(...)` at the beginning of maybe_auto_unlink_me
+        // (thanks valgrind for pointing this out)
+        BxiME::maybe_auto_unlink(me);
+        // ... But by doing this the "auto unlink" event is issued before
+        // the "put" event, I don't know if it matters or not (I'm not
+        // event sure of how the real world NIC does this)
+
+        // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
+        if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+            node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+        }
+
+        node->issue_event(eq, event);
+    } else {
+        BxiME::maybe_auto_unlink(me);
+    }
 }
 
 /**
