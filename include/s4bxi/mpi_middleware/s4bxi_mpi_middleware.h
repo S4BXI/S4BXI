@@ -829,6 +829,70 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_File_set_errhandler        S4BXI_MPI_File_set_errhandler
 // #define MPI_File_get_errhandler        S4BXI_MPI_File_get_errhandler
 
+// ================================================================================================================
+// SMPI stuff, copy/pasted because all of this is defined in smpi.h and not in a specific file, and I don't want to
+// include it all the time
+// ================================================================================================================
+
+/**
+ * Functions for call location tracing. These functions will be
+ * called from the user's application! (With the __FILE__ and __LINE__ values
+ * passed as parameters.)
+ */
+void smpi_trace_set_call_location(const char* file, int line);
+/** Fortran binding **/
+void smpi_trace_set_call_location_(const char* file, const int* line);
+/** Fortran binding + -fsecond-underscore **/
+void smpi_trace_set_call_location__(const char* file, const int* line);
+
+#define SMPI_ITER_NAME1(line) _XBT_CONCAT(iter_count, line)
+#define SMPI_ITER_NAME(line)  SMPI_ITER_NAME1(line)
+#define SMPI_CTAG_NAME1(line) _XBT_CONCAT(ctag, line)
+#define SMPI_CTAG_NAME(line)  SMPI_CTAG_NAME1(line)
+
+#define SMPI_SAMPLE_LOOP(loop_init, loop_end, loop_iter, global, iters, thres, tag)                                    \
+    char SMPI_CTAG_NAME(__LINE__)[132];                                                                                \
+    snprintf(SMPI_CTAG_NAME(__LINE__), 132, "%s%d", tag, __LINE__);                                                    \
+    int SMPI_ITER_NAME(__LINE__) = 0;                                                                                  \
+    {                                                                                                                  \
+        loop_init;                                                                                                     \
+        while (loop_end) {                                                                                             \
+            SMPI_ITER_NAME(__LINE__)++;                                                                                \
+            (loop_iter);                                                                                               \
+        }                                                                                                              \
+    }                                                                                                                  \
+    for (loop_init;                                                                                                    \
+         (loop_end) ? (smpi_sample_1((global), __FILE__, SMPI_CTAG_NAME(__LINE__), (iters), (thres)),                  \
+                       (smpi_sample_2((global), __FILE__, SMPI_CTAG_NAME(__LINE__), SMPI_ITER_NAME(__LINE__))))        \
+                    : smpi_sample_exit((global), __FILE__, SMPI_CTAG_NAME(__LINE__), SMPI_ITER_NAME(__LINE__));        \
+         smpi_sample_3((global), __FILE__, SMPI_CTAG_NAME(__LINE__)), (loop_iter))
+
+#define SMPI_SAMPLE_LOCAL(loop_init, loop_end, loop_iter, iters, thres)                                                \
+    SMPI_SAMPLE_LOOP(loop_init, (loop_end), (loop_iter), 0, (iters), (thres), "")
+#define SMPI_SAMPLE_LOCAL_TAG(loop_init, loop_end, loop_iter, iters, thres, tag)                                       \
+    SMPI_SAMPLE_LOOP(loop_init, (loop_end), (loop_iter), 0, (iters), (thres), tag)
+#define SMPI_SAMPLE_GLOBAL(loop_init, loop_end, loop_iter, iters, thres)                                               \
+    SMPI_SAMPLE_LOOP(loop_init, (loop_end), (loop_iter), 1, (iters), (thres), "")
+#define SMPI_SAMPLE_GLOBAL_TAG(loop_init, loop_end, loop_iter, iters, thres, tag)                                      \
+    SMPI_SAMPLE_LOOP(loop_init, (loop_end), (loop_iter), 1, (iters), (thres), tag)
+#define SMPI_SAMPLE_DELAY(duration) for (smpi_execute(duration); 0;)
+#define SMPI_SAMPLE_FLOPS(flops)    for (smpi_execute_flops(flops); 0;)
+void* smpi_shared_malloc(size_t size, const char* file, int line);
+#define SMPI_SHARED_MALLOC(size) smpi_shared_malloc((size), __FILE__, __LINE__)
+void* smpi_shared_malloc_partial(size_t size, const size_t* shared_block_offsets, int nb_shared_blocks);
+#define SMPI_PARTIAL_SHARED_MALLOC(size, shared_block_offsets, nb_shared_blocks)                                       \
+    smpi_shared_malloc_partial((size), (shared_block_offsets), (nb_shared_blocks))
+
+#define SMPI_SHARED_FREE(data) smpi_shared_free(data)
+
+int smpi_shared_known_call(const char* func, const char* input);
+void* smpi_shared_get_call(const char* func, const char* input);
+void* smpi_shared_set_call(const char* func, const char* input, void* data);
+#define SMPI_SHARED_CALL(func, input, ...)                                                                             \
+    (smpi_shared_known_call(_XBT_STRINGIFY(func), (input))                                                             \
+         ? smpi_shared_get_call(_XBT_STRINGIFY(func), (input))                                                         \
+         : smpi_shared_set_call(_XBT_STRINGIFY(func), (input), ((func)(__VA_ARGS__))))
+
 #endif
 
 #endif // S4BXI_MPI_MIDDLEWARE_H
