@@ -1,11 +1,6 @@
 <?xml version='1.0'?>
 <!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
 <platform version="4.1">
-	<config>
-		<prop id="network/model" value="CM02" />
-		<prop id="network/loopback-lat" value="0.000000001" />
-		<prop id="network/loopback-bw" value="99000000000" />
-	</config>
 	<zone id="AS0" routing="Floyd">
         <!-- Hosts -->
 		<host id="machine0" speed="10Gf"/>

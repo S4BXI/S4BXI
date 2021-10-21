@@ -4,7 +4,7 @@
 
 ## Preparing your application for simulation
 
-S4BXI is able to [run unmodified scientific applications](https://hal.inria.fr/hal-02972297) that use Portals for network communications. It can also be used to run unmodified MPI applications, using the Portals BTL of OpenMPI, with only a few modifications to MPI's initialisation (to correctly setup ranks).
+S4BXI is able to [run unmodified scientific applications](https://hal.inria.fr/hal-02972297) that use Portals for network communications. It can also be used to [run unmodified MPI applications](https://hal.inria.fr/hal-03366573), using the Portals BTL of OpenMPI, with only a few modifications to MPI's initialisation (to correctly setup ranks).
 
 The only requirement is to compile your applications as shared libraries (instead of regular executable binaries), and to add our simulator to your include paths. Internally making a shared library allows the simulator to fetch symbols from your application (using `dlopen`) and run them in a controlled environment. There are two ways to do this: either manually in your build system, or using our own compilers (which are simply wrappers around your usual compiler):
 
@@ -34,25 +34,25 @@ add_library(hello SHARED hello.cpp)
 
 ## Running a simulation
 
-A simulation has three inputs: 
+A simulation has four inputs: 
 
-- A platform, which is an XML file describing the cluster on which you want your application to run
+- A platform, which is file describing the cluster on which you want your application to run. It can be either in XML form, or use the newer C++ SimGrid API (in which case it should be compiled as a shared library beforehand, and the .so file should be specified)
 
-- A deployment, which is also an XML file, and which describes which actors you want to run on each machine of your cluster
+- A deployment, which is also an XML file, and which describes which actors need to be instanciated on each machine the modeled cluster
 
-- Your application, compiled as a shared library
+- The application, compiled as a shared library
 
-The entry point is the binary `s4bximain`, which has been installed in `<S4BXI path>/bin` when you built S4BXI, therefore the complete command to run a simulation looks like this (for the `hello` program compiled in the previous example):
+- The application name. The only use for this parameter is to forward it to `argv[0]` on each simulated process, so in most case its value doesn't matter
+
+The entry point is the binary `s4bximain`, which is installed in `<S4BXI path>/bin` when building S4BXI, therefore the complete command to run a simulation looks like this (for the `hello` program compiled in the previous example):
 
 ```bash
 s4bximain ./platform.xml ./deploy.xml ./libhello.so hello
 ```
 
-(The last parameter is the name of your application, which will be passed to your main in `argv[0]` in case you need it)
-
 **Note:** our simulator will need access to S4BXI's and SimGrid's libraries, so you should make sure that they are in your library path. For example if they are installed in standard locations: `LD_LIBRARY_PATH=/opt/s4bxi/lib:/opt/simgrid/lib`
 
-### A word on XML configuration files
+### A word on configuration files
 
 Although XML inputs are simply [regular SimGrid's](https://simgrid.org/doc/latest/platform.html) [configuration files](https://simgrid.org/doc/latest/Deploying_your_Application.html), S4BXI adds a few requirements (because our pre-defined actors expect a specific description of each machine). 
 
@@ -136,6 +136,12 @@ So with everything wrapped together, an example platform with only one machine c
 ```
 
 (Note that we set some global configuration at the top of the file. This isn't mandatory, but these parameters are strongly recommended, especially the CM02 network model. For more infos on this see [SimGrid's documentation](https://simgrid.org/doc/latest/Configuring_SimGrid.html))
+
+When using the C++ API to describe platforms, the requirements regarding CPUs and NICs are similar, but there is an additional requirement: the description should be specified in a function named `make_platform` with C linkage, so the signature would look like:
+
+```C
+extern "C" void make_platform();
+```
 
 ---
 
