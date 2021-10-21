@@ -13,3 +13,5 @@ make install # Probably do that as root
 ```
 
 Or you can simply run `./rebuild.sh`, which should do all that automatically
+
+Alternatively, S4BXI provides a Vagrant + Ansible configuration which allows automatic deployment on a CentOS 8 Virtual Machine. This configuration is available here: [framagit.org/s4bxi/s4bxi-vagrant](https://framagit.org/s4bxi/s4bxi-vagrant)
