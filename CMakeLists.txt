@@ -116,6 +116,9 @@ set_target_properties(${LIBNAME} PROPERTIES
 
 # Configure s4bximain
 
+include(PandocMan)
+add_pandoc_man("${CMAKE_CURRENT_SOURCE_DIR}/s4bximain.1.md")
+
 add_executable(s4bximain src/privatization_main.cpp)
 target_link_libraries(s4bximain ${LIBNAME})
 
