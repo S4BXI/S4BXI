@@ -672,34 +672,34 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 #define MPI_Probe            S4BXI_MPI_Probe
 // #define MPI_Request_f2c      S4BXI_MPI_Request_f2c
 // #define MPI_Request_c2f      S4BXI_MPI_Request_c2f
-#define MPI_Cancel   S4BXI_MPI_Cancel
-#define MPI_Bcast    S4BXI_MPI_Bcast
-#define MPI_Barrier  S4BXI_MPI_Barrier
-#define MPI_Ibarrier S4BXI_MPI_Ibarrier
-#define MPI_Ibcast   S4BXI_MPI_Ibcast
-// #define MPI_Igather                    S4BXI_MPI_Igather
-// #define MPI_Igatherv                   S4BXI_MPI_Igatherv
-// #define MPI_Iallgather                 S4BXI_MPI_Iallgather
-// #define MPI_Iallgatherv                S4BXI_MPI_Iallgatherv
-// #define MPI_Iscatter                   S4BXI_MPI_Iscatter
-// #define MPI_Iscatterv                  S4BXI_MPI_Iscatterv
-// #define MPI_Ireduce                    S4BXI_MPI_Ireduce
-// #define MPI_Iallreduce                 S4BXI_MPI_Iallreduce
-// #define MPI_Iscan                      S4BXI_MPI_Iscan
-// #define MPI_Iexscan                    S4BXI_MPI_Iexscan
-// #define MPI_Ireduce_scatter            S4BXI_MPI_Ireduce_scatter
-// #define MPI_Ireduce_scatter_block      S4BXI_MPI_Ireduce_scatter_block
-#define MPI_Ialltoall  S4BXI_MPI_Ialltoall
-#define MPI_Ialltoallv S4BXI_MPI_Ialltoallv
-#define MPI_Ialltoallw S4BXI_MPI_Ialltoallw
-#define MPI_Gather     S4BXI_MPI_Gather
-#define MPI_Gatherv    S4BXI_MPI_Gatherv
-#define MPI_Allgather  S4BXI_MPI_Allgather
-#define MPI_Allgatherv S4BXI_MPI_Allgatherv
-#define MPI_Scatter    S4BXI_MPI_Scatter
-#define MPI_Scatterv   S4BXI_MPI_Scatterv
-#define MPI_Reduce     S4BXI_MPI_Reduce
-#define MPI_Allreduce  S4BXI_MPI_Allreduce
+#define MPI_Cancel                S4BXI_MPI_Cancel
+#define MPI_Bcast                 S4BXI_MPI_Bcast
+#define MPI_Barrier               S4BXI_MPI_Barrier
+#define MPI_Ibarrier              S4BXI_MPI_Ibarrier
+#define MPI_Ibcast                S4BXI_MPI_Ibcast
+#define MPI_Igather               S4BXI_MPI_Igather
+#define MPI_Igatherv              S4BXI_MPI_Igatherv
+#define MPI_Iallgather            S4BXI_MPI_Iallgather
+#define MPI_Iallgatherv           S4BXI_MPI_Iallgatherv
+#define MPI_Iscatter              S4BXI_MPI_Iscatter
+#define MPI_Iscatterv             S4BXI_MPI_Iscatterv
+#define MPI_Ireduce               S4BXI_MPI_Ireduce
+#define MPI_Iallreduce            S4BXI_MPI_Iallreduce
+#define MPI_Iscan                 S4BXI_MPI_Iscan
+#define MPI_Iexscan               S4BXI_MPI_Iexscan
+#define MPI_Ireduce_scatter       S4BXI_MPI_Ireduce_scatter
+#define MPI_Ireduce_scatter_block S4BXI_MPI_Ireduce_scatter_block
+#define MPI_Ialltoall             S4BXI_MPI_Ialltoall
+#define MPI_Ialltoallv            S4BXI_MPI_Ialltoallv
+#define MPI_Ialltoallw            S4BXI_MPI_Ialltoallw
+#define MPI_Gather                S4BXI_MPI_Gather
+#define MPI_Gatherv               S4BXI_MPI_Gatherv
+#define MPI_Allgather             S4BXI_MPI_Allgather
+#define MPI_Allgatherv            S4BXI_MPI_Allgatherv
+#define MPI_Scatter               S4BXI_MPI_Scatter
+#define MPI_Scatterv              S4BXI_MPI_Scatterv
+#define MPI_Reduce                S4BXI_MPI_Reduce
+#define MPI_Allreduce             S4BXI_MPI_Allreduce
 // #define MPI_Scan                       S4BXI_MPI_Scan
 // #define MPI_Exscan                     S4BXI_MPI_Exscan
 #define MPI_Reduce_scatter S4BXI_MPI_Reduce_scatter
