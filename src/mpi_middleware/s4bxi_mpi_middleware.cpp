@@ -178,7 +178,7 @@ MPI_Op implem_op(MPI_Op original)
 
 #define S4BXI_MPI_ONE_IMPLEM(rtype, name, args, argsval)                                                               \
     typedef rtype(*name##_func) args;                                                                                  \
-    int S4BXI_MPI_##name args                                                                                          \
+    rtype S4BXI_MPI_##name args                                                                                        \
     {                                                                                                                  \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
         return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
@@ -187,7 +187,7 @@ MPI_Op implem_op(MPI_Op original)
 // This one is kind of specific, it's only used for [I]alltoallw because of the datatype arrays
 #define S4BXI_MPI_W_COLLECTIVE(rtype, name, args, argsval)                                                             \
     typedef rtype(*name##_func) args;                                                                                  \
-    int S4BXI_MPI_##name args                                                                                          \
+    rtype S4BXI_MPI_##name args                                                                                        \
     {                                                                                                                  \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
         int size;                                                                                                      \
@@ -232,11 +232,11 @@ int S4BXI_MPI_Finalize(void)
 // S4BXI_MPI_ONE_IMPLEM(int, Get_version, (int* version, int* subversion));
 // S4BXI_MPI_ONE_IMPLEM(int, Get_library_version, (char* version, int* len));
 // S4BXI_MPI_ONE_IMPLEM(int, Get_processor_name, (char* name, int* resultlen));
-// S4BXI_MPI_ONE_IMPLEM(int, Abort, (MPI_Comm comm, int errorcode));
+S4BXI_MPI_ONE_IMPLEM(int, Abort, (MPI_Comm comm, int errorcode), (BxiMpiComm::implem_comm(comm), errorcode));
 // S4BXI_MPI_ONE_IMPLEM(int, Alloc_mem, (MPI_Aint size, MPI_Info info, void* baseptr));
 // S4BXI_MPI_ONE_IMPLEM(int, Free_mem, (void* base));
-// S4BXI_MPI_ONE_IMPLEM(double, Wtime, (void));
-// S4BXI_MPI_ONE_IMPLEM(double, Wtick, (void));
+S4BXI_MPI_ONE_IMPLEM(double, Wtime, (void), ());
+S4BXI_MPI_ONE_IMPLEM(double, Wtick, (void), ());
 // S4BXI_MPI_ONE_IMPLEM(int, Buffer_attach, (void* buffer, int size));
 // S4BXI_MPI_ONE_IMPLEM(int, Buffer_detach, (void* buffer, int* size));
 // S4BXI_MPI_ONE_IMPLEM(int, Address, (const void* location, MPI_Aint* address));

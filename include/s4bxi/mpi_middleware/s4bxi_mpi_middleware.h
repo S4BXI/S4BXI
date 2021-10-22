@@ -541,11 +541,11 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 // #define MPI_Get_version                S4BXI_MPI_Get_version
 // #define MPI_Get_library_version        S4BXI_MPI_Get_library_version
 // #define MPI_Get_processor_name         S4BXI_MPI_Get_processor_name
-// #define MPI_Abort                      S4BXI_MPI_Abort
+#define MPI_Abort S4BXI_MPI_Abort
 // #define MPI_Alloc_mem                  S4BXI_MPI_Alloc_mem
 // #define MPI_Free_mem                   S4BXI_MPI_Free_mem
-// #define MPI_Wtime                      S4BXI_MPI_Wtime
-// #define MPI_Wtick                      S4BXI_MPI_Wtick
+#define MPI_Wtime S4BXI_MPI_Wtime
+#define MPI_Wtick S4BXI_MPI_Wtick
 // #define MPI_Buffer_attach              S4BXI_MPI_Buffer_attach
 // #define MPI_Buffer_detach              S4BXI_MPI_Buffer_detach
 // #define MPI_Address                    S4BXI_MPI_Address
