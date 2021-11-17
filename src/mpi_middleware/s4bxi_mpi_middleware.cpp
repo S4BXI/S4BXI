@@ -39,6 +39,12 @@ void* S4BXI_MPI_IN_PLACE()
     return (main_actor->use_smpi_implem ? ((void*)-222) : ((void*)1));
 }
 
+MPI_Request S4BXI_MPI_REQUEST_NULL()
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    return (main_actor->use_smpi_implem ? NULL : main_actor->bull_mpi_ops->REQUEST_NULL);
+}
+
 #define SETUP_SYMBOLS_IN_IMPLEMS(symbol)                                                                               \
     main_actor->bull_mpi_ops->symbol = dlsym(bull_libhandle, "PMPI_" #symbol);                                         \
     assert(main_actor->bull_mpi_ops->symbol != nullptr);                                                               \
@@ -1225,6 +1231,10 @@ void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
     SETUP_OPS_IN_IMPLEMS(bxor, BXOR)
     SETUP_OPS_IN_IMPLEMS(replace, REPLACE)
     SETUP_OPS_IN_IMPLEMS(no_op, NO_OP)
+
+    // Request
+    main_actor->bull_mpi_ops->REQUEST_NULL = (MPI_Request)dlsym(bull_libhandle, "ompi_request_null");
+    assert(main_actor->bull_mpi_ops->REQUEST_NULL != nullptr);
 }
 
 #undef S4BXI_MPI_CALL

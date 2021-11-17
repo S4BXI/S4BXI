@@ -405,6 +405,9 @@ struct s4bxi_mpi_ops {
     MPI_Op OP_BXOR;
     MPI_Op OP_REPLACE;
     MPI_Op OP_NO_OP;
+
+    // Request
+    MPI_Request REQUEST_NULL;
 };
 
 #else // BUILD_MPI_MIDDLEWARE

@@ -35,13 +35,9 @@ typedef MPI_Win_errhandler_function MPI_Win_errhandler_fn;
 extern "C" {
 #endif
 
+// "Constants"
 void* S4BXI_MPI_IN_PLACE();
-
-#ifdef MPI_IN_PLACE
-// The only reason for this undef is to avoid stupid compiler warnings
-#undef MPI_IN_PLACE
-#endif
-#define MPI_IN_PLACE (S4BXI_MPI_IN_PLACE())
+MPI_Request S4BXI_MPI_REQUEST_NULL();
 
 void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle);
 
@@ -530,6 +526,17 @@ S4BXI_MPI_CALL(int, MPI_File_get_errhandler, (MPI_File file, MPI_Errhandler* err
 #endif
 
 #ifndef COMPILING_SIMULATOR
+
+#ifdef MPI_IN_PLACE
+// The only reason for this undef is to avoid stupid compiler warnings
+#undef MPI_IN_PLACE
+#endif
+#define MPI_IN_PLACE (S4BXI_MPI_IN_PLACE())
+
+#ifdef MPI_REQUEST_NULL
+#undef MPI_REQUEST_NULL
+#endif
+#define MPI_REQUEST_NULL (S4BXI_MPI_REQUEST_NULL())
 
 #define MPI_Init     S4BXI_MPI_Init
 #define MPI_Finalize S4BXI_MPI_Finalize
