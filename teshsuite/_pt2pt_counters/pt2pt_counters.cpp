@@ -39,13 +39,13 @@ int client(char* target)
     rc = PtlInit();
     if (rc != PTL_OK) {
         ptlerr("PtlInit", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_PHYSICAL, 123, NULL, NULL, &nih);
     if (rc != PTL_OK) {
         ptlerr("PtlNIInit", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     ptl_md_t mdpar;
@@ -57,7 +57,7 @@ int client(char* target)
     rc = PtlCTAlloc(nih, &cth);
     if (rc != PTL_OK) {
         ptlerr("PtlCTAlloc", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     peer.phys.nid = target_nid;
@@ -85,7 +85,7 @@ int client(char* target)
         rc = PtlMDBind(nih, &mdpar, &mdh);
         if (rc != PTL_OK) {
             ptlerr("PtlMDBind", rc);
-            exit(rc);
+            _exit(rc);
         }
 
         sleep(1);
@@ -124,13 +124,13 @@ int server()
     rc = PtlInit();
     if (rc != PTL_OK) {
         ptlerr("PtlInit", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_PHYSICAL, 123, NULL, NULL, &nih);
     if (rc != PTL_OK) {
         ptlerr("PtlNIInit", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     ptl_md_t mdpar;
@@ -142,7 +142,7 @@ int server()
     rc = PtlCTAlloc(nih, &cth);
     if (rc != PTL_OK) {
         ptlerr("PtlCTAlloc", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     char** bufs;
@@ -156,7 +156,7 @@ int server()
 
     if (rc != PTL_OK) {
         ptlerr("PtlPTAlloc", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     int i, j;
@@ -180,7 +180,7 @@ int server()
 
         if (rc != PTL_OK) {
             ptlerr("PtlMEAppend", rc);
-            exit(rc);
+            _exit(rc);
         }
     }
 

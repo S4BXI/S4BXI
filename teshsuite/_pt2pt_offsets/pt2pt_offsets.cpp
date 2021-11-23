@@ -74,7 +74,7 @@ int client(char* target)
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_ACK) {
         fprintf(stderr, "Wrong event type, got %u instead of ACK (%u)", ev.type, PTL_EVENT_ACK);
-        exit(1);
+        _exit(1);
     }
 
     s4bxi_barrier();
@@ -84,7 +84,7 @@ int client(char* target)
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_REPLY) {
         fprintf(stderr, "Wrong event type, got %u instead of REPLY (%u)", ev.type, PTL_EVENT_REPLY);
-        exit(1);
+        _exit(1);
     }
 
     s4bxi_barrier();
@@ -102,7 +102,7 @@ int client(char* target)
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_ACK) {
         fprintf(stderr, "Wrong event type, got %u instead of ACK (%u)", ev.type, PTL_EVENT_ACK);
-        exit(1);
+        _exit(1);
     }
 
     s4bxi_barrier();
@@ -118,7 +118,7 @@ int client(char* target)
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_ACK) {
         fprintf(stderr, "Wrong event type, got %u instead of ACK (%u)", ev.type, PTL_EVENT_ACK);
-        exit(1);
+        _exit(1);
     }
 
     rc = PtlPut(mdh, 2 * sizeof(int64_t), sizeof(int64_t), PTL_ACK_REQ, peer, 0, 42, 666 * sizeof(int64_t), nullptr,
@@ -126,7 +126,7 @@ int client(char* target)
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_ACK) {
         fprintf(stderr, "Wrong event type, got %u instead of ACK (%u)", ev.type, PTL_EVENT_ACK);
-        exit(1);
+        _exit(1);
     }
 
     rc = PtlGet(mdh, 3 * sizeof(int64_t), sizeof(int64_t), peer, 0, 42, 666 * sizeof(int64_t), nullptr);
@@ -134,7 +134,7 @@ int client(char* target)
     PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_REPLY) {
         fprintf(stderr, "Wrong event type, got %u instead of REPLY %u", ev.type, PTL_EVENT_REPLY);
-        exit(1);
+        _exit(1);
     }
 
     sleep(1);
@@ -196,7 +196,7 @@ int server()
     rc = PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_LINK) {
         fprintf(stderr, "Wrong event type, got %u instead of LINK (%u)", ev.type, PTL_EVENT_LINK);
-        exit(1);
+        _exit(1);
     }
 
     // Wait for requests
@@ -208,7 +208,7 @@ int server()
     }
     if (ev.type != PTL_EVENT_PUT) {
         fprintf(stderr, "Wrong event type, got %u instead of PUT (%u)", ev.type, PTL_EVENT_PUT);
-        exit(1);
+        _exit(1);
     }
     printf("Target after PUT : %ld\n", *i64);
 
@@ -221,7 +221,7 @@ int server()
     }
     if (ev.type != PTL_EVENT_FETCH_ATOMIC) {
         fprintf(stderr, "Wrong event type, got %u instead of FETCH_ATOMIC (%u)", ev.type, PTL_EVENT_FETCH_ATOMIC);
-        exit(1);
+        _exit(1);
     }
     printf("Target after FETCH_ATOMIC : %ld\n", *i64);
 
@@ -255,7 +255,7 @@ int server()
     rc = PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_LINK) {
         fprintf(stderr, "Wrong event type, got %u instead of LINK (%u)", ev.type, PTL_EVENT_LINK);
-        exit(1);
+        _exit(1);
     }
 
     // Wait for requests
@@ -267,7 +267,7 @@ int server()
     }
     if (ev.type != PTL_EVENT_PUT) {
         fprintf(stderr, "Wrong event type, got %u instead of PUT (%u)", ev.type, PTL_EVENT_PUT);
-        exit(1);
+        _exit(1);
     }
     printf("Target[0] after PUT : %ld\n", *i64);
     printf("Target[1] after PUT : %ld\n", *(i64 + 1));
@@ -305,7 +305,7 @@ int server()
     rc = PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_LINK) {
         fprintf(stderr, "Wrong event type, got %u instead of LINK (%u)", ev.type, PTL_EVENT_LINK);
-        exit(1);
+        _exit(1);
     }
 
     // Wait for 2 Put
@@ -317,7 +317,7 @@ int server()
         }
         if (ev.type != PTL_EVENT_PUT) {
             fprintf(stderr, "Wrong event type, got %u instead of PUT (%u)", ev.type, PTL_EVENT_PUT);
-            exit(1);
+            _exit(1);
         }
         printf("Target[0] after PUT : %ld\n", *i64);
         printf("Target[1] after PUT : %ld\n", *(i64 + 1));
@@ -335,7 +335,7 @@ int server()
         if (ev.type != PTL_EVENT_GET && ev.type != PTL_EVENT_AUTO_UNLINK) {
             fprintf(stderr, "Wrong event type, got %u instead of GET or AUTO_UNLINK (%u or %u)", ev.type, PTL_EVENT_GET,
                     PTL_EVENT_AUTO_UNLINK);
-            exit(1);
+            _exit(1);
         }
     }
     printf("Target[0] after GET : %ld\n", *i64);
@@ -351,19 +351,19 @@ int server()
     rc = PtlPTFree(nih, pte);
     if (rc != PTL_OK) {
         fprintf(stderr, "PtlPTFree bug\n");
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlEQFree(eqh);
     if (rc != PTL_OK) {
         fprintf(stderr, "PtlEQFree bug\n");
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlNIFini(nih);
     if (rc != PTL_OK) {
         fprintf(stderr, "PtlNIFini bug\n");
-        exit(rc);
+        _exit(rc);
     }
 
     PtlFini();

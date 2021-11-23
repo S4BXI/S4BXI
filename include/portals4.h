@@ -651,7 +651,6 @@ int s4bxi_get_ptl_process_from_rank(int rank, ptl_process_t* out);
 double s4bxi_simtime();
 unsigned int s4bxi_is_polling();
 void s4bxi_set_polling(unsigned int p);
-void s4bxi_exit();
 void s4bxi_barrier();
 void s4bxi_set_ptl_process_for_rank(ptl_handle_ni_t ni);
 void s4bxi_keyval_store_pointer(char* key, void* value);

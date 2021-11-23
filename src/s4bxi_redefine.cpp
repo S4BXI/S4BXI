@@ -220,3 +220,14 @@ int s4bxi_getopt(int argc, char* const* argv, const char* options)
 
     return ret;
 }
+
+void s4bxi_exit(int code) __THROW
+{
+    s4bxi_bench_end();
+    if (code)
+        XBT_WARN("User code exited with code %d", code);
+    else
+        XBT_INFO("User code exited gracefully");
+
+    s4u::this_actor::exit();
+}

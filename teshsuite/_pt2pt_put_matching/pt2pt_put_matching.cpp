@@ -138,7 +138,7 @@ int server()
         rc = PtlEQWait(eqh, &ev);
         if (ev.type != PTL_EVENT_LINK) {
             fprintf(stderr, "Wrong event type, got %u instead of LINK (%u)", ev.type, PTL_EVENT_LINK);
-            exit(1);
+            _exit(1);
         }
     }
 
@@ -158,7 +158,7 @@ int server()
 
             if (ev.type != PTL_EVENT_PUT) {
                 fprintf(stderr, "Wrong event type, got %u instead of PUT (%u)", ev.type, PTL_EVENT_PUT);
-                exit(1);
+                _exit(1);
             }
 
             if (j == 0) {

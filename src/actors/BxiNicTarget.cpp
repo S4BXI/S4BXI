@@ -478,7 +478,7 @@ int BxiNicTarget::match_entry(BxiMsg* msg, BxiME** me)
     return PTL_NI_TARGET_INVALID;
 }
 
-void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg *msg, ptl_event_kind ev_kind)
+void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_kind ev_kind)
 {
     auto req = (BxiPutRequest*)msg->parent_request;
 

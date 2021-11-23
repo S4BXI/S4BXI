@@ -161,7 +161,7 @@ int server()
     rc = PtlEQWait(eqh, &ev);
     if (ev.type != PTL_EVENT_LINK) {
         fprintf(stderr, "Wrong event type, got %u instead of LINK (%u)", ev.type, PTL_EVENT_LINK);
-        exit(1);
+        _exit(1);
     }
 
     // Wait for requests
@@ -175,7 +175,7 @@ int server()
     }
     if (ev.type != PTL_EVENT_ATOMIC) {
         fprintf(stderr, "Wrong event type, got %u instead of ATOMIC (%u)", ev.type, PTL_EVENT_ATOMIC);
-        exit(1);
+        _exit(1);
     }
     printf("INT64 : %ld\n", *i64);
     printf("HDR data : %lu\n", ev.hdr_data);
@@ -192,7 +192,7 @@ int server()
     }
     if (ev.type != PTL_EVENT_ATOMIC) {
         fprintf(stderr, "Wrong event type, got %u instead of ATOMIC (%u)", ev.type, PTL_EVENT_ATOMIC);
-        exit(1);
+        _exit(1);
     }
     printf("LONG DOUBLE : %Lf\n", *ld);
     printf("HDR data : %lu\n", ev.hdr_data);
@@ -205,19 +205,19 @@ int server()
     rc = PtlPTFree(nih, pte);
     if (rc != PTL_OK) {
         ptlerr("PtlPTFree bug", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlEQFree(eqh);
     if (rc != PTL_OK) {
         ptlerr("PtlEQFree bug", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlNIFini(nih);
     if (rc != PTL_OK) {
         ptlerr("PtlNIFini bug", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     PtlFini();

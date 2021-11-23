@@ -136,13 +136,6 @@ void s4bxi_set_polling(unsigned int p)
     ((BxiUserAppActor*)GET_CURRENT_MAIN_ACTOR)->is_polling = p;
 }
 
-void s4bxi_exit()
-{
-    auto main_actor = GET_CURRENT_MAIN_ACTOR;
-    s4bxi_bench_end();
-    s4u::this_actor::exit();
-}
-
 void s4bxi_barrier()
 {
     BxiMainActor::barrier();

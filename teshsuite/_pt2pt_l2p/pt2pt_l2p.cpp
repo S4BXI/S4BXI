@@ -150,7 +150,7 @@ int server()
     }
     if (ev.type != PTL_EVENT_FETCH_ATOMIC) {
         fprintf(stderr, "Wrong event type, got %u instead of FETCH_ATOMIC (%u)", ev.type, PTL_EVENT_FETCH_ATOMIC);
-        exit(1);
+        _exit(1);
     }
     printf("INT64 : %ld\n", *i64);
     printf("HDR data : %lu\n", ev.hdr_data);
@@ -163,19 +163,19 @@ int server()
     rc = PtlPTFree(nih, pte);
     if (rc != PTL_OK) {
         ptlerr("PtlPTFree bug", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlEQFree(eqh);
     if (rc != PTL_OK) {
         ptlerr("PtlEQFree bug", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     rc = PtlNIFini(nih);
     if (rc != PTL_OK) {
         ptlerr("PtlNIFini bug", rc);
-        exit(rc);
+        _exit(rc);
     }
 
     PtlFini();
