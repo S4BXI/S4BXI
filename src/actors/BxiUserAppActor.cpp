@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <boost/algorithm/string.hpp>
 #include <csignal>
+#include <map>
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/plugins/BxiActorExt.hpp"
@@ -157,6 +158,7 @@ BxiUserAppActor::BxiUserAppActor(const vector<string>& args) : BxiMainActor(args
  */
 void BxiUserAppActor::operator()()
 {
+    map<string, string> *privatize_libs_renames = new map<string, string>;
     my_rank = stoul(string(self->get_property("rank")));
     XBT_INFO("Init rank %d", my_rank);
 
@@ -168,7 +170,6 @@ void BxiUserAppActor::operator()()
     s4bxi_copy_file(executable, target_executable, fdin_size);
     // if s4bxi/privatize-libs is set, duplicate pointed lib and link each
     // executable copy to a different one.
-    vector<string> target_libs;
     for (auto const& libpath : privatize_libs_paths) {
         // if we were given a full path, strip it
         size_t index = libpath.find_last_of("/\\");
@@ -191,7 +192,7 @@ void BxiUserAppActor::operator()()
                 pad = libname.length();
             string target_lib = simulation_rand_id.substr(0, pad - to_string(my_rank).length()) + to_string(my_rank) +
                                 libname.substr(pad);
-            target_libs.push_back(target_lib);
+            privatize_libs_renames->emplace(libname, target_lib);
             XBT_DEBUG("copy lib %s to %s, with size %lld", libpath.c_str(), target_lib.c_str(), (long long)fdin_size2);
             s4bxi_copy_file(libpath, target_lib, fdin_size2);
 
@@ -213,26 +214,15 @@ void BxiUserAppActor::operator()()
     // → Actually it works if OMPI is configured with --disable-dlopen (so that everything is in the
     // three libs OMPI, ORTE and OPAL)
 
-    for (auto const& relink_me : target_libs) {
-        // This inner loop is stupid: we should cache the names instead of re-computing them, but for now it will do
-        for (auto const& libpath : privatize_libs_paths) {
-            size_t index = libpath.find_last_of("/\\");
-            string libname;
-            if (index != string::npos)
-                libname = libpath.substr(index + 1);
-
-            if (not libname.empty()) {
-                unsigned int pad = 7;
-                if (libname.length() < pad)
-                    pad = libname.length();
-                string new_lib_name = simulation_rand_id.substr(0, pad - to_string(my_rank).length()) +
-                                      to_string(my_rank) + libname.substr(pad);
-
-                string sedcommand = "sed -i -e 's/" + libname + "/" + new_lib_name + "/g' " + relink_me;
-                XBT_DEBUG("Relinking privatized lib:\n → %s\n", sedcommand.c_str());
-                int rc = system(sedcommand.c_str());
-                xbt_assert(rc == 0, "error while applying sed command %s \n", sedcommand.c_str());
-            }
+    for (auto const& relink_me : *privatize_libs_renames) {
+        for (auto const& target_lib : *privatize_libs_renames) {
+            if (target_lib.second == relink_me.second)
+                continue;
+            string sedcommand =
+                "sed -i -e 's/" + target_lib.first + "/" + target_lib.second + "/g' " + relink_me.second;
+            XBT_DEBUG("Relinking privatized lib:\n → %s\n", sedcommand.c_str());
+            int rc = system(sedcommand.c_str());
+            xbt_assert(rc == 0, "error while applying sed command %s \n", sedcommand.c_str());
         }
     }
 
@@ -257,10 +247,12 @@ void BxiUserAppActor::operator()()
 
     if (S4BXI_GLOBAL_CONFIG(keep_temps) == false) {
         unlink(target_executable.c_str());
-        for (const string& target_lib : target_libs)
-            unlink(target_lib.c_str());
+        for (const auto& target_lib : *privatize_libs_renames)
+            unlink(target_lib.second.c_str());
     }
     xbt_assert(handle != nullptr, "dlopen failed: %s (errno: %d -- %s)", dlerror(), saved_errno, strerror(saved_errno));
+
+    delete privatize_libs_renames; // No need to keep this in memory when running user app
 
     s4bxi_entry_point_type entry_point = s4bxi_resolve_function(handle);
     xbt_assert(entry_point, "Could not resolve entry point");
