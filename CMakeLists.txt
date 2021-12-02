@@ -77,7 +77,8 @@ set(SOURCE_FILES
         src/s4bxi_mailbox_pool.cpp
         src/s4bxi_bench.cpp
         src/s4bxi_sample.cpp
-        src/plugins/BxiActorExt.cpp)
+        src/plugins/BxiActorExt.cpp
+        pugixml/src/pugixml.cpp)
 
 if(BUILD_MPI_MIDDLEWARE)
     list(APPEND SOURCE_FILES 
@@ -108,7 +109,7 @@ target_link_libraries(${LIBNAME} ${SimGrid_LIBRARY} ${DL_LIBRARY})
 target_include_directories(${LIBNAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        PRIVATE src)
+        PRIVATE src pugixml/src)
 
 set_target_properties(${LIBNAME} PROPERTIES
         VERSION ${PROJECT_VERSION}

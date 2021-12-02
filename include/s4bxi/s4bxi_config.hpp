@@ -67,6 +67,8 @@ struct s4bxi_config {
     int max_inflight_to_process;
     /** @brief Disable dlclosing libs, which is required to use some tools like Valgrind */
     bool no_dlclose;
+    /** @brief Use PugiXML instead of SimGrid's parser for deployments */
+    bool use_pugixml;
 };
 
 #endif // S4BXI_s4bxi_config_HPP

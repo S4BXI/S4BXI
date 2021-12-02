@@ -31,6 +31,7 @@
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/plugins/BxiActorExt.hpp"
+#include "pugixml.hpp"
 
 #ifdef BUILD_MPI_MIDDLEWARE
 #include <smpi/smpi.h>
@@ -158,8 +159,8 @@ BxiUserAppActor::BxiUserAppActor(const vector<string>& args) : BxiMainActor(args
  */
 void BxiUserAppActor::operator()()
 {
-    map<string, string> *privatize_libs_renames = new map<string, string>;
-    my_rank = stoul(string(self->get_property("rank")));
+    map<string, string>* privatize_libs_renames = new map<string, string>;
+    my_rank                                     = stoul(string(self->get_property("rank")));
     XBT_INFO("Init rank %d", my_rank);
 
     setup_barrier();
@@ -294,6 +295,17 @@ void BxiUserAppActor::operator()()
     s4bxi_barrier();
 }
 
+template <typename T> class BxiActorFactory {
+  public:
+    vector<string> args;
+    BxiActorFactory(vector<string> a) { args = a; }
+    void operator()()
+    {
+        T actor(args);
+        actor();
+    }
+};
+
 /**
  * See segvhandler in SimGrid's EngineImpl.cpp, we're modifying it to display the current backtrace
  */
@@ -329,7 +341,7 @@ int s4bxi_default_main(int argc, char* argv[])
 #endif
 
     s4bxi_actor_ext_plugin_init();
-    auto simgrid_engine = new simgrid::s4u::Engine(&argc, argv);
+    auto simgrid_engine = new s4u::Engine(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
 
     string platf  = argv[1];
@@ -380,12 +392,6 @@ int s4bxi_default_main(int argc, char* argv[])
     SMPI_init();
 #endif
 
-    /* Register the classes representing the actors */
-    simgrid_engine->register_actor<BxiNicInitiator>("nic_initiator");
-    simgrid_engine->register_actor<BxiNicTarget>("nic_target");
-    simgrid_engine->register_actor<BxiNicE2E>("nic_e2e");
-    simgrid_engine->register_actor<BxiUserAppActor>("user_app");
-
     /* Load the platform description and then deploy the application */
     if (platf_lib) { // If we have a dll fetch the symbol, otherwise load the XML
         cpp_platform_callback sym;
@@ -401,8 +407,56 @@ int s4bxi_default_main(int argc, char* argv[])
 #ifdef BUILD_MPI_MIDDLEWARE
     simgrid_engine->set_default_comm_data_copy_callback(smpi_comm_copy_buffer_callback);
 #endif
-    simgrid_engine->load_deployment(deploy);
 
+    /* Load deployment */
+    if (!S4BXI_GLOBAL_CONFIG(use_pugixml)) {
+        /* Register the classes representing the actors */
+        simgrid_engine->register_actor<BxiNicInitiator>("nic_initiator");
+        simgrid_engine->register_actor<BxiNicTarget>("nic_target");
+        simgrid_engine->register_actor<BxiNicE2E>("nic_e2e");
+        simgrid_engine->register_actor<BxiUserAppActor>("user_app");
+
+        simgrid_engine->load_deployment(deploy);
+    } else {
+        pugi::xml_document doc;
+        pugi::xml_parse_result result = doc.load_file(deploy.c_str());
+        if (!result) {
+            XBT_ERROR("Error during parsing of XML deploy");
+            return 1;
+        }
+
+        for (pugi::xml_node node : doc.child("platform").children()) {
+            if (strcmp(node.name(), "actor")) {
+                XBT_WARN("Unexpected tag in XML deployment: %s (expected %s)", node.name(), "actor");
+                continue;
+            }
+            vector<string> actor_args = {string(node.name())};
+
+            for (pugi::xml_node arg : node.children("argument"))
+                actor_args.push_back(string(arg.attribute("value").value()));
+
+            const char* func = node.attribute("function").value();
+            s4u::Host* host  = simgrid_engine->host_by_name(string(node.attribute("host").value()));
+            assert(host);
+            s4u::ActorPtr actorPtr = s4u::Actor::init(func, host);
+
+            for (pugi::xml_node arg : node.children("prop"))
+                actorPtr->set_property(string(arg.attribute("id").value()), string(arg.attribute("value").value()));
+
+            if (!strcmp(func, "nic_initiator"))
+                actorPtr->start(BxiActorFactory<BxiNicInitiator>(actor_args));
+            else if (!strcmp(func, "nic_target"))
+                actorPtr->start(BxiActorFactory<BxiNicTarget>(actor_args));
+            else if (!strcmp(func, "nic_e2e"))
+                actorPtr->start(BxiActorFactory<BxiNicE2E>(actor_args));
+            else if (!strcmp(func, "user_app")) {
+                actorPtr->start(BxiActorFactory<BxiUserAppActor>(actor_args));
+            } else {
+                XBT_WARN("Unexpected actor function in deployment: %s", func);
+                continue;
+            }
+        }
+    } // /Limit scope
     int rank_counts = 0;
     for (auto actor : simgrid_engine->get_all_actors()) {
         if (actor->get_name() == "user_app") {

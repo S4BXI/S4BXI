@@ -66,6 +66,7 @@ BxiEngine::BxiEngine()
     config->max_inflight_to_target    = get_int_s4bxi_param("MAX_INFLIGHT_TO_TARGET", 0);
     config->max_inflight_to_process   = get_int_s4bxi_param("MAX_INFLIGHT_TO_PROCESS", 0);
     config->no_dlclose                = get_bool_s4bxi_param("NO_DLCLOSE", false);
+    config->use_pugixml               = get_bool_s4bxi_param("USE_PUGIXML", false);
     const string s                    = get_string_s4bxi_param("SHARED_MALLOC", "none");
     if (s == "local")
         config->shared_malloc = 1;
