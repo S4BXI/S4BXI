@@ -13,6 +13,7 @@ rm CMakeCache.txt
 
 # Compile and install
 cmake -DBUILD_MPI_MIDDLEWARE=$BUILD_MPI_MIDDLEWARE \
+      -DLOG_MPI_CALLS=$LOG_MPI_CALLS \
       -DCMAKE_BUILD_TYPE=$build_type \
       -DCMAKE_INSTALL_PREFIX=$install_prefix \
       -DSimGrid_SOURCE="$SIMGRID_SOURCE" \

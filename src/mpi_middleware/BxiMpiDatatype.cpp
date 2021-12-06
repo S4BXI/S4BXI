@@ -1,0 +1,230 @@
+/*
+ * Author: Julien EMMANUEL
+ * Copyright (C) 2019-2021 Bull S.A.S
+ * All rights reserved
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License version 2.1 as published by the Free Software Foundation,
+ * which comes with this package.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ */
+
+#include "s4bxi/mpi_middleware/BxiMpiDatatype.hpp"
+#include "s4bxi/s4bxi_xbt_log.h"
+#include "s4bxi/actors/BxiMainActor.hpp"
+#include "s4bxi/s4bxi_util.hpp"
+
+S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_mpi_datatype, "Messages specific to the middleware MPI datatypes");
+
+MPI_Datatype BxiMpiDatatype::implem_datatype(MPI_Datatype original)
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+
+#define MPI_TYPE_TRANSLATION(type)                                                                                     \
+    if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type || original == MPI_##type)         \
+        return main_actor->use_smpi_implem ? MPI_##type : main_actor->bull_mpi_ops->TYPE_##type;
+
+    MPI_TYPE_TRANSLATION(CHAR)
+    MPI_TYPE_TRANSLATION(DATATYPE_NULL)
+    MPI_TYPE_TRANSLATION(CHAR)
+    MPI_TYPE_TRANSLATION(SHORT)
+    MPI_TYPE_TRANSLATION(INT)
+    MPI_TYPE_TRANSLATION(LONG)
+    MPI_TYPE_TRANSLATION(LONG_LONG)
+    MPI_TYPE_TRANSLATION(SIGNED_CHAR)
+    MPI_TYPE_TRANSLATION(UNSIGNED_CHAR)
+    MPI_TYPE_TRANSLATION(UNSIGNED_SHORT)
+    MPI_TYPE_TRANSLATION(UNSIGNED)
+    MPI_TYPE_TRANSLATION(UNSIGNED_LONG)
+    MPI_TYPE_TRANSLATION(UNSIGNED_LONG_LONG)
+    MPI_TYPE_TRANSLATION(FLOAT)
+    MPI_TYPE_TRANSLATION(DOUBLE)
+    MPI_TYPE_TRANSLATION(LONG_DOUBLE)
+    MPI_TYPE_TRANSLATION(WCHAR)
+    MPI_TYPE_TRANSLATION(C_BOOL)
+    MPI_TYPE_TRANSLATION(INT8_T)
+    MPI_TYPE_TRANSLATION(INT16_T)
+    MPI_TYPE_TRANSLATION(INT32_T)
+    MPI_TYPE_TRANSLATION(INT64_T)
+    MPI_TYPE_TRANSLATION(UINT8_T)
+    MPI_TYPE_TRANSLATION(BYTE)
+    MPI_TYPE_TRANSLATION(UINT16_T)
+    MPI_TYPE_TRANSLATION(UINT32_T)
+    MPI_TYPE_TRANSLATION(UINT64_T)
+    MPI_TYPE_TRANSLATION(C_FLOAT_COMPLEX)
+    MPI_TYPE_TRANSLATION(C_DOUBLE_COMPLEX)
+    MPI_TYPE_TRANSLATION(C_LONG_DOUBLE_COMPLEX)
+    MPI_TYPE_TRANSLATION(AINT)
+    MPI_TYPE_TRANSLATION(OFFSET)
+    MPI_TYPE_TRANSLATION(LB)
+    MPI_TYPE_TRANSLATION(UB)
+    MPI_TYPE_TRANSLATION(FLOAT_INT)
+    MPI_TYPE_TRANSLATION(LONG_INT)
+    MPI_TYPE_TRANSLATION(DOUBLE_INT)
+    MPI_TYPE_TRANSLATION(SHORT_INT)
+    MPI_TYPE_TRANSLATION(2INT)
+    MPI_TYPE_TRANSLATION(LONG_DOUBLE_INT)
+    MPI_TYPE_TRANSLATION(2FLOAT)
+    MPI_TYPE_TRANSLATION(2DOUBLE)
+    MPI_TYPE_TRANSLATION(2LONG)
+    MPI_TYPE_TRANSLATION(REAL)
+    MPI_TYPE_TRANSLATION(REAL4)
+    MPI_TYPE_TRANSLATION(REAL8)
+    MPI_TYPE_TRANSLATION(REAL16)
+    MPI_TYPE_TRANSLATION(COMPLEX8)
+    MPI_TYPE_TRANSLATION(COMPLEX16)
+    MPI_TYPE_TRANSLATION(COMPLEX32)
+    MPI_TYPE_TRANSLATION(INTEGER1)
+    MPI_TYPE_TRANSLATION(INTEGER2)
+    MPI_TYPE_TRANSLATION(INTEGER4)
+    MPI_TYPE_TRANSLATION(INTEGER8)
+    MPI_TYPE_TRANSLATION(INTEGER16)
+    MPI_TYPE_TRANSLATION(COUNT)
+
+    auto s4bxi_datatype = (BxiMpiDatatype*)original;
+
+    return main_actor->use_smpi_implem ? s4bxi_datatype->smpi : s4bxi_datatype->bull;
+}
+
+MPI_Datatype BxiMpiDatatype::bull_datatype(MPI_Datatype original)
+{
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+
+#define MPI_TYPE_BULL(type)                                                                                            \
+    if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type)                                   \
+        return main_actor->bull_mpi_ops->TYPE_##type;
+
+    MPI_TYPE_BULL(CHAR)
+    MPI_TYPE_BULL(DATATYPE_NULL)
+    MPI_TYPE_BULL(CHAR)
+    MPI_TYPE_BULL(SHORT)
+    MPI_TYPE_BULL(INT)
+    MPI_TYPE_BULL(LONG)
+    MPI_TYPE_BULL(LONG_LONG)
+    MPI_TYPE_BULL(SIGNED_CHAR)
+    MPI_TYPE_BULL(UNSIGNED_CHAR)
+    MPI_TYPE_BULL(UNSIGNED_SHORT)
+    MPI_TYPE_BULL(UNSIGNED)
+    MPI_TYPE_BULL(UNSIGNED_LONG)
+    MPI_TYPE_BULL(UNSIGNED_LONG_LONG)
+    MPI_TYPE_BULL(FLOAT)
+    MPI_TYPE_BULL(DOUBLE)
+    MPI_TYPE_BULL(LONG_DOUBLE)
+    MPI_TYPE_BULL(WCHAR)
+    MPI_TYPE_BULL(C_BOOL)
+    MPI_TYPE_BULL(INT8_T)
+    MPI_TYPE_BULL(INT16_T)
+    MPI_TYPE_BULL(INT32_T)
+    MPI_TYPE_BULL(INT64_T)
+    MPI_TYPE_BULL(UINT8_T)
+    MPI_TYPE_BULL(BYTE)
+    MPI_TYPE_BULL(UINT16_T)
+    MPI_TYPE_BULL(UINT32_T)
+    MPI_TYPE_BULL(UINT64_T)
+    MPI_TYPE_BULL(C_FLOAT_COMPLEX)
+    MPI_TYPE_BULL(C_DOUBLE_COMPLEX)
+    MPI_TYPE_BULL(C_LONG_DOUBLE_COMPLEX)
+    MPI_TYPE_BULL(AINT)
+    MPI_TYPE_BULL(OFFSET)
+    MPI_TYPE_BULL(LB)
+    MPI_TYPE_BULL(UB)
+    MPI_TYPE_BULL(FLOAT_INT)
+    MPI_TYPE_BULL(LONG_INT)
+    MPI_TYPE_BULL(DOUBLE_INT)
+    MPI_TYPE_BULL(SHORT_INT)
+    MPI_TYPE_BULL(2INT)
+    MPI_TYPE_BULL(LONG_DOUBLE_INT)
+    MPI_TYPE_BULL(2FLOAT)
+    MPI_TYPE_BULL(2DOUBLE)
+    MPI_TYPE_BULL(2LONG)
+    MPI_TYPE_BULL(REAL)
+    MPI_TYPE_BULL(REAL4)
+    MPI_TYPE_BULL(REAL8)
+    MPI_TYPE_BULL(REAL16)
+    MPI_TYPE_BULL(COMPLEX8)
+    MPI_TYPE_BULL(COMPLEX16)
+    MPI_TYPE_BULL(COMPLEX32)
+    MPI_TYPE_BULL(INTEGER1)
+    MPI_TYPE_BULL(INTEGER2)
+    MPI_TYPE_BULL(INTEGER4)
+    MPI_TYPE_BULL(INTEGER8)
+    MPI_TYPE_BULL(INTEGER16)
+    MPI_TYPE_BULL(COUNT)
+
+    auto s4bxi_datatype = (BxiMpiDatatype*)original;
+
+    return s4bxi_datatype->bull;
+}
+
+MPI_Datatype BxiMpiDatatype::smpi_datatype(MPI_Datatype original)
+{
+#define MPI_TYPE_SMPI(type)                                                                                            \
+    if (original == MPI_##type || original == GET_CURRENT_MAIN_ACTOR->bull_mpi_ops->TYPE_##type)                       \
+        return MPI_##type;
+
+    MPI_TYPE_SMPI(CHAR)
+    MPI_TYPE_SMPI(DATATYPE_NULL)
+    MPI_TYPE_SMPI(CHAR)
+    MPI_TYPE_SMPI(SHORT)
+    MPI_TYPE_SMPI(INT)
+    MPI_TYPE_SMPI(LONG)
+    MPI_TYPE_SMPI(LONG_LONG)
+    MPI_TYPE_SMPI(SIGNED_CHAR)
+    MPI_TYPE_SMPI(UNSIGNED_CHAR)
+    MPI_TYPE_SMPI(UNSIGNED_SHORT)
+    MPI_TYPE_SMPI(UNSIGNED)
+    MPI_TYPE_SMPI(UNSIGNED_LONG)
+    MPI_TYPE_SMPI(UNSIGNED_LONG_LONG)
+    MPI_TYPE_SMPI(FLOAT)
+    MPI_TYPE_SMPI(DOUBLE)
+    MPI_TYPE_SMPI(LONG_DOUBLE)
+    MPI_TYPE_SMPI(WCHAR)
+    MPI_TYPE_SMPI(C_BOOL)
+    MPI_TYPE_SMPI(INT8_T)
+    MPI_TYPE_SMPI(INT16_T)
+    MPI_TYPE_SMPI(INT32_T)
+    MPI_TYPE_SMPI(INT64_T)
+    MPI_TYPE_SMPI(UINT8_T)
+    MPI_TYPE_SMPI(BYTE)
+    MPI_TYPE_SMPI(UINT16_T)
+    MPI_TYPE_SMPI(UINT32_T)
+    MPI_TYPE_SMPI(UINT64_T)
+    MPI_TYPE_SMPI(C_FLOAT_COMPLEX)
+    MPI_TYPE_SMPI(C_DOUBLE_COMPLEX)
+    MPI_TYPE_SMPI(C_LONG_DOUBLE_COMPLEX)
+    MPI_TYPE_SMPI(AINT)
+    MPI_TYPE_SMPI(OFFSET)
+    MPI_TYPE_SMPI(LB)
+    MPI_TYPE_SMPI(UB)
+    MPI_TYPE_SMPI(FLOAT_INT)
+    MPI_TYPE_SMPI(LONG_INT)
+    MPI_TYPE_SMPI(DOUBLE_INT)
+    MPI_TYPE_SMPI(SHORT_INT)
+    MPI_TYPE_SMPI(2INT)
+    MPI_TYPE_SMPI(LONG_DOUBLE_INT)
+    MPI_TYPE_SMPI(2FLOAT)
+    MPI_TYPE_SMPI(2DOUBLE)
+    MPI_TYPE_SMPI(2LONG)
+    MPI_TYPE_SMPI(REAL)
+    MPI_TYPE_SMPI(REAL4)
+    MPI_TYPE_SMPI(REAL8)
+    MPI_TYPE_SMPI(REAL16)
+    MPI_TYPE_SMPI(COMPLEX8)
+    MPI_TYPE_SMPI(COMPLEX16)
+    MPI_TYPE_SMPI(COMPLEX32)
+    MPI_TYPE_SMPI(INTEGER1)
+    MPI_TYPE_SMPI(INTEGER2)
+    MPI_TYPE_SMPI(INTEGER4)
+    MPI_TYPE_SMPI(INTEGER8)
+    MPI_TYPE_SMPI(INTEGER16)
+    MPI_TYPE_SMPI(COUNT)
+
+    auto s4bxi_datatype = (BxiMpiDatatype*)original;
+
+    return s4bxi_datatype->smpi;
+}

@@ -44,7 +44,16 @@ if(BUILD_MPI_MIDDLEWARE)
     else ()
         add_definitions(-DBUILD_MPI_MIDDLEWARE)
     endif()
+
+    if(LOG_MPI_CALLS)
+        if (NOT CMAKE_VERSION VERSION_LESS 3.11)
+            add_compile_definitions(LOG_MPI_CALLS)
+        else ()
+            add_definitions(-DLOG_MPI_CALLS)
+        endif()
+    endif()
 endif()
+
 
 include(GNUInstallDirs)
 
@@ -84,6 +93,7 @@ if(BUILD_MPI_MIDDLEWARE)
     list(APPEND SOURCE_FILES 
             src/mpi_middleware/s4bxi_mpi_middleware.cpp 
             src/mpi_middleware/BxiMpiComm.cpp 
+            src/mpi_middleware/BxiMpiDatatype.cpp 
             src/s4bxi_shared.cpp)
 endif()
 

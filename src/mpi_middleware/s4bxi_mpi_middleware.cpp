@@ -22,6 +22,7 @@
 #include "s4bxi/actors/BxiMainActor.hpp"
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiComm.hpp"
+#include "s4bxi/mpi_middleware/BxiMpiDatatype.hpp"
 #include <smpi_actor.hpp>
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_mpi_middlware, "Messages generated in MPI middleware");
@@ -75,81 +76,10 @@ MPI_Request S4BXI_MPI_REQUEST_NULL()
         assert(smpi_mpi_ops->OP_##uppercase != nullptr);                                                               \
     }
 
-MPI_Datatype implem_datatype(MPI_Datatype original)
-{
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-#define MPI_TYPE_TRANSLATION(type)                                                                                     \
-    if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type ||                                 \
-        original == smpi_mpi_ops->TYPE_##type)                                                                         \
-        return (main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->TYPE_##type;
-
-    MPI_TYPE_TRANSLATION(CHAR)
-    MPI_TYPE_TRANSLATION(DATATYPE_NULL)
-    MPI_TYPE_TRANSLATION(CHAR)
-    MPI_TYPE_TRANSLATION(SHORT)
-    MPI_TYPE_TRANSLATION(INT)
-    MPI_TYPE_TRANSLATION(LONG)
-    MPI_TYPE_TRANSLATION(LONG_LONG)
-    MPI_TYPE_TRANSLATION(SIGNED_CHAR)
-    MPI_TYPE_TRANSLATION(UNSIGNED_CHAR)
-    MPI_TYPE_TRANSLATION(UNSIGNED_SHORT)
-    MPI_TYPE_TRANSLATION(UNSIGNED)
-    MPI_TYPE_TRANSLATION(UNSIGNED_LONG)
-    MPI_TYPE_TRANSLATION(UNSIGNED_LONG_LONG)
-    MPI_TYPE_TRANSLATION(FLOAT)
-    MPI_TYPE_TRANSLATION(DOUBLE)
-    MPI_TYPE_TRANSLATION(LONG_DOUBLE)
-    MPI_TYPE_TRANSLATION(WCHAR)
-    MPI_TYPE_TRANSLATION(C_BOOL)
-    MPI_TYPE_TRANSLATION(INT8_T)
-    MPI_TYPE_TRANSLATION(INT16_T)
-    MPI_TYPE_TRANSLATION(INT32_T)
-    MPI_TYPE_TRANSLATION(INT64_T)
-    MPI_TYPE_TRANSLATION(UINT8_T)
-    MPI_TYPE_TRANSLATION(BYTE)
-    MPI_TYPE_TRANSLATION(UINT16_T)
-    MPI_TYPE_TRANSLATION(UINT32_T)
-    MPI_TYPE_TRANSLATION(UINT64_T)
-    MPI_TYPE_TRANSLATION(C_FLOAT_COMPLEX)
-    MPI_TYPE_TRANSLATION(C_DOUBLE_COMPLEX)
-    MPI_TYPE_TRANSLATION(C_LONG_DOUBLE_COMPLEX)
-    MPI_TYPE_TRANSLATION(AINT)
-    MPI_TYPE_TRANSLATION(OFFSET)
-    MPI_TYPE_TRANSLATION(LB)
-    MPI_TYPE_TRANSLATION(UB)
-    MPI_TYPE_TRANSLATION(FLOAT_INT)
-    MPI_TYPE_TRANSLATION(LONG_INT)
-    MPI_TYPE_TRANSLATION(DOUBLE_INT)
-    MPI_TYPE_TRANSLATION(SHORT_INT)
-    MPI_TYPE_TRANSLATION(2INT)
-    MPI_TYPE_TRANSLATION(LONG_DOUBLE_INT)
-    MPI_TYPE_TRANSLATION(2FLOAT)
-    MPI_TYPE_TRANSLATION(2DOUBLE)
-    MPI_TYPE_TRANSLATION(2LONG)
-    MPI_TYPE_TRANSLATION(REAL)
-    MPI_TYPE_TRANSLATION(REAL4)
-    MPI_TYPE_TRANSLATION(REAL8)
-    MPI_TYPE_TRANSLATION(REAL16)
-    MPI_TYPE_TRANSLATION(COMPLEX8)
-    MPI_TYPE_TRANSLATION(COMPLEX16)
-    MPI_TYPE_TRANSLATION(COMPLEX32)
-    MPI_TYPE_TRANSLATION(INTEGER1)
-    MPI_TYPE_TRANSLATION(INTEGER2)
-    MPI_TYPE_TRANSLATION(INTEGER4)
-    MPI_TYPE_TRANSLATION(INTEGER8)
-    MPI_TYPE_TRANSLATION(INTEGER16)
-    MPI_TYPE_TRANSLATION(COUNT)
-
-#undef MPI_TYPE_TRANSLATION
-
-    return original;
-}
-
 MPI_Datatype* implem_datatypes(const MPI_Datatype* original, int size, MPI_Datatype* out)
 {
     for (int i = 0; i < size; ++i)
-        out[i] = implem_datatype(original[i]);
+        out[i] = BxiMpiDatatype::implem_datatype(original[i]);
 
     return out;
 }
@@ -182,190 +112,252 @@ MPI_Op implem_op(MPI_Op original)
     return original;
 }
 
-#define S4BXI_MPI_ONE_IMPLEM(rtype, name, args, argsval)                                                               \
-    typedef rtype(*name##_func) args;                                                                                  \
-    rtype S4BXI_MPI_##name args                                                                                        \
+#ifdef LOG_MPI_CALLS
+#define LOG_CALL(name, file, line)                                                                                     \
+    do {                                                                                                               \
+        s4bxi_fprintf(stderr, "Calling " #name " from line %d in file %s\n", line, file);                              \
+        xbt_backtrace_display_current();                                                                               \
+    } while (0)
+#else
+#define LOG_CALL(name, file, line)                                                                                     \
+    do {                                                                                                               \
+    } while (0)
+#endif
+
+#define S4BXI_MPI_ONE_IMPLEM(rtype, name, argsval, ...)                                                                \
+    typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
+    rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
     {                                                                                                                  \
+        LOG_CALL(name, __file, __line);                                                                                \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
         return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
     }
 
-// This one is kind of specific, it's only used for [I]alltoallw because of the datatype arrays
-#define S4BXI_MPI_W_COLLECTIVE(rtype, name, args, argsval)                                                             \
-    typedef rtype(*name##_func) args;                                                                                  \
-    rtype S4BXI_MPI_##name args                                                                                        \
+#define S4BXI_MPI_BULL_IMPLEM(rtype, name, argsval, ...)                                                               \
+    typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
+    rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
     {                                                                                                                  \
+        LOG_CALL(name, __file, __line);                                                                                \
+        BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
+        return ((name##_func)(main_actor->bull_mpi_ops)->name)argsval;                                                 \
+    }
+
+#define S4BXI_MPI_UNSUPPORTED(rtype, name, ...)                                                                        \
+    typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
+    rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
+    {                                                                                                                  \
+        ptl_panic("Unsupported function " #name " intercepted in MPI middleware");                                     \
+    }
+
+// This one is kind of specific, it's only used for [I]alltoallw because of the datatype arrays
+#define S4BXI_MPI_W_COLLECTIVE(rtype, name, argsval, ...)                                                              \
+    typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
+    rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
+    {                                                                                                                  \
+        LOG_CALL(name, __file, __line);                                                                                \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
         int size;                                                                                                      \
-        S4BXI_MPI_Comm_size(comm, &size);                                                                              \
+        S4BXI_MPI_Comm_size(__file, __line, comm, &size);                                                              \
         MPI_Datatype sendtypes_arr[size];                                                                              \
         MPI_Datatype recvtypes_arr[size];                                                                              \
         return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
     }
 
 typedef int (*Init_func)(int* argc, char*** argv);
-int S4BXI_MPI_Init(int* argc, char*** argv)
+int S4BXI_MPI_Init(const char* __file, int __line, int* argc, char*** argv)
 {
+    LOG_CALL(Init, __file, __line);
+
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    XBT_INFO("Init SMPI");
     int smpi = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
-    XBT_INFO("Init Bull MPI");
     int bull = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
 
     return bull > smpi ? bull : smpi;
 }
 
-typedef int (*Finalize_func)(void);
-int S4BXI_MPI_Finalize(void)
+typedef int (*Finalize_func)();
+int S4BXI_MPI_Finalize(const char* __file, int __line)
 {
+    LOG_CALL(Finalize, __file, __line);
+
     s4bxi_barrier();
 
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    XBT_INFO("Finalize SMPI");
-    int smpi = ((Finalize_func)smpi_mpi_ops->Finalize)();
-    XBT_INFO("Finalize Bull MPI");
-    int bull = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
+    int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)();
+    int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
 
     return bull > smpi ? bull : smpi;
 }
 
-// S4BXI_MPI_ONE_IMPLEM(int, Finalized, (int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Init_thread, (int* argc, char*** argv, int required, int* provided));
-// S4BXI_MPI_ONE_IMPLEM(int, Initialized, (int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Query_thread, (int* provided));
-// S4BXI_MPI_ONE_IMPLEM(int, Is_thread_main, (int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Get_version, (int* version, int* subversion));
-// S4BXI_MPI_ONE_IMPLEM(int, Get_library_version, (char* version, int* len));
-// S4BXI_MPI_ONE_IMPLEM(int, Get_processor_name, (char* name, int* resultlen));
-S4BXI_MPI_ONE_IMPLEM(int, Abort, (MPI_Comm comm, int errorcode), (BxiMpiComm::implem_comm(comm), errorcode));
-// S4BXI_MPI_ONE_IMPLEM(int, Alloc_mem, (MPI_Aint size, MPI_Info info, void* baseptr));
-// S4BXI_MPI_ONE_IMPLEM(int, Free_mem, (void* base));
-S4BXI_MPI_ONE_IMPLEM(double, Wtime, (void), ());
-S4BXI_MPI_ONE_IMPLEM(double, Wtick, (void), ());
-// S4BXI_MPI_ONE_IMPLEM(int, Buffer_attach, (void* buffer, int size));
-// S4BXI_MPI_ONE_IMPLEM(int, Buffer_detach, (void* buffer, int* size));
-// S4BXI_MPI_ONE_IMPLEM(int, Address, (const void* location, MPI_Aint* address));
-// S4BXI_MPI_ONE_IMPLEM(int, Get_address, (const void* location, MPI_Aint* address));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Aint, Aint_diff, (MPI_Aint base, MPI_Aint disp));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Aint, Aint_add, (MPI_Aint base, MPI_Aint disp));
-// S4BXI_MPI_ONE_IMPLEM(int, Error_class, (int errorcode, int* errorclass));
-// S4BXI_MPI_ONE_IMPLEM(int, Error_string, (int errorcode, char* string, int* resultlen));
+S4BXI_MPI_UNSUPPORTED(int, Finalized, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Init_thread, int* argc, char*** argv, int required, int* provided)
+S4BXI_MPI_UNSUPPORTED(int, Initialized, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Query_thread, int* provided)
+S4BXI_MPI_UNSUPPORTED(int, Is_thread_main, int* flag)
+S4BXI_MPI_BULL_IMPLEM(int, Get_version, (version, subversion), int* version, int* subversion)
+S4BXI_MPI_UNSUPPORTED(int, Get_library_version, char* version, int* len)
+S4BXI_MPI_UNSUPPORTED(int, Get_processor_name, char* name, int* resultlen)
+S4BXI_MPI_ONE_IMPLEM(int, Abort, (BxiMpiComm::implem_comm(comm), errorcode), MPI_Comm comm, int errorcode)
+S4BXI_MPI_UNSUPPORTED(int, Alloc_mem, MPI_Aint size, MPI_Info info, void* baseptr)
+S4BXI_MPI_UNSUPPORTED(int, Free_mem, void* base)
+S4BXI_MPI_ONE_IMPLEM(double, Wtime, ())
+S4BXI_MPI_ONE_IMPLEM(double, Wtick, ())
+S4BXI_MPI_UNSUPPORTED(int, Buffer_attach, void* buffer, int size)
+S4BXI_MPI_UNSUPPORTED(int, Buffer_detach, void* buffer, int* size)
+S4BXI_MPI_UNSUPPORTED(int, Address, const void* location, MPI_Aint* address)
+S4BXI_MPI_UNSUPPORTED(int, Get_address, const void* location, MPI_Aint* address)
+S4BXI_MPI_UNSUPPORTED(MPI_Aint, Aint_diff, MPI_Aint base, MPI_Aint disp)
+S4BXI_MPI_UNSUPPORTED(MPI_Aint, Aint_add, MPI_Aint base, MPI_Aint disp)
+S4BXI_MPI_UNSUPPORTED(int, Error_class, int errorcode, int* errorclass)
+S4BXI_MPI_UNSUPPORTED(int, Error_string, int errorcode, char* string, int* resultlen)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Attr_delete, (MPI_Comm comm, int keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Attr_get, (MPI_Comm comm, int keyval, void* attr_value, int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Attr_put, (MPI_Comm comm, int keyval, void* attr_value));
-// S4BXI_MPI_ONE_IMPLEM(int, Keyval_create,
-//                      (MPI_Copy_function * copy_fn, MPI_Delete_function* delete_fn, int* keyval, void* extra_state));
-// S4BXI_MPI_ONE_IMPLEM(int, Keyval_free, (int* keyval));
+S4BXI_MPI_UNSUPPORTED(int, Attr_delete, MPI_Comm comm, int keyval)
+S4BXI_MPI_UNSUPPORTED(int, Attr_get, MPI_Comm comm, int keyval, void* attr_value, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Attr_put, MPI_Comm comm, int keyval, void* attr_value)
+S4BXI_MPI_UNSUPPORTED(int, Keyval_create, MPI_Copy_function* copy_fn, MPI_Delete_function* delete_fn, int* keyval,
+                      void* extra_state)
+S4BXI_MPI_UNSUPPORTED(int, Keyval_free, int* keyval)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Type_free, (MPI_Datatype * datatype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_size, (MPI_Datatype datatype, int* size));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_size_x, (MPI_Datatype datatype, MPI_Count* size));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_extent, (MPI_Datatype datatype, MPI_Aint* lb, MPI_Aint* extent));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_extent_x, (MPI_Datatype datatype, MPI_Count* lb, MPI_Count* extent));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_true_extent, (MPI_Datatype datatype, MPI_Aint* lb, MPI_Aint* extent));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_true_extent_x, (MPI_Datatype datatype, MPI_Count* lb, MPI_Count* extent));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_extent, (MPI_Datatype datatype, MPI_Aint* extent));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_lb, (MPI_Datatype datatype, MPI_Aint* disp));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_ub, (MPI_Datatype datatype, MPI_Aint* disp));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_commit, (MPI_Datatype * datatype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_hindexed,
-//                      (int count, const int* blocklens, const MPI_Aint* indices, MPI_Datatype old_type,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_hindexed,
-//                      (int count, const int* blocklens, const MPI_Aint* indices, MPI_Datatype old_type,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_hindexed_block,
-//                      (int count, int blocklength, const MPI_Aint* indices, MPI_Datatype old_type,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_hvector,
-//                      (int count, int blocklen, MPI_Aint stride, MPI_Datatype old_type, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_hvector,
-//                      (int count, int blocklen, MPI_Aint stride, MPI_Datatype old_type, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_indexed,
-//                      (int count, const int* blocklens, const int* indices, MPI_Datatype old_type,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_indexed,
-//                      (int count, const int* blocklens, const int* indices, MPI_Datatype old_type,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_indexed_block,
-//                      (int count, int blocklength, const int* indices, MPI_Datatype old_type, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_struct,
-//                      (int count, const int* blocklens, const MPI_Aint* indices, const MPI_Datatype* old_types,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_struct,
-//                      (int count, const int* blocklens, const MPI_Aint* indices, const MPI_Datatype* old_types,
-//                       MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_vector,
-//                      (int count, int blocklen, int stride, MPI_Datatype old_type, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_contiguous, (int count, MPI_Datatype old_type, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_resized,
-//                      (MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Datatype, Type_f2c, (MPI_Fint datatype));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Type_c2f, (MPI_Datatype datatype));
-// S4BXI_MPI_ONE_IMPLEM(int, Get_count, (const MPI_Status* status, MPI_Datatype datatype, int* count));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_attr, (MPI_Datatype type, int type_keyval, void* attribute_val, int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_set_attr, (MPI_Datatype type, int type_keyval, void* att));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_delete_attr, (MPI_Datatype type, int comm_keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_keyval,
-//                      (MPI_Type_copy_attr_function * copy_fn, MPI_Type_delete_attr_function* delete_fn, int* keyval,
-//                       void* extra_state));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_free_keyval, (int* keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_dup, (MPI_Datatype datatype, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_set_name, (MPI_Datatype datatype, const char* name));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_name, (MPI_Datatype datatype, char* name, int* len));
-
-// S4BXI_MPI_ONE_IMPLEM(int, Pack,
-//                      (const void* inbuf, int incount, MPI_Datatype type, void* outbuf, int outcount, int* position,
-//                       MPI_Comm comm));
-// S4BXI_MPI_ONE_IMPLEM(int, Pack_size, (int incount, MPI_Datatype datatype, MPI_Comm comm, int* size));
-// S4BXI_MPI_ONE_IMPLEM(int, Unpack,
-//                      (const void* inbuf, int insize, int* position, void* outbuf, int outcount, MPI_Datatype type,
-//                       MPI_Comm comm));
-
-// S4BXI_MPI_ONE_IMPLEM(int, Op_create, (MPI_User_function * function, int commute, MPI_Op* op));
-// S4BXI_MPI_ONE_IMPLEM(int, Op_free, (SETUP_OPS_IN_IMPLEMS(* op)))
-// S4BXI_MPI_ONE_IMPLEM(int, Op_commutative, (SETUP_OPS_IN_IMPLEMS(op, int* commute)))
-// S4BXI_MPI_ONE_IMPLEM(MPI_Op, Op_f2c, (MPI_Fint op));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Op_c2f, (SETUP_OPS_IN_IMPLEMS(op)))
-
-// S4BXI_MPI_ONE_IMPLEM(int, Group_free, (MPI_Group * group));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_size, (MPI_Group group, int* size));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_rank, (MPI_Group group, int* rank));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_translate_ranks,
-//                      (MPI_Group group1, int n, const int* ranks1, MPI_Group group2, int* ranks2));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_compare, (MPI_Group group1, MPI_Group group2, int* result));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_union, (MPI_Group group1, MPI_Group group2, MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_intersection, (MPI_Group group1, MPI_Group group2, MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_difference, (MPI_Group group1, MPI_Group group2, MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_incl, (MPI_Group group, int n, const int* ranks, MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_excl, (MPI_Group group, int n, const int* ranks, MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_range_incl, (MPI_Group group, int n, int ranges[][3], MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(int, Group_range_excl, (MPI_Group group, int n, int ranges[][3], MPI_Group* newgroup));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Group, Group_f2c, (MPI_Fint group));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Group_c2f, (MPI_Group group));
-
-S4BXI_MPI_ONE_IMPLEM(int, Comm_rank, (MPI_Comm comm, int* rank), (BxiMpiComm::implem_comm(comm), rank));
-S4BXI_MPI_ONE_IMPLEM(int, Comm_size, (MPI_Comm comm, int* size), (BxiMpiComm::implem_comm(comm), size));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_get_name, (MPI_Comm comm, char* name, int* len));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_set_name, (MPI_Comm comm, const char* name));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_dup, (MPI_Comm comm, MPI_Comm* newcomm));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_dup_with_info, (MPI_Comm comm, MPI_Info info, MPI_Comm* newcomm));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_get_attr, (MPI_Comm comm, int comm_keyval, void* attribute_val, int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_set_attr, (MPI_Comm comm, int comm_keyval, void* attribute_val));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_delete_attr, (MPI_Comm comm, int comm_keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_create_keyval,
-//                      (MPI_Comm_copy_attr_function * copy_fn, MPI_Comm_delete_attr_function* delete_fn, int* keyval,
-//                       void* extra_state));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_free_keyval, (int* keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_group, (MPI_Comm comm, MPI_Group* group));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_compare, (MPI_Comm comm1, MPI_Comm comm2, int* result));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_create, (MPI_Comm comm, MPI_Group group, MPI_Comm* newcomm));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_create_group, (MPI_Comm comm, MPI_Group group, int tag, MPI_Comm* newcomm));
-typedef int (*Comm_free_func)(MPI_Comm* comm);
-int S4BXI_MPI_Comm_free(MPI_Comm* comm)
+typedef int (*Type_free_func)(MPI_Datatype* datatype);
+int S4BXI_MPI_Type_free(const char* __file, int __line, MPI_Datatype* datatype)
 {
+    LOG_CALL(Type_free, __file, __line);
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    // We should probably check that the comm is not a predefined one, but I feel that it's the user app problem if
+    // someone tried to free one of those...
+    auto s4bxi_type = (BxiMpiDatatype*)(*datatype);
+    int bull        = ((Type_free_func)(main_actor->bull_mpi_ops->Type_free))(&s4bxi_type->bull);
+    int smpi        = ((Type_free_func)(smpi_mpi_ops->Type_free))(&s4bxi_type->smpi);
+    delete s4bxi_type;
+
+    return bull > smpi ? bull : smpi;
+}
+S4BXI_MPI_UNSUPPORTED(int, Type_size, MPI_Datatype datatype, int* size)
+S4BXI_MPI_UNSUPPORTED(int, Type_size_x, MPI_Datatype datatype, MPI_Count* size)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_extent, MPI_Datatype datatype, MPI_Aint* lb, MPI_Aint* extent)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_extent_x, MPI_Datatype datatype, MPI_Count* lb, MPI_Count* extent)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_true_extent, MPI_Datatype datatype, MPI_Aint* lb, MPI_Aint* extent)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_true_extent_x, MPI_Datatype datatype, MPI_Count* lb, MPI_Count* extent)
+S4BXI_MPI_UNSUPPORTED(int, Type_extent, MPI_Datatype datatype, MPI_Aint* extent)
+S4BXI_MPI_UNSUPPORTED(int, Type_lb, MPI_Datatype datatype, MPI_Aint* disp)
+S4BXI_MPI_UNSUPPORTED(int, Type_ub, MPI_Datatype datatype, MPI_Aint* disp)
+typedef int (*Type_commit_func)(MPI_Datatype* datatype);
+int S4BXI_MPI_Type_commit(const char* __file, int __line, MPI_Datatype* datatype)
+{
+    LOG_CALL(Type_commit, __file, __line);
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    auto s4bxi_type          = (BxiMpiDatatype*)(*datatype);
+    int bull                 = ((Type_commit_func)(main_actor->bull_mpi_ops->Type_commit))(&s4bxi_type->bull);
+    int smpi                 = ((Type_commit_func)(smpi_mpi_ops->Type_commit))(&s4bxi_type->smpi);
+
+    return bull > smpi ? bull : smpi;
+}
+S4BXI_MPI_UNSUPPORTED(int, Type_hindexed, int count, const int* blocklens, const MPI_Aint* indices,
+                      MPI_Datatype old_type, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_hindexed, int count, const int* blocklens, const MPI_Aint* indices,
+                      MPI_Datatype old_type, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_hindexed_block, int count, int blocklength, const MPI_Aint* indices,
+                      MPI_Datatype old_type, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_hvector, int count, int blocklen, MPI_Aint stride, MPI_Datatype old_type,
+                      MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_hvector, int count, int blocklen, MPI_Aint stride, MPI_Datatype old_type,
+                      MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_indexed, int count, const int* blocklens, const int* indices, MPI_Datatype old_type,
+                      MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_indexed, int count, const int* blocklens, const int* indices,
+                      MPI_Datatype old_type, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_indexed_block, int count, int blocklength, const int* indices,
+                      MPI_Datatype old_type, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_struct, int count, const int* blocklens, const MPI_Aint* indices,
+                      const MPI_Datatype* old_types, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_struct, int count, const int* blocklens, const MPI_Aint* indices,
+                      const MPI_Datatype* old_types, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_vector, int count, int blocklen, int stride, MPI_Datatype old_type,
+                      MPI_Datatype* newtype)
+typedef int (*Type_contiguous_func)(int count, MPI_Datatype old_type, MPI_Datatype* newtype);
+int S4BXI_MPI_Type_contiguous(const char* __file, int __line, int count, MPI_Datatype old_type, MPI_Datatype* newtype)
+{
+    LOG_CALL(Type_contiguous, __file, __line);
+    BxiMainActor* main_actor  = GET_CURRENT_MAIN_ACTOR;
+    MPI_Datatype type_in_bull = BxiMpiDatatype::bull_datatype(old_type);
+    MPI_Datatype type_in_smpi = BxiMpiDatatype::smpi_datatype(old_type);
+    MPI_Datatype type_out_bull;
+    MPI_Datatype type_out_smpi;
+
+    int bull = ((Type_contiguous_func)(main_actor->bull_mpi_ops->Type_contiguous))(count, old_type, &type_out_bull);
+    int smpi = ((Type_contiguous_func)(smpi_mpi_ops->Type_contiguous))(count, old_type, &type_out_smpi);
+
+    auto s4bxi_type_out  = new BxiMpiDatatype;
+    s4bxi_type_out->bull = type_out_bull;
+    s4bxi_type_out->smpi = type_out_smpi;
+    *newtype             = (MPI_Datatype)s4bxi_type_out;
+
+    return bull > smpi ? bull : smpi;
+}
+S4BXI_MPI_UNSUPPORTED(int, Type_create_resized, MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent,
+                      MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(MPI_Datatype, Type_f2c, MPI_Fint datatype)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Type_c2f, MPI_Datatype datatype)
+S4BXI_MPI_UNSUPPORTED(int, Get_count, const MPI_Status* status, MPI_Datatype datatype, int* count)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_attr, MPI_Datatype type, int type_keyval, void* attribute_val, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Type_set_attr, MPI_Datatype type, int type_keyval, void* att)
+S4BXI_MPI_UNSUPPORTED(int, Type_delete_attr, MPI_Datatype type, int comm_keyval)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_keyval, MPI_Type_copy_attr_function* copy_fn,
+                      MPI_Type_delete_attr_function* delete_fn, int* keyval, void* extra_state)
+S4BXI_MPI_UNSUPPORTED(int, Type_free_keyval, int* keyval)
+S4BXI_MPI_UNSUPPORTED(int, Type_dup, MPI_Datatype datatype, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_set_name, MPI_Datatype datatype, const char* name)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_name, MPI_Datatype datatype, char* name, int* len)
+
+S4BXI_MPI_UNSUPPORTED(int, Pack, const void* inbuf, int incount, MPI_Datatype type, void* outbuf, int outcount,
+                      int* position, MPI_Comm comm)
+S4BXI_MPI_UNSUPPORTED(int, Pack_size, int incount, MPI_Datatype datatype, MPI_Comm comm, int* size)
+S4BXI_MPI_UNSUPPORTED(int, Unpack, const void* inbuf, int insize, int* position, void* outbuf, int outcount,
+                      MPI_Datatype type, MPI_Comm comm)
+
+S4BXI_MPI_UNSUPPORTED(int, Op_create, MPI_User_function* function, int commute, MPI_Op* op)
+S4BXI_MPI_UNSUPPORTED(int, Op_free, MPI_Op* op)
+S4BXI_MPI_UNSUPPORTED(int, Op_commutative, MPI_Op op, int* commute)
+S4BXI_MPI_UNSUPPORTED(MPI_Op, Op_f2c, MPI_Fint op)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Op_c2f, MPI_Op op)
+
+S4BXI_MPI_UNSUPPORTED(int, Group_free, MPI_Group* group)
+S4BXI_MPI_UNSUPPORTED(int, Group_size, MPI_Group group, int* size)
+S4BXI_MPI_UNSUPPORTED(int, Group_rank, MPI_Group group, int* rank)
+S4BXI_MPI_UNSUPPORTED(int, Group_translate_ranks, MPI_Group group1, int n, const int* ranks1, MPI_Group group2,
+                      int* ranks2)
+S4BXI_MPI_UNSUPPORTED(int, Group_compare, MPI_Group group1, MPI_Group group2, int* result)
+S4BXI_MPI_UNSUPPORTED(int, Group_union, MPI_Group group1, MPI_Group group2, MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(int, Group_intersection, MPI_Group group1, MPI_Group group2, MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(int, Group_difference, MPI_Group group1, MPI_Group group2, MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(int, Group_incl, MPI_Group group, int n, const int* ranks, MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(int, Group_excl, MPI_Group group, int n, const int* ranks, MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(int, Group_range_incl, MPI_Group group, int n, int ranges[][3], MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(int, Group_range_excl, MPI_Group group, int n, int ranges[][3], MPI_Group* newgroup)
+S4BXI_MPI_UNSUPPORTED(MPI_Group, Group_f2c, MPI_Fint group)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Group_c2f, MPI_Group group)
+
+S4BXI_MPI_ONE_IMPLEM(int, Comm_rank, (BxiMpiComm::implem_comm(comm), rank), MPI_Comm comm, int* rank)
+S4BXI_MPI_ONE_IMPLEM(int, Comm_size, (BxiMpiComm::implem_comm(comm), size), MPI_Comm comm, int* size)
+S4BXI_MPI_UNSUPPORTED(int, Comm_get_name, MPI_Comm comm, char* name, int* len)
+S4BXI_MPI_UNSUPPORTED(int, Comm_set_name, MPI_Comm comm, const char* name)
+S4BXI_MPI_UNSUPPORTED(int, Comm_dup, MPI_Comm comm, MPI_Comm* newcomm)
+S4BXI_MPI_UNSUPPORTED(int, Comm_dup_with_info, MPI_Comm comm, MPI_Info info, MPI_Comm* newcomm)
+S4BXI_MPI_UNSUPPORTED(int, Comm_get_attr, MPI_Comm comm, int comm_keyval, void* attribute_val, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Comm_set_attr, MPI_Comm comm, int comm_keyval, void* attribute_val)
+S4BXI_MPI_UNSUPPORTED(int, Comm_delete_attr, MPI_Comm comm, int comm_keyval)
+S4BXI_MPI_UNSUPPORTED(int, Comm_create_keyval, MPI_Comm_copy_attr_function* copy_fn,
+                      MPI_Comm_delete_attr_function* delete_fn, int* keyval, void* extra_state)
+S4BXI_MPI_UNSUPPORTED(int, Comm_free_keyval, int* keyval)
+S4BXI_MPI_UNSUPPORTED(int, Comm_group, MPI_Comm comm, MPI_Group* group)
+S4BXI_MPI_UNSUPPORTED(int, Comm_compare, MPI_Comm comm1, MPI_Comm comm2, int* result)
+S4BXI_MPI_UNSUPPORTED(int, Comm_create, MPI_Comm comm, MPI_Group group, MPI_Comm* newcomm)
+S4BXI_MPI_UNSUPPORTED(int, Comm_create_group, MPI_Comm comm, MPI_Group group, int tag, MPI_Comm* newcomm)
+typedef int (*Comm_free_func)(MPI_Comm* comm);
+int S4BXI_MPI_Comm_free(const char* __file, int __line, MPI_Comm* comm)
+{
+    LOG_CALL(Comm_free, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     // We should probably check that the comm is not WORLD or SELF, but I feel that it's the user app problem if someone
     // tried to free WORLD or SELF...
@@ -376,10 +368,11 @@ int S4BXI_MPI_Comm_free(MPI_Comm* comm)
 
     return bull > smpi ? bull : smpi;
 }
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_disconnect, (MPI_Comm * comm));
+S4BXI_MPI_UNSUPPORTED(int, Comm_disconnect, MPI_Comm* comm)
 typedef int (*Comm_split_func)(MPI_Comm comm, int color, int key, MPI_Comm* comm_out);
-int S4BXI_MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm* comm_out)
+int S4BXI_MPI_Comm_split(const char* __file, int __line, MPI_Comm comm, int color, int key, MPI_Comm* comm_out)
 {
+    LOG_CALL(Comm_split, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     MPI_Comm comm_in_bull    = BxiMpiComm::bull_comm(comm);
     MPI_Comm comm_in_smpi    = BxiMpiComm::smpi_comm(comm);
@@ -396,452 +389,440 @@ int S4BXI_MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm* comm_out)
 
     return bull > smpi ? bull : smpi;
 }
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_set_info, (MPI_Comm comm, MPI_Info info));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_get_info, (MPI_Comm comm, MPI_Info* info));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_split_type, (MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm*
-// newcomm));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Comm, Comm_f2c, (MPI_Fint comm));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Comm_c2f, (MPI_Comm comm));
+S4BXI_MPI_UNSUPPORTED(int, Comm_set_info, MPI_Comm comm, MPI_Info info)
+S4BXI_MPI_UNSUPPORTED(int, Comm_get_info, MPI_Comm comm, MPI_Info* info)
+S4BXI_MPI_UNSUPPORTED(int, Comm_split_type, MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm* newcomm)
+S4BXI_MPI_UNSUPPORTED(MPI_Comm, Comm_f2c, MPI_Fint comm)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Comm_c2f, MPI_Comm comm)
 
-S4BXI_MPI_ONE_IMPLEM(int, Start, (MPI_Request * request), (request));
-S4BXI_MPI_ONE_IMPLEM(int, Startall, (int count, MPI_Request* requests), (count, requests));
-S4BXI_MPI_ONE_IMPLEM(int, Request_free, (MPI_Request * request), (request));
+S4BXI_MPI_ONE_IMPLEM(int, Start, (request), MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM(int, Startall, (count, requests), int count, MPI_Request* requests)
+S4BXI_MPI_ONE_IMPLEM(int, Request_free, (request), MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Recv,
-                     (void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm, MPI_Status* status),
-                     (buf, count, implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm), status));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm),
+                      status),
+                     void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm, MPI_Status* status)
 S4BXI_MPI_ONE_IMPLEM(int, Recv_init,
-                     (void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Irecv,
-                     (void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm), request));
-S4BXI_MPI_ONE_IMPLEM(int, Send, (const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm),
-                     (buf, count, implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm)));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM(int, Send,
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm)),
+                     const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Send_init,
-                     (const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Isend,
-                     (const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm), request));
-S4BXI_MPI_ONE_IMPLEM(int, Ssend, (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
+                     MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM(int, Ssend,
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Ssend_init,
-                     (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Issend,
-                     (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request));
-S4BXI_MPI_ONE_IMPLEM(int, Bsend, (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                     MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM(int, Bsend,
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Bsend_init,
-                     (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ibsend,
-                     (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request));
-S4BXI_MPI_ONE_IMPLEM(int, Rsend, (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                     MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM(int, Rsend,
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Rsend_init,
-                     (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Irsend,
-                     (const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                      MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm),
+                      request),
+                     const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Sendrecv,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, int dst, int sendtag, void* recvbuf,
-                      int recvcount, MPI_Datatype recvtype, int src, int recvtag, MPI_Comm comm, MPI_Status* status),
-                     (sendbuf, sendcount, implem_datatype(sendtype), dst, sendtag, recvbuf, recvcount,
-                      implem_datatype(recvtype), src, recvtag, BxiMpiComm::implem_comm(comm), status));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), dst, sendtag, recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), src, recvtag, BxiMpiComm::implem_comm(comm), status),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, int dst, int sendtag, void* recvbuf,
+                     int recvcount, MPI_Datatype recvtype, int src, int recvtag, MPI_Comm comm, MPI_Status* status)
 S4BXI_MPI_ONE_IMPLEM(int, Sendrecv_replace,
-                     (void* buf, int count, MPI_Datatype datatype, int dst, int sendtag, int src, int recvtag,
-                      MPI_Comm comm, MPI_Status* status),
-                     (buf, count, implem_datatype(datatype), dst, sendtag, src, recvtag, BxiMpiComm::implem_comm(comm),
-                      status));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, sendtag, src, recvtag,
+                      BxiMpiComm::implem_comm(comm), status),
+                     void* buf, int count, MPI_Datatype datatype, int dst, int sendtag, int src, int recvtag,
+                     MPI_Comm comm, MPI_Status* status)
 
-S4BXI_MPI_ONE_IMPLEM(int, Test, (MPI_Request * request, int* flag, MPI_Status* status), (request, flag, status));
-S4BXI_MPI_ONE_IMPLEM(int, Testany, (int count, MPI_Request requests[], int* index, int* flag, MPI_Status* status),
-                     (count, requests, index, flag, status));
-S4BXI_MPI_ONE_IMPLEM(int, Testall, (int count, MPI_Request* requests, int* flag, MPI_Status* statuses),
-                     (count, requests, flag, statuses));
-S4BXI_MPI_ONE_IMPLEM(int, Testsome,
-                     (int incount, MPI_Request requests[], int* outcount, int* indices, MPI_Status status[]),
-                     (incount, requests, outcount, indices, status));
-S4BXI_MPI_ONE_IMPLEM(int, Test_cancelled, (const MPI_Status* status, int* flag), (status, flag));
-S4BXI_MPI_ONE_IMPLEM(int, Wait, (MPI_Request * request, MPI_Status* status), (request, status));
-S4BXI_MPI_ONE_IMPLEM(int, Waitany, (int count, MPI_Request requests[], int* index, MPI_Status* status),
-                     (count, requests, index, status));
-S4BXI_MPI_ONE_IMPLEM(int, Waitall, (int count, MPI_Request requests[], MPI_Status status[]), (count, requests, status));
-S4BXI_MPI_ONE_IMPLEM(int, Waitsome,
-                     (int incount, MPI_Request requests[], int* outcount, int* indices, MPI_Status status[]),
-                     (incount, requests, outcount, indices, status));
-S4BXI_MPI_ONE_IMPLEM(int, Iprobe, (int source, int tag, MPI_Comm comm, int* flag, MPI_Status* status),
-                     (source, tag, BxiMpiComm::implem_comm(comm), flag, status));
-S4BXI_MPI_ONE_IMPLEM(int, Probe, (int source, int tag, MPI_Comm comm, MPI_Status* status),
-                     (source, tag, BxiMpiComm::implem_comm(comm), status));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Request, Request_f2c, (MPI_Fint request), (request));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Request_c2f, (MPI_Request request), (request));
-S4BXI_MPI_ONE_IMPLEM(int, Cancel, (MPI_Request * request), (request));
+S4BXI_MPI_ONE_IMPLEM(int, Test, (request, flag, status), MPI_Request* request, int* flag, MPI_Status* status)
+S4BXI_MPI_ONE_IMPLEM(int, Testany, (count, requests, index, flag, status), int count, MPI_Request requests[],
+                     int* index, int* flag, MPI_Status* status)
+S4BXI_MPI_ONE_IMPLEM(int, Testall, (count, requests, flag, statuses), int count, MPI_Request* requests, int* flag,
+                     MPI_Status* statuses)
+S4BXI_MPI_ONE_IMPLEM(int, Testsome, (incount, requests, outcount, indices, status), int incount, MPI_Request requests[],
+                     int* outcount, int* indices, MPI_Status status[])
+S4BXI_MPI_ONE_IMPLEM(int, Test_cancelled, (status, flag), const MPI_Status* status, int* flag)
+S4BXI_MPI_ONE_IMPLEM(int, Wait, (request, status), MPI_Request* request, MPI_Status* status)
+S4BXI_MPI_ONE_IMPLEM(int, Waitany, (count, requests, index, status), int count, MPI_Request requests[], int* index,
+                     MPI_Status* status)
+S4BXI_MPI_ONE_IMPLEM(int, Waitall, (count, requests, status), int count, MPI_Request requests[], MPI_Status status[])
+S4BXI_MPI_ONE_IMPLEM(int, Waitsome, (incount, requests, outcount, indices, status), int incount, MPI_Request requests[],
+                     int* outcount, int* indices, MPI_Status status[])
+S4BXI_MPI_ONE_IMPLEM(int, Iprobe, (source, tag, BxiMpiComm::implem_comm(comm), flag, status), int source, int tag,
+                     MPI_Comm comm, int* flag, MPI_Status* status)
+S4BXI_MPI_ONE_IMPLEM(int, Probe, (source, tag, BxiMpiComm::implem_comm(comm), status), int source, int tag,
+                     MPI_Comm comm, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(MPI_Request, Request_f2c, MPI_Fint request)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Request_c2f, MPI_Request request)
+S4BXI_MPI_ONE_IMPLEM(int, Cancel, (request), MPI_Request* request)
 
-S4BXI_MPI_ONE_IMPLEM(int, Bcast, (void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm),
-                     (buf, count, implem_datatype(datatype), root, BxiMpiComm::implem_comm(comm)));
-S4BXI_MPI_ONE_IMPLEM(int, Barrier, (MPI_Comm comm), (BxiMpiComm::implem_comm(comm)));
-S4BXI_MPI_ONE_IMPLEM(int, Ibarrier, (MPI_Comm comm, MPI_Request* request), (BxiMpiComm::implem_comm(comm), request));
+S4BXI_MPI_ONE_IMPLEM(int, Bcast,
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), root, BxiMpiComm::implem_comm(comm)),
+                     void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+S4BXI_MPI_ONE_IMPLEM(int, Barrier, (BxiMpiComm::implem_comm(comm)), MPI_Comm comm)
+S4BXI_MPI_ONE_IMPLEM(int, Ibarrier, (BxiMpiComm::implem_comm(comm), request), MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ibcast,
-                     (void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request* request),
-                     (buf, count, implem_datatype(datatype), root, BxiMpiComm::implem_comm(comm), request));
+                     (buf, count, BxiMpiDatatype::implem_datatype(datatype), root, BxiMpiComm::implem_comm(comm),
+                      request),
+                     void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Igather,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      root, BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Igatherv,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
-                      const int* displs, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcounts, displs,
-                      implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, displs,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
+                     const int* displs, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iallgather,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iallgatherv,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
-                      const int* displs, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcounts, displs,
-                      implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, displs,
+                      BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
+                     const int* displs, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iscatter,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      root, BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iscatterv,
-                     (const void* sendbuf, const int* sendcounts, const int* displs, MPI_Datatype sendtype,
-                      void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm,
-                      MPI_Request* request),
-                     (sendbuf, sendcounts, displs, implem_datatype(sendtype), recvbuf, recvcount,
-                      implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcounts, displs, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, const int* sendcounts, const int* displs, MPI_Datatype sendtype,
+                     void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ireduce,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
-                      MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op), root,
-                      BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op), root,
+                      BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
+                     MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iallreduce,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
-                      MPI_Request* request),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op), BxiMpiComm::implem_comm(comm),
-                      request));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iscan,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
-                      MPI_Request* request),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op), BxiMpiComm::implem_comm(comm),
-                      request));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Iexscan,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
-                      MPI_Request* request),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op), BxiMpiComm::implem_comm(comm),
-                      request));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ireduce_scatter,
-                     (const void* sendbuf, void* recvbuf, const int* recvcounts, MPI_Datatype datatype, MPI_Op op,
-                      MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, recvbuf, recvcounts, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, recvbuf, recvcounts, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, void* recvbuf, const int* recvcounts, MPI_Datatype datatype, MPI_Op op,
+                     MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ireduce_scatter_block,
-                     (const void* sendbuf, void* recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op,
-                      MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, recvbuf, recvcount, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, recvbuf, recvcount, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, void* recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ialltoall,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ialltoallv,
-                     (const void* sendbuf, const int* sendcounts, const int* senddisps, MPI_Datatype sendtype,
-                      void* recvbuf, const int* recvcounts, const int* recvdisps, MPI_Datatype recvtype, MPI_Comm comm,
-                      MPI_Request* request),
-                     (sendbuf, sendcounts, senddisps, implem_datatype(sendtype), recvbuf, recvcounts, recvdisps,
-                      implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request));
+                     (sendbuf, sendcounts, senddisps, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts,
+                      recvdisps, BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request),
+                     const void* sendbuf, const int* sendcounts, const int* senddisps, MPI_Datatype sendtype,
+                     void* recvbuf, const int* recvcounts, const int* recvdisps, MPI_Datatype recvtype, MPI_Comm comm,
+                     MPI_Request* request)
 S4BXI_MPI_W_COLLECTIVE(int, Ialltoallw,
-                       (const void* sendbuf, const int* sendcounts, const int* senddisps, const MPI_Datatype* sendtypes,
-                        void* recvbuf, const int* recvcounts, const int* recvdisps, const MPI_Datatype* recvtypes,
-                        MPI_Comm comm, MPI_Request* request),
                        (sendbuf, sendcounts, senddisps, implem_datatypes(sendtypes, size, sendtypes_arr), recvbuf,
                         recvcounts, recvdisps, implem_datatypes(recvtypes, size, recvtypes_arr),
-                        BxiMpiComm::implem_comm(comm), request))
+                        BxiMpiComm::implem_comm(comm), request),
+                       const void* sendbuf, const int* sendcounts, const int* senddisps, const MPI_Datatype* sendtypes,
+                       void* recvbuf, const int* recvcounts, const int* recvdisps, const MPI_Datatype* recvtypes,
+                       MPI_Comm comm, MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Gather,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, int root, MPI_Comm comm),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      root, BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, int root, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Gatherv,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
-                      const int* displs, MPI_Datatype recvtype, int root, MPI_Comm comm),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcounts, displs,
-                      implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, displs,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
+                     const int* displs, MPI_Datatype recvtype, int root, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Allgather,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, MPI_Comm comm),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Allgatherv,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
-                      const int* displs, MPI_Datatype recvtype, MPI_Comm comm),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcounts, displs,
-                      implem_datatype(recvtype), BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, displs,
+                      BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
+                     const int* displs, MPI_Datatype recvtype, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Scatter,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, int root, MPI_Comm comm),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      root, BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, int root, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Scatterv,
-                     (const void* sendbuf, const int* sendcounts, const int* displs, MPI_Datatype sendtype,
-                      void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm),
-                     (sendbuf, sendcounts, displs, implem_datatype(sendtype), recvbuf, recvcount,
-                      implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcounts, displs, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, const int* sendcounts, const int* displs, MPI_Datatype sendtype,
+                     void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Reduce,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
-                      MPI_Comm comm),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op), root,
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op), root,
+                      BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
+                     MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Allreduce,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Scan,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Exscan,
-                     (const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm),
-                     (sendbuf, recvbuf, count, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Reduce_scatter,
-                     (const void* sendbuf, void* recvbuf, const int* recvcounts, MPI_Datatype datatype, MPI_Op op,
-                      MPI_Comm comm),
-                     (sendbuf, recvbuf, recvcounts, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, recvbuf, recvcounts, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, void* recvbuf, const int* recvcounts, MPI_Datatype datatype, MPI_Op op,
+                     MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Reduce_scatter_block,
-                     (const void* sendbuf, void* recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op,
-                      MPI_Comm comm),
-                     (sendbuf, recvbuf, recvcount, implem_datatype(datatype), implem_op(op),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, recvbuf, recvcount, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                      BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, void* recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Alltoall,
-                     (const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                      MPI_Datatype recvtype, MPI_Comm comm),
-                     (sendbuf, sendcount, implem_datatype(sendtype), recvbuf, recvcount, implem_datatype(recvtype),
-                      BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                      BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
+                     MPI_Datatype recvtype, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Alltoallv,
-                     (const void* sendbuf, const int* sendcounts, const int* senddisps, MPI_Datatype sendtype,
-                      void* recvbuf, const int* recvcounts, const int* recvdisps, MPI_Datatype recvtype, MPI_Comm comm),
-                     (sendbuf, sendcounts, senddisps, implem_datatype(sendtype), recvbuf, recvcounts, recvdisps,
-                      implem_datatype(recvtype), BxiMpiComm::implem_comm(comm)));
+                     (sendbuf, sendcounts, senddisps, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts,
+                      recvdisps, BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm)),
+                     const void* sendbuf, const int* sendcounts, const int* senddisps, MPI_Datatype sendtype,
+                     void* recvbuf, const int* recvcounts, const int* recvdisps, MPI_Datatype recvtype, MPI_Comm comm)
 S4BXI_MPI_W_COLLECTIVE(int, Alltoallw,
-                       (const void* sendbuf, const int* sendcnts, const int* sdispls, const MPI_Datatype* sendtypes,
-                        void* recvbuf, const int* recvcnts, const int* rdispls, const MPI_Datatype* recvtypes,
-                        MPI_Comm comm),
                        (sendbuf, sendcnts, sdispls, implem_datatypes(sendtypes, size, sendtypes_arr), recvbuf, recvcnts,
-                        rdispls, implem_datatypes(recvtypes, size, recvtypes_arr), BxiMpiComm::implem_comm(comm)))
-// S4BXI_MPI_ONE_IMPLEM(int, Reduce_local,
-//                      (const void* inbuf, void* inoutbuf, int count, MPI_Datatype datatype, SETUP_OPS_IN_IMPLEMS(op)))
+                        rdispls, implem_datatypes(recvtypes, size, recvtypes_arr), BxiMpiComm::implem_comm(comm)),
+                       const void* sendbuf, const int* sendcnts, const int* sdispls, const MPI_Datatype* sendtypes,
+                       void* recvbuf, const int* recvcnts, const int* rdispls, const MPI_Datatype* recvtypes,
+                       MPI_Comm comm)
+S4BXI_MPI_UNSUPPORTED(int, Reduce_local, const void* inbuf, void* inoutbuf, int count, MPI_Datatype datatype, MPI_Op op)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Info_create, (MPI_Info * info));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_set, (MPI_Info info, const char* key, const char* value));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_get, (MPI_Info info, const char* key, int valuelen, char* value, int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_free, (MPI_Info * info));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_delete, (MPI_Info info, const char* key));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_dup, (MPI_Info info, MPI_Info* newinfo));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_get_nkeys, (MPI_Info info, int* nkeys));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_get_nthkey, (MPI_Info info, int n, char* key));
-// S4BXI_MPI_ONE_IMPLEM(int, Info_get_valuelen, (MPI_Info info, const char* key, int* valuelen, int* flag));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Info, Info_f2c, (MPI_Fint info));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Info_c2f, (MPI_Info info));
+S4BXI_MPI_UNSUPPORTED(int, Info_create, MPI_Info* info)
+S4BXI_MPI_UNSUPPORTED(int, Info_set, MPI_Info info, const char* key, const char* value)
+S4BXI_MPI_UNSUPPORTED(int, Info_get, MPI_Info info, const char* key, int valuelen, char* value, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Info_free, MPI_Info* info)
+S4BXI_MPI_UNSUPPORTED(int, Info_delete, MPI_Info info, const char* key)
+S4BXI_MPI_UNSUPPORTED(int, Info_dup, MPI_Info info, MPI_Info* newinfo)
+S4BXI_MPI_UNSUPPORTED(int, Info_get_nkeys, MPI_Info info, int* nkeys)
+S4BXI_MPI_UNSUPPORTED(int, Info_get_nthkey, MPI_Info info, int n, char* key)
+S4BXI_MPI_UNSUPPORTED(int, Info_get_valuelen, MPI_Info info, const char* key, int* valuelen, int* flag)
+S4BXI_MPI_UNSUPPORTED(MPI_Info, Info_f2c, MPI_Fint info)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Info_c2f, MPI_Info info)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Win_free, (MPI_Win * win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_create,
-//                      (void* base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win* win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_allocate,
-//                      (MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void* base, MPI_Win* win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_allocate_shared,
-//                      (MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void* base, MPI_Win* win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_create_dynamic, (MPI_Info info, MPI_Comm comm, MPI_Win* win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_attach, (MPI_Win win, void* base, MPI_Aint size));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_detach, (MPI_Win win, const void* base));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_set_name, (MPI_Win win, const char* name));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_get_name, (MPI_Win win, char* name, int* len));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_set_info, (MPI_Win win, MPI_Info info));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_get_info, (MPI_Win win, MPI_Info* info));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_get_group, (MPI_Win win, MPI_Group* group));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_fence, (int assert, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_get_attr, (MPI_Win type, int type_keyval, void* attribute_val, int* flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_set_attr, (MPI_Win type, int type_keyval, void* att));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_delete_attr, (MPI_Win type, int comm_keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_create_keyval,
-//                      (MPI_Win_copy_attr_function * copy_fn, MPI_Win_delete_attr_function* delete_fn, int* keyval,
-//                       void* extra_state));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_free_keyval, (int* keyval));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_complete, (MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_post, (MPI_Group group, int assert, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_start, (MPI_Group group, int assert, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_wait, (MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_lock, (int lock_type, int rank, int assert, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_lock_all, (int assert, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_unlock, (int rank, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_unlock_all, (MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_flush, (int rank, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_flush_local, (int rank, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_flush_all, (MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_flush_local_all, (MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_shared_query, (MPI_Win win, int rank, MPI_Aint* size, int* disp_unit, void* baseptr));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_sync, (MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Win, Win_f2c, (MPI_Fint win));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Win_c2f, (MPI_Win win));
+S4BXI_MPI_UNSUPPORTED(int, Win_free, MPI_Win* win)
+S4BXI_MPI_UNSUPPORTED(int, Win_create, void* base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm,
+                      MPI_Win* win)
+S4BXI_MPI_UNSUPPORTED(int, Win_allocate, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void* base,
+                      MPI_Win* win)
+S4BXI_MPI_UNSUPPORTED(int, Win_allocate_shared, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void* base,
+                      MPI_Win* win)
+S4BXI_MPI_UNSUPPORTED(int, Win_create_dynamic, MPI_Info info, MPI_Comm comm, MPI_Win* win)
+S4BXI_MPI_UNSUPPORTED(int, Win_attach, MPI_Win win, void* base, MPI_Aint size)
+S4BXI_MPI_UNSUPPORTED(int, Win_detach, MPI_Win win, const void* base)
+S4BXI_MPI_UNSUPPORTED(int, Win_set_name, MPI_Win win, const char* name)
+S4BXI_MPI_UNSUPPORTED(int, Win_get_name, MPI_Win win, char* name, int* len)
+S4BXI_MPI_UNSUPPORTED(int, Win_set_info, MPI_Win win, MPI_Info info)
+S4BXI_MPI_UNSUPPORTED(int, Win_get_info, MPI_Win win, MPI_Info* info)
+S4BXI_MPI_UNSUPPORTED(int, Win_get_group, MPI_Win win, MPI_Group* group)
+S4BXI_MPI_UNSUPPORTED(int, Win_fence, int assert, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_get_attr, MPI_Win type, int type_keyval, void* attribute_val, int* flag)
+S4BXI_MPI_UNSUPPORTED(int, Win_set_attr, MPI_Win type, int type_keyval, void* att)
+S4BXI_MPI_UNSUPPORTED(int, Win_delete_attr, MPI_Win type, int comm_keyval)
+S4BXI_MPI_UNSUPPORTED(int, Win_create_keyval, MPI_Win_copy_attr_function* copy_fn,
+                      MPI_Win_delete_attr_function* delete_fn, int* keyval, void* extra_state)
+S4BXI_MPI_UNSUPPORTED(int, Win_free_keyval, int* keyval)
+S4BXI_MPI_UNSUPPORTED(int, Win_complete, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_post, MPI_Group group, int assert, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_start, MPI_Group group, int assert, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_wait, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_lock, int lock_type, int rank, int assert, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_lock_all, int assert, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_unlock, int rank, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_unlock_all, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_flush, int rank, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_flush_local, int rank, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_flush_all, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_flush_local_all, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Win_shared_query, MPI_Win win, int rank, MPI_Aint* size, int* disp_unit, void* baseptr)
+S4BXI_MPI_UNSUPPORTED(int, Win_sync, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(MPI_Win, Win_f2c, MPI_Fint win)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Win_c2f, MPI_Win win)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Get,
-//                      (void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-//                       MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Put,
-//                      (const void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-//                       MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win));
-// S4BXI_MPI_ONE_IMPLEM(int, Accumulate,
-//                      (const void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-//                       MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, SETUP_OPS_IN_IMPLEMS(op,
-//                       MPI_Win win)))
-// S4BXI_MPI_ONE_IMPLEM(int, Get_accumulate,
-//                      (const void* origin_addr, int origin_count, MPI_Datatype origin_datatype, void* result_addr,
-//                       int result_count, MPI_Datatype result_datatype, int target_rank, MPI_Aint target_disp,
-//                       int target_count, MPI_Datatype target_datatype, SETUP_OPS_IN_IMPLEMS(op, MPI_Win win)))
-// S4BXI_MPI_ONE_IMPLEM(int, Rget,
-//                      (void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-//                       MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win,
-//                       MPI_Request* request));
-// S4BXI_MPI_ONE_IMPLEM(int, Rput,
-//                      (const void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-//                       MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win,
-//                       MPI_Request* request));
-// S4BXI_MPI_ONE_IMPLEM(int, Raccumulate,
-//                      (const void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-//                       MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win,
-//                       MPI_Request* request));
-// S4BXI_MPI_ONE_IMPLEM(int, Rget_accumulate,
-//                      (const void* origin_addr, int origin_count, MPI_Datatype origin_datatype, void* result_addr,
-//                       int result_count, MPI_Datatype result_datatype, int target_rank, MPI_Aint target_disp,
-//                       int target_count, MPI_Datatype target_datatype, SETUP_OPS_IN_IMPLEMS(op, MPI_Win win,
-//                       MPI_Request* request)))
-// S4BXI_MPI_ONE_IMPLEM(int, Fetch_and_op,
-//                      (const void* origin_addr, void* result_addr, MPI_Datatype datatype, int target_rank,
-//                       MPI_Aint target_disp, SETUP_OPS_IN_IMPLEMS(op, MPI_Win win)))
-// S4BXI_MPI_ONE_IMPLEM(int, Compare_and_swap,
-//                      (const void* origin_addr, void* compare_addr, void* result_addr, MPI_Datatype datatype,
-//                       int target_rank, MPI_Aint target_disp, MPI_Win win));
+S4BXI_MPI_UNSUPPORTED(int, Get, void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
+                      MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Put, const void* origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                      MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Accumulate, const void* origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op,
+                      MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Get_accumulate, const void* origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      void* result_addr, int result_count, MPI_Datatype result_datatype, int target_rank,
+                      MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Rget, void* origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
+                      MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win,
+                      MPI_Request* request)
+S4BXI_MPI_UNSUPPORTED(int, Rput, const void* origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                      MPI_Win win, MPI_Request* request)
+S4BXI_MPI_UNSUPPORTED(int, Raccumulate, const void* origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op,
+                      MPI_Win win, MPI_Request* request)
+S4BXI_MPI_UNSUPPORTED(int, Rget_accumulate, const void* origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      void* result_addr, int result_count, MPI_Datatype result_datatype, int target_rank,
+                      MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win,
+                      MPI_Request* request)
+S4BXI_MPI_UNSUPPORTED(int, Fetch_and_op, const void* origin_addr, void* result_addr, MPI_Datatype datatype,
+                      int target_rank, MPI_Aint target_disp, MPI_Op op, MPI_Win win)
+S4BXI_MPI_UNSUPPORTED(int, Compare_and_swap, const void* origin_addr, void* compare_addr, void* result_addr,
+                      MPI_Datatype datatype, int target_rank, MPI_Aint target_disp, MPI_Win win)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Cart_coords, (MPI_Comm comm, int rank, int maxdims, int* coords));
-// S4BXI_MPI_ONE_IMPLEM(int, Cart_create,
-//                      (MPI_Comm comm_old, int ndims, const int* dims, const int* periods, int reorder,
-//                       MPI_Comm* comm_cart));
-// S4BXI_MPI_ONE_IMPLEM(int, Cart_get, (MPI_Comm comm, int maxdims, int* dims, int* periods, int* coords));
-// S4BXI_MPI_ONE_IMPLEM(int, Cart_rank, (MPI_Comm comm, const int* coords, int* rank));
-// S4BXI_MPI_ONE_IMPLEM(int, Cart_shift, (MPI_Comm comm, int direction, int displ, int* source, int* dest));
-// S4BXI_MPI_ONE_IMPLEM(int, Cart_sub, (MPI_Comm comm, const int* remain_dims, MPI_Comm* comm_new));
-// S4BXI_MPI_ONE_IMPLEM(int, Cartdim_get, (MPI_Comm comm, int* ndims));
-// S4BXI_MPI_ONE_IMPLEM(int, Dims_create, (int nnodes, int ndims, int* dims));
-// S4BXI_MPI_ONE_IMPLEM(int, Request_get_status, (MPI_Request request, int* flag, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, Grequest_start,
-//                      (MPI_Grequest_query_function * query_fn, MPI_Grequest_free_function* free_fn,
-//                       MPI_Grequest_cancel_function* cancel_fn, void* extra_state, MPI_Request* request));
-// S4BXI_MPI_ONE_IMPLEM(int, Grequest_complete, (MPI_Request request));
-// S4BXI_MPI_ONE_IMPLEM(int, Status_set_cancelled, (MPI_Status * status, int flag));
-// S4BXI_MPI_ONE_IMPLEM(int, Status_set_elements, (MPI_Status * status, MPI_Datatype datatype, int count));
-// S4BXI_MPI_ONE_IMPLEM(int, Status_set_elements_x, (MPI_Status * status, MPI_Datatype datatype, MPI_Count count));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_subarray,
-//                      (int ndims, const int* array_of_sizes, const int* array_of_subsizes, const int* array_of_starts,
-//                       int order, MPI_Datatype oldtype, MPI_Datatype* newtype));
+S4BXI_MPI_UNSUPPORTED(int, Cart_coords, MPI_Comm comm, int rank, int maxdims, int* coords)
+S4BXI_MPI_UNSUPPORTED(int, Cart_create, MPI_Comm comm_old, int ndims, const int* dims, const int* periods, int reorder,
+                      MPI_Comm* comm_cart)
+S4BXI_MPI_UNSUPPORTED(int, Cart_get, MPI_Comm comm, int maxdims, int* dims, int* periods, int* coords)
+S4BXI_MPI_UNSUPPORTED(int, Cart_rank, MPI_Comm comm, const int* coords, int* rank)
+S4BXI_MPI_UNSUPPORTED(int, Cart_shift, MPI_Comm comm, int direction, int displ, int* source, int* dest)
+S4BXI_MPI_UNSUPPORTED(int, Cart_sub, MPI_Comm comm, const int* remain_dims, MPI_Comm* comm_new)
+S4BXI_MPI_UNSUPPORTED(int, Cartdim_get, MPI_Comm comm, int* ndims)
+S4BXI_MPI_UNSUPPORTED(int, Dims_create, int nnodes, int ndims, int* dims)
+S4BXI_MPI_UNSUPPORTED(int, Request_get_status, MPI_Request request, int* flag, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, Grequest_start, MPI_Grequest_query_function* query_fn, MPI_Grequest_free_function* free_fn,
+                      MPI_Grequest_cancel_function* cancel_fn, void* extra_state, MPI_Request* request)
+S4BXI_MPI_UNSUPPORTED(int, Grequest_complete, MPI_Request request)
+S4BXI_MPI_UNSUPPORTED(int, Status_set_cancelled, MPI_Status* status, int flag)
+S4BXI_MPI_UNSUPPORTED(int, Status_set_elements, MPI_Status* status, MPI_Datatype datatype, int count)
+S4BXI_MPI_UNSUPPORTED(int, Status_set_elements_x, MPI_Status* status, MPI_Datatype datatype, MPI_Count count)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_subarray, int ndims, const int* array_of_sizes, const int* array_of_subsizes,
+                      const int* array_of_starts, int order, MPI_Datatype oldtype, MPI_Datatype* newtype)
 
-// S4BXI_MPI_ONE_IMPLEM(int, File_open, (MPI_Comm comm, const char* filename, int amode, MPI_Info info, MPI_File* fh));
-// S4BXI_MPI_ONE_IMPLEM(int, File_close, (MPI_File * fh));
-// S4BXI_MPI_ONE_IMPLEM(int, File_delete, (const char* filename, MPI_Info info));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_size, (MPI_File fh, MPI_Offset* size));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_group, (MPI_File fh, MPI_Group* group));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_amode, (MPI_File fh, int* amode));
-// S4BXI_MPI_ONE_IMPLEM(int, File_set_info, (MPI_File fh, MPI_Info info));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_info, (MPI_File fh, MPI_Info* info_used));
-// S4BXI_MPI_ONE_IMPLEM(int, File_read_at,
-//                      (MPI_File fh, MPI_Offset offset, void* buf, int count, MPI_Datatype datatype, MPI_Status*
-//                      status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_read_at_all,
-//                      (MPI_File fh, MPI_Offset offset, void* buf, int count, MPI_Datatype datatype, MPI_Status*
-//                      status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_write_at,
-//                      (MPI_File fh, MPI_Offset offset, const void* buf, int count, MPI_Datatype datatype,
-//                       MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_write_at_all,
-//                      (MPI_File fh, MPI_Offset offset, const void* buf, int count, MPI_Datatype datatype,
-//                       MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_read, (MPI_File fh, void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_read_all,
-//                      (MPI_File fh, void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_write,
-//                      (MPI_File fh, const void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_write_all,
-//                      (MPI_File fh, const void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_seek, (MPI_File fh, MPI_Offset offset, int whenace));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_position, (MPI_File fh, MPI_Offset* offset));
-// S4BXI_MPI_ONE_IMPLEM(int, File_read_shared,
-//                      (MPI_File fh, void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_write_shared,
-//                      (MPI_File fh, const void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_read_ordered,
-//                      (MPI_File fh, void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_write_ordered,
-//                      (MPI_File fh, const void* buf, int count, MPI_Datatype datatype, MPI_Status* status));
-// S4BXI_MPI_ONE_IMPLEM(int, File_seek_shared, (MPI_File fh, MPI_Offset offset, int whence));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_position_shared, (MPI_File fh, MPI_Offset* offset));
-// S4BXI_MPI_ONE_IMPLEM(int, File_sync, (MPI_File fh));
-// S4BXI_MPI_ONE_IMPLEM(int, File_set_view,
-//                      (MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char* datarep,
-//                       MPI_Info info));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_view,
-//                      (MPI_File fh, MPI_Offset* disp, MPI_Datatype* etype, MPI_Datatype* filetype, char* datarep));
+S4BXI_MPI_UNSUPPORTED(int, File_open, MPI_Comm comm, const char* filename, int amode, MPI_Info info, MPI_File* fh)
+S4BXI_MPI_UNSUPPORTED(int, File_close, MPI_File* fh)
+S4BXI_MPI_UNSUPPORTED(int, File_delete, const char* filename, MPI_Info info)
+S4BXI_MPI_UNSUPPORTED(int, File_get_size, MPI_File fh, MPI_Offset* size)
+S4BXI_MPI_UNSUPPORTED(int, File_get_group, MPI_File fh, MPI_Group* group)
+S4BXI_MPI_UNSUPPORTED(int, File_get_amode, MPI_File fh, int* amode)
+S4BXI_MPI_UNSUPPORTED(int, File_set_info, MPI_File fh, MPI_Info info)
+S4BXI_MPI_UNSUPPORTED(int, File_get_info, MPI_File fh, MPI_Info* info_used)
+S4BXI_MPI_UNSUPPORTED(int, File_read_at, MPI_File fh, MPI_Offset offset, void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_read_at_all, MPI_File fh, MPI_Offset offset, void* buf, int count,
+                      MPI_Datatype datatype, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_write_at, MPI_File fh, MPI_Offset offset, const void* buf, int count,
+                      MPI_Datatype datatype, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_write_at_all, MPI_File fh, MPI_Offset offset, const void* buf, int count,
+                      MPI_Datatype datatype, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_read, MPI_File fh, void* buf, int count, MPI_Datatype datatype, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_read_all, MPI_File fh, void* buf, int count, MPI_Datatype datatype, MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_write, MPI_File fh, const void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_write_all, MPI_File fh, const void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_seek, MPI_File fh, MPI_Offset offset, int whenace)
+S4BXI_MPI_UNSUPPORTED(int, File_get_position, MPI_File fh, MPI_Offset* offset)
+S4BXI_MPI_UNSUPPORTED(int, File_read_shared, MPI_File fh, void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_write_shared, MPI_File fh, const void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_read_ordered, MPI_File fh, void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_write_ordered, MPI_File fh, const void* buf, int count, MPI_Datatype datatype,
+                      MPI_Status* status)
+S4BXI_MPI_UNSUPPORTED(int, File_seek_shared, MPI_File fh, MPI_Offset offset, int whence)
+S4BXI_MPI_UNSUPPORTED(int, File_get_position_shared, MPI_File fh, MPI_Offset* offset)
+S4BXI_MPI_UNSUPPORTED(int, File_sync, MPI_File fh)
+S4BXI_MPI_UNSUPPORTED(int, File_set_view, MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype,
+                      const char* datarep, MPI_Info info)
+S4BXI_MPI_UNSUPPORTED(int, File_get_view, MPI_File fh, MPI_Offset* disp, MPI_Datatype* etype, MPI_Datatype* filetype,
+                      char* datarep)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Errhandler_set, (MPI_Comm comm, MPI_Errhandler errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Errhandler_create, (MPI_Handler_function * function, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Errhandler_free, (MPI_Errhandler * errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Errhandler_get, (MPI_Comm comm, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_set_errhandler, (MPI_Comm comm, MPI_Errhandler errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_get_errhandler, (MPI_Comm comm, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_create_errhandler, (MPI_Comm_errhandler_fn * function, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Comm_call_errhandler, (MPI_Comm comm, int errorcode));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_set_errhandler, (MPI_Win win, MPI_Errhandler errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_get_errhandler, (MPI_Win win, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_create_errhandler, (MPI_Win_errhandler_fn * function, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, Win_call_errhandler, (MPI_Win win, int errorcode));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Errhandler, Errhandler_f2c, (MPI_Fint errhandler));
-// S4BXI_MPI_ONE_IMPLEM(MPI_Fint, Errhandler_c2f, (MPI_Errhandler errhandler));
+S4BXI_MPI_UNSUPPORTED(int, Errhandler_set, MPI_Comm comm, MPI_Errhandler errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Errhandler_create, MPI_Handler_function* function, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Errhandler_free, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Errhandler_get, MPI_Comm comm, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Comm_set_errhandler, MPI_Comm comm, MPI_Errhandler errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Comm_get_errhandler, MPI_Comm comm, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Comm_create_errhandler, MPI_Comm_errhandler_fn* function, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Comm_call_errhandler, MPI_Comm comm, int errorcode)
+S4BXI_MPI_UNSUPPORTED(int, Win_set_errhandler, MPI_Win win, MPI_Errhandler errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Win_get_errhandler, MPI_Win win, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Win_create_errhandler, MPI_Win_errhandler_fn* function, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, Win_call_errhandler, MPI_Win win, int errorcode)
+S4BXI_MPI_UNSUPPORTED(MPI_Errhandler, Errhandler_f2c, MPI_Fint errhandler)
+S4BXI_MPI_UNSUPPORTED(MPI_Fint, Errhandler_c2f, MPI_Errhandler errhandler)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_f90_integer, (int count, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_f90_real, (int prec, int exp, MPI_Datatype* newtype));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_create_f90_complex, (int prec, int exp, MPI_Datatype* newtype));
+S4BXI_MPI_UNSUPPORTED(int, Type_create_f90_integer, int count, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_f90_real, int prec, int exp, MPI_Datatype* newtype)
+S4BXI_MPI_UNSUPPORTED(int, Type_create_f90_complex, int prec, int exp, MPI_Datatype* newtype)
 
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_contents,
-//                      (MPI_Datatype datatype, int max_integers, int max_addresses, int max_datatypes,
-//                       int* array_of_integers, MPI_Aint* array_of_addresses, MPI_Datatype* array_of_datatypes));
-// S4BXI_MPI_ONE_IMPLEM(int, Type_get_envelope,
-//                      (MPI_Datatype datatype, int* num_integers, int* num_addresses, int* num_datatypes, int*
-//                      combiner));
-// S4BXI_MPI_ONE_IMPLEM(int, File_call_errhandler, (MPI_File fh, int errorcode));
-// S4BXI_MPI_ONE_IMPLEM(int, File_create_errhandler,
-//                      (MPI_File_errhandler_function * function, MPI_Errhandler* errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, File_set_errhandler, (MPI_File file, MPI_Errhandler errhandler));
-// S4BXI_MPI_ONE_IMPLEM(int, File_get_errhandler, (MPI_File file, MPI_Errhandler* errhandler));
+S4BXI_MPI_UNSUPPORTED(int, Type_get_contents, MPI_Datatype datatype, int max_integers, int max_addresses,
+                      int max_datatypes, int* array_of_integers, MPI_Aint* array_of_addresses,
+                      MPI_Datatype* array_of_datatypes)
+S4BXI_MPI_UNSUPPORTED(int, Type_get_envelope, MPI_Datatype datatype, int* num_integers, int* num_addresses,
+                      int* num_datatypes, int* combiner)
+S4BXI_MPI_UNSUPPORTED(int, File_call_errhandler, MPI_File fh, int errorcode)
+S4BXI_MPI_UNSUPPORTED(int, File_create_errhandler, MPI_File_errhandler_function* function, MPI_Errhandler* errhandler)
+S4BXI_MPI_UNSUPPORTED(int, File_set_errhandler, MPI_File file, MPI_Errhandler errhandler)
+S4BXI_MPI_UNSUPPORTED(int, File_get_errhandler, MPI_File file, MPI_Errhandler* errhandler)
 
 void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle)
 {
