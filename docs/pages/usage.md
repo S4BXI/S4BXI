@@ -69,7 +69,7 @@ _**Platform:**_ Each machine of your cluster should consist of:
 <host id="machine0" speed="10Gf"/>
 ```
 
-- a PCI cable, which can be represented as two cable for more accuracy, for example:
+- a PCI cable, which can be represented as two cables for more accuracy, for example:
 ```xml
 <link id="machine0_PCI_FAT" bandwidth="10GBps" latency="0ns" sharing_policy="FATPIPE"/>
 <link id="machine0_PCI" bandwidth="15.75GBps" latency="250ns"/>

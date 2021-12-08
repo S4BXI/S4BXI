@@ -5,5 +5,5 @@ S4BXI is a simulator of the [Portals4 network API](https://cs.sandia.gov/Portals
 This documentation covers:
 - [Installation](@ref Installation): how to setup S4BXI and its dependencies
 - [Usage](@ref Usage): how to run your Portals applications in simulation
+- [High level APIS](@ref HighLevelAPIs): methodology to model higher-level APIs on top of Portals
 - [Network model](@ref NetworkModel): details about the internal flow model for communications
-- [CPU model](@ref CpuModel): details about the internal model for computation on the CPU
