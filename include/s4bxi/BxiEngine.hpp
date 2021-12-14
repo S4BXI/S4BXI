@@ -64,7 +64,7 @@ class BxiEngine {
     void log(const BxiLog& log);
     void end_simulation();
     void register_main_actor(BxiMainActor*);
-    std::map<aid_t, BxiMainActor*> main_actors_on_host(std::string hostname);
+    std::map<aid_t, BxiMainActor*> main_actors_on_host(const std::string& hostname);
     std::set<std::string, std::less<>> used_nodes();
     BxiMainActor* get_current_main_actor();
     BxiMainActor* get_main_actor(aid_t pid);

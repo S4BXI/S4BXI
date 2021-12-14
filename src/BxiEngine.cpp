@@ -110,7 +110,7 @@ void BxiEngine::end_simulation()
     delete instance;
 }
 
-std::shared_ptr<BxiNode> BxiEngine::get_node(int nid)
+shared_ptr<BxiNode> BxiEngine::get_node(int nid)
 {
     auto nodeIt = nodes.find(nid);
     shared_ptr<BxiNode> node;
@@ -134,13 +134,13 @@ void BxiEngine::register_main_actor(BxiMainActor* actor)
     actors.emplace(s4u::Actor::self()->get_pid(), actor);
 }
 
-std::map<aid_t, BxiMainActor*> BxiEngine::main_actors_on_host(std::string hostname)
+map<aid_t, BxiMainActor*> BxiEngine::main_actors_on_host(const string& hostname)
 {
     map<aid_t, BxiMainActor*> on_host;
-    auto pred = [hostname](std::pair<aid_t, BxiMainActor*> const& the_pair) {
+    auto pred = [hostname](pair<aid_t, BxiMainActor*> const& the_pair) {
         return the_pair.second->getSlug() == hostname;
     };
-    std::copy_if(actors.begin(), actors.end(), std::inserter(on_host, on_host.end()), pred);
+    copy_if(actors.begin(), actors.end(), inserter(on_host, on_host.end()), pred);
 
     return on_host;
 }
