@@ -20,7 +20,10 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "portals4.h"
 #include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/s4bxi_xbt_log.h"
 #include <unistd.h>
+
+S4BXI_LOG_NEW_DEFAULT_CATEGORY(c_util, "Messages specific to C util");
 
 using namespace simgrid;
 
@@ -88,9 +91,51 @@ int s4bxi_printf(const char* fmt, ...)
     return res;
 }
 
+uint32_t s4bxi_num_local_peers()
+{
+    return BxiEngine::get_instance()->main_actors_on_host(GET_CURRENT_MAIN_ACTOR->getSlug().c_str()).size() - 1;
+}
+
+uint32_t s4bxi_num_nodes()
+{
+    return BxiEngine::get_instance()->used_nodes().size();
+}
+
+void s4bxi_local_peers_list(char* list, size_t maxlen)
+{
+    list[0] = '\0';
+    for (auto pair : BxiEngine::get_instance()->main_actors_on_host(GET_CURRENT_MAIN_ACTOR->getSlug().c_str())) {
+        size_t cur_val_length = strlen(list);
+
+        auto ret =
+            snprintf(list + cur_val_length, maxlen - cur_val_length, "%d,", (((BxiUserAppActor*)pair.second)->my_rank));
+
+        if (ret >= maxlen - cur_val_length)
+            ptl_panic_fmt("Overflowing snprintf at %s:%d\n", __FILE__, __LINE__);
+    }
+
+    list[strlen(list) - 1] = '\0';
+}
+
 uint32_t s4bxi_get_my_rank()
 {
     return ((BxiUserAppActor*)GET_CURRENT_MAIN_ACTOR)->my_rank;
+}
+
+uint32_t s4bxi_get_my_local_rank()
+{
+    return ((BxiUserAppActor*)GET_CURRENT_MAIN_ACTOR)->my_local_rank;
+}
+
+uint32_t s4bxi_global_rank_from_local(uint32_t local)
+{
+    std::string slug = GET_CURRENT_MAIN_ACTOR->getSlug();
+    auto actor       = BxiEngine::get_instance()->get_actor_from_slug_and_localrank(slug, local);
+
+    if (!actor)
+        ptl_panic_fmt("Couldn't find actor with local rank %d on host %s", local, slug.c_str());
+
+    return ((BxiUserAppActor*)actor)->my_rank;
 }
 
 uint32_t s4bxi_get_rank_number()
@@ -98,9 +143,10 @@ uint32_t s4bxi_get_rank_number()
     return BxiEngine::get_instance()->get_main_actor_count();
 }
 
-char* s4bxi_get_hostname_from_rank(int rank)
+void s4bxi_get_hostname_from_rank(char* hostname, int rank)
 {
-    return (char*)BxiEngine::get_instance()->get_actor_from_rank(rank)->getSimgridActor()->get_host()->get_cname();
+    std::string slug = BxiEngine::get_instance()->get_actor_from_rank(rank)->getSlug();
+    slug.copy(hostname, slug.size());
 }
 
 int s4bxi_get_ptl_process_from_rank(int rank, ptl_process_t* out)

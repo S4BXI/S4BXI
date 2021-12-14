@@ -134,6 +134,25 @@ void BxiEngine::register_main_actor(BxiMainActor* actor)
     actors.emplace(s4u::Actor::self()->get_pid(), actor);
 }
 
+std::map<aid_t, BxiMainActor*> BxiEngine::main_actors_on_host(std::string hostname)
+{
+    map<aid_t, BxiMainActor*> on_host;
+    auto pred = [hostname](std::pair<aid_t, BxiMainActor*> const& the_pair) {
+        return the_pair.second->getSlug() == hostname;
+    };
+    std::copy_if(actors.begin(), actors.end(), std::inserter(on_host, on_host.end()), pred);
+
+    return on_host;
+}
+
+set<string> BxiEngine::used_nodes() {
+    set<string> out;
+    for (auto p: actors)
+        out.emplace(p.second->getSlug());
+
+    return out;
+}
+
 BxiMainActor* BxiEngine::get_current_main_actor()
 {
     auto actor = get_main_actor(s4u::Actor::self()->get_pid());
@@ -155,6 +174,14 @@ BxiMainActor* BxiEngine::get_actor_from_rank(int rank)
 {
     for (auto actorIt : actors)
         if (((BxiUserAppActor*)actorIt.second)->my_rank == rank)
+            return actorIt.second;
+
+    return nullptr;
+}
+
+BxiMainActor* BxiEngine::get_actor_from_slug_and_localrank(string slug, int localrank) {
+    for (auto actorIt : actors)
+        if (actorIt.second->getSlug() == slug && ((BxiUserAppActor*)actorIt.second)->my_local_rank == localrank)
             return actorIt.second;
 
     return nullptr;

@@ -71,6 +71,8 @@ string simulation_rand_id = "0000000000";
 
 void* smpi_lib;
 
+map<string, uint32_t> local_ranks;
+
 static void s4bxi_copy_file(const string& src, const string& target, off_t fdin_size)
 {
     int fdin = open(src.c_str(), O_RDONLY);
@@ -160,8 +162,17 @@ BxiUserAppActor::BxiUserAppActor(const vector<string>& args) : BxiMainActor(args
 void BxiUserAppActor::operator()()
 {
     map<string, string>* privatize_libs_renames = new map<string, string>;
-    my_rank                                     = stoul(string(self->get_property("rank")));
-    XBT_INFO("Init rank %d", my_rank);
+
+    my_rank   = stoul(string(self->get_property("rank")));
+    auto pair = local_ranks.find(getSlug());
+    if (pair == local_ranks.end()) {
+        my_local_rank = 0;
+        local_ranks.emplace(getSlug(), 0);
+    } else {
+        my_local_rank = ++pair->second;
+    }
+
+    XBT_INFO("Init rank %d ; local_rank %d", my_rank, my_local_rank);
 
     setup_barrier();
 

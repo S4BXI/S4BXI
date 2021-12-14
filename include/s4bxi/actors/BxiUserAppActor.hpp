@@ -28,6 +28,7 @@ class BxiUserAppActor : public BxiMainActor {
 
   public:
     uint32_t my_rank;
+    uint32_t my_local_rank;
 
     explicit BxiUserAppActor(const std::vector<std::string>& args);
 
