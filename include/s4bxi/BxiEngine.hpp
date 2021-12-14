@@ -65,12 +65,12 @@ class BxiEngine {
     void end_simulation();
     void register_main_actor(BxiMainActor*);
     std::map<aid_t, BxiMainActor*> main_actors_on_host(std::string hostname);
-    std::set<std::string> used_nodes();
+    std::set<std::string, std::less<>> used_nodes();
     BxiMainActor* get_current_main_actor();
     BxiMainActor* get_main_actor(aid_t pid);
     int get_main_actor_count();
     BxiMainActor* get_actor_from_rank(int rank);
-    BxiMainActor* get_actor_from_slug_and_localrank(std::string slug, int localrank);
+    BxiMainActor* get_actor_from_slug_and_localrank(const std::string& slug, int localrank);
 };
 
 #endif // S4BXI_BxiEngine_HPP

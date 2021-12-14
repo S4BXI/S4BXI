@@ -145,9 +145,10 @@ std::map<aid_t, BxiMainActor*> BxiEngine::main_actors_on_host(std::string hostna
     return on_host;
 }
 
-set<string> BxiEngine::used_nodes() {
-    set<string> out;
-    for (auto p: actors)
+set<string, less<>> BxiEngine::used_nodes()
+{
+    set<string, less<>> out;
+    for (auto p : actors)
         out.emplace(p.second->getSlug());
 
     return out;
@@ -179,7 +180,8 @@ BxiMainActor* BxiEngine::get_actor_from_rank(int rank)
     return nullptr;
 }
 
-BxiMainActor* BxiEngine::get_actor_from_slug_and_localrank(string slug, int localrank) {
+BxiMainActor* BxiEngine::get_actor_from_slug_and_localrank(const string& slug, int localrank)
+{
     for (auto actorIt : actors)
         if (actorIt.second->getSlug() == slug && ((BxiUserAppActor*)actorIt.second)->my_local_rank == localrank)
             return actorIt.second;
