@@ -18,6 +18,7 @@
 #include "s4bxi/actors/BxiMainActor.hpp"
 #include "s4bxi/actors/BxiUserAppActor.hpp"
 #include "s4bxi/s4bxi_util.hpp"
+#include "s4bxi/s4bxi_c_util.h"
 #include "portals4.h"
 #include "s4bxi/s4bxi_bench.hpp"
 #include "s4bxi/s4bxi_xbt_log.h"
@@ -26,6 +27,8 @@
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(c_util, "Messages specific to C util");
 
 using namespace simgrid;
+
+int _s4bxi_should_allow_polling = 1;
 
 void s4bxi_compute(double flops)
 {
@@ -172,12 +175,12 @@ double s4bxi_simtime()
     return res;
 }
 
-unsigned int s4bxi_is_polling()
+int s4bxi_is_polling()
 {
     return ((BxiUserAppActor*)GET_CURRENT_MAIN_ACTOR)->is_polling;
 }
 
-void s4bxi_set_polling(unsigned int p)
+void s4bxi_set_polling(int p)
 {
     ((BxiUserAppActor*)GET_CURRENT_MAIN_ACTOR)->is_polling = p;
 }

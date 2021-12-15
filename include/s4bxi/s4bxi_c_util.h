@@ -25,14 +25,16 @@ void s4bxi_get_hostname_from_rank(char *hostname, int rank);
 uint32_t s4bxi_global_rank_from_local(uint32_t local);
 int s4bxi_get_ptl_process_from_rank(int rank, ptl_process_t* out);
 double s4bxi_simtime();
-unsigned int s4bxi_is_polling();
-void s4bxi_set_polling(unsigned int p);
+int s4bxi_is_polling();
+void s4bxi_set_polling(int p);
 void s4bxi_barrier();
 void s4bxi_set_ptl_process_for_rank(ptl_handle_ni_t ni);
 void s4bxi_keyval_store_pointer(char* key, void* value);
 void* s4bxi_keyval_fetch_pointer(int rank, char* key);
 void s4bxi_set_loglevel(int l);
 void s4bxi_use_smpi_implem(int v);
+
+extern int _s4bxi_should_allow_polling;
 
 #ifdef __cplusplus
 }
