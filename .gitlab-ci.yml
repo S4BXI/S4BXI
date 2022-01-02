@@ -1,4 +1,6 @@
-image: simgrid/unstable
+image:
+    name: simgrid/unstable
+    entrypoint: ['/bin/bash', '-c', 'ln -snf /bin/bash /bin/sh && /bin/bash -c $0' ]
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
