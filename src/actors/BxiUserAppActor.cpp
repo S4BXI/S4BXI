@@ -475,7 +475,7 @@ int s4bxi_default_main(int argc, char* argv[])
         if (actor->get_name() == "user_app") {
             actor->set_property("instance_id", smpi_default_instance_name.c_str());
             if (!actor->get_property("rank"))
-            actor->set_property("rank", to_string(rank_counts));
+                actor->set_property("rank", to_string(rank_counts));
             rank_counts++;
         }
     }
@@ -486,7 +486,7 @@ int s4bxi_default_main(int argc, char* argv[])
 
     // By default the simulation fails "silently" (shows an error message but returns with code 0) in case of deadlock.
     // Throwing an error allows us to see what was going at the time of deadlock in GDB
-    simgrid_engine->on_deadlock.connect([]() { abort(); });
+    simgrid_engine->on_deadlock_cb([]() { abort(); });
 
     struct sigaction app_action;
     memset(&app_action, 0, sizeof(struct sigaction));

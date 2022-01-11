@@ -49,7 +49,7 @@ void s4bxi_actor_ext_plugin_init()
     }
 
     // Make sure that every future actor also gets an extension (in case the platform is not loaded yet)
-    s4u::Actor::on_creation.connect([](s4u::Actor& actor) { actor.extension_set(new BxiActorExt); });
+    s4u::Actor::on_creation_cb([](s4u::Actor& actor) { actor.extension_set(new BxiActorExt); });
 }
 
 BxiMainActor* get_cached_current_main_actor() {
