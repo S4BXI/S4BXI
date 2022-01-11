@@ -216,3 +216,8 @@ void s4bxi_use_smpi_implem(int v)
 {
     GET_CURRENT_MAIN_ACTOR->use_smpi_implem = (bool)v;
 }
+
+const char* s4bxi_simulation_id_c_str()
+{
+    return BxiEngine::get_instance()->get_simulation_rand_id().c_str();
+}

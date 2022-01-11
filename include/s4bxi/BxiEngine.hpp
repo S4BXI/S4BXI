@@ -38,6 +38,7 @@ class BxiEngine {
     std::shared_ptr<s4bxi_config> config;
     unsigned long logCount = 0;
     std::ofstream logFile;
+    std::string simulation_rand_id = "0000000000";
 
     BxiEngine();
 
@@ -60,6 +61,8 @@ class BxiEngine {
 
     static std::shared_ptr<s4bxi_config> get_config();
 
+    std::string get_simulation_rand_id();
+    void set_simulation_rand_id(std::string id);
     std::shared_ptr<BxiNode> get_node(int);
     void log(const BxiLog& log);
     void end_simulation();

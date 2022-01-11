@@ -33,6 +33,7 @@ void s4bxi_keyval_store_pointer(char* key, void* value);
 void* s4bxi_keyval_fetch_pointer(int rank, char* key);
 void s4bxi_set_loglevel(int l);
 void s4bxi_use_smpi_implem(int v);
+const char* s4bxi_simulation_id_c_str();
 
 extern int _s4bxi_should_allow_polling;
 

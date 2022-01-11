@@ -110,6 +110,16 @@ void BxiEngine::end_simulation()
     delete instance;
 }
 
+string BxiEngine::get_simulation_rand_id()
+{
+    return simulation_rand_id;
+}
+
+void BxiEngine::set_simulation_rand_id(string id)
+{
+    simulation_rand_id = id;
+}
+
 shared_ptr<BxiNode> BxiEngine::get_node(int nid)
 {
     auto nodeIt = nodes.find(nid);

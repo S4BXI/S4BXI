@@ -381,6 +381,8 @@ int s4bxi_default_main(int argc, char* argv[])
     for (int i = 0; i < simulation_rand_id.length(); i++)
         simulation_rand_id[i] = random_characters[random_int(0, 51)];
 
+    BxiEngine::get_instance()->set_simulation_rand_id(simulation_rand_id);
+
     s4bxi_init_privatization_dlopen(executable);
 
 #ifdef BUILD_MPI_MIDDLEWARE
@@ -472,6 +474,7 @@ int s4bxi_default_main(int argc, char* argv[])
     for (auto actor : simgrid_engine->get_all_actors()) {
         if (actor->get_name() == "user_app") {
             actor->set_property("instance_id", smpi_default_instance_name.c_str());
+            if (!actor->get_property("rank"))
             actor->set_property("rank", to_string(rank_counts));
             rank_counts++;
         }
