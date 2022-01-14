@@ -486,7 +486,7 @@ int s4bxi_default_main(int argc, char* argv[])
 
     // By default the simulation fails "silently" (shows an error message but returns with code 0) in case of deadlock.
     // Throwing an error allows us to see what was going at the time of deadlock in GDB
-    simgrid_engine->on_deadlock_cb([]() { abort(); });
+    s4u::Engine::on_deadlock_cb([]() { abort(); });
 
     struct sigaction app_action;
     memset(&app_action, 0, sizeof(struct sigaction));
