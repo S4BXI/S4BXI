@@ -21,6 +21,7 @@
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bxi_node, "Messages specific to BxiNode");
 
 using namespace simgrid;
+using namespace std;
 
 BxiNode::BxiNode(int nid) : nid(nid), e2e_entries(s4u::Semaphore::create(MAX_E2E_ENTRIES)) {}
 
@@ -80,7 +81,7 @@ bool BxiNode::check_process_flowctrl(const BxiMsg* msg)
         return true;
 
     bxi_vn vn = msg->get_vn();
-    s4u::SemaphorePtr flow_control_sem;
+    shared_ptr<int> flow_control_count;
     ptl_pid_t req_src        = msg->parent_request->md->ni->pid;
     ptl_pid_t req_target     = msg->parent_request->target_pid;
     bool is_request_vn       = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
@@ -88,21 +89,23 @@ bool BxiNode::check_process_flowctrl(const BxiMsg* msg)
                                 .dst_pid = is_request_vn ? req_target : req_src,
                                 .dst_nid = msg->target};
 
-    auto it = flowctrl_sems_process[vn].find(f_id);
+    auto it = flowctrl_process_counts[vn].find(f_id);
 
-    if (it == flowctrl_sems_process[vn].end()) {
+    if (it == flowctrl_process_counts[vn].end()) {
         XBT_DEBUG("Making semaphore %u:%u -> %u:%u with max capacity of %d (process-level)", nid,
                   msg->parent_request->md->ni->pid, msg->target, msg->parent_request->target_pid,
                   max_inflight_to_process);
-        flow_control_sem = s4u::Semaphore::create(max_inflight_to_process);
-        flowctrl_sems_process[vn].emplace(f_id, flow_control_sem);
+        flow_control_count = make_shared<int>(max_inflight_to_process);
+        flowctrl_process_counts[vn].emplace(f_id, flow_control_count);
     } else {
-        flow_control_sem = it->second;
+        flow_control_count = it->second;
     }
 
-    if (flow_control_sem->would_block())
+    if (*flow_control_count < 0)
+        ptl_panic("Process flow control has less than 0 credits");
+    if (*flow_control_count == 0)
         return false;
-    flow_control_sem->acquire();
+    *flow_control_count -= 1;
     return true;
 }
 
@@ -161,15 +164,15 @@ void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_p
     if (!S4BXI_GLOBAL_CONFIG(max_inflight_to_process))
         return;
 
-    auto it = flowctrl_sems_process[vn].find({.src_pid = src_pid, .dst_pid = dst_pid, .dst_nid = target_nid});
+    auto it = flowctrl_process_counts[vn].find({.src_pid = src_pid, .dst_pid = dst_pid, .dst_nid = target_nid});
 
-    if (it == flowctrl_sems_process[vn].end())
+    if (it == flowctrl_process_counts[vn].end())
         ptl_panic_fmt(
             "Trying to release a flow control entry in a non-existing semaphore (process-level): %u:%u -> %u:%u", nid,
             src_pid, target_nid, dst_pid);
 
     auto sem = it->second;
-    sem->release();
+    *sem += 1;
 }
 
 void BxiNode::resume_waiting_tx_actors()

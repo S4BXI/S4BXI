@@ -70,3 +70,35 @@ int random_int(int start, int end)
 
     return dist(rng);
 }
+
+const char* msg_type_c_str(BxiMsg* msg)
+{
+    switch (msg->type) {
+    case S4BXI_E2E_ACK:
+        return "S4BXI_E2E_ACK";
+
+    case S4BXI_PTL_ACK:
+        return "S4BXI_PTL_ACK";
+
+    case S4BXI_PTL_GET_RESPONSE:
+        return "S4BXI_PTL_GET_RESPONSE";
+
+    case S4BXI_PTL_PUT:
+        return "S4BXI_PTL_PUT";
+
+    case S4BXI_PTL_GET:
+        return "S4BXI_PTL_GET";
+
+    case S4BXI_PTL_ATOMIC:
+        return "S4BXI_PTL_ATOMIC";
+
+    case S4BXI_PTL_FETCH_ATOMIC:
+        return "S4BXI_PTL_FETCH_ATOMIC";
+
+    case S4BXI_PTL_FETCH_ATOMIC_RESPONSE:
+        return "S4BXI_PTL_FETCH_ATOMIC_RESPONSE";
+
+    default:
+        return "UNKNOWN";
+    }
+}

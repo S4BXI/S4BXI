@@ -56,11 +56,11 @@ class BxiNode {
         std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(), std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(),
         std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>(), std::map<ptl_nid_t, simgrid::s4u::SemaphorePtr>()};
     // Process level flow control semaphores
-    std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr> flowctrl_sems_process[4] = {
-        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>(),
-        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>(),
-        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>(),
-        std::map<flowctrl_process_id, simgrid::s4u::SemaphorePtr>()};
+    std::map<flowctrl_process_id, std::shared_ptr<int>> flowctrl_process_counts[4] = {
+        std::map<flowctrl_process_id, std::shared_ptr<int>>(),
+        std::map<flowctrl_process_id, std::shared_ptr<int>>(),
+        std::map<flowctrl_process_id, std::shared_ptr<int>>(),
+        std::map<flowctrl_process_id, std::shared_ptr<int>>()};
     // Process level miscellaneous things (for cycle detection and processing only)
     std::vector<BxiMsg*> flowctrl_waiting_messages[4]               = {std::vector<BxiMsg*>(), std::vector<BxiMsg*>(),
                                                          std::vector<BxiMsg*>(), std::vector<BxiMsg*>()};

@@ -77,4 +77,6 @@ int ptl_atsize(enum ptl_datatype atype);
 
 int random_int(int start = 0, int end = INT_MAX);
 
+const char* msg_type_c_str(BxiMsg* msg);
+
 #endif // S4BXI_S4BXI_UTIL_HPP

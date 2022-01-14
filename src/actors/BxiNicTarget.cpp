@@ -449,8 +449,6 @@ void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
 /**
  * Entry matching logic, works for both MEs and LEs
  *
- * That's a lot of nested `for`s, but usually we will have only one ni and one pt, so it will be fast
- *
  * @param msg Incoming message
  * @param me Output ME if matching succeeded
  * @return Portals' NI status code
