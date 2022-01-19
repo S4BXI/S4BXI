@@ -42,35 +42,20 @@ BxiNicInitiator::BxiNicInitiator(const vector<string>& args) : BxiNicActor(args)
  */
 void BxiNicInitiator::operator()()
 {
+    auto flowctrl_msq_queue = &node->flowctrl_waiting_messages[vn];
+
     for (;;) {
         BxiMsg* msg = tx_queue->get();
 
-        // E2E_ACKs don't have any higher level of ACKs, and retries should be prioritary (and they are only processed
-        // once at target so we only get credits back once per message)
-        bool flowctrl_check = (node->e2e_off || msg->type == S4BXI_E2E_ACK || msg->retry_count)
-                                  ? true
-                                  : node->check_process_flowctrl(msg);
+        if (!node->check_flowctrl(msg)) {
+            // If we ran out of flow control, simply store the message in a queue and move on, it will be the
+            // responsability of actors that wake us up to put the messages back in our queue
 
-        if (!flowctrl_check) {
-            auto flowctrl_msq_queue = &node->flowctrl_waiting_messages[vn];
-            if (find(flowctrl_msq_queue->begin(), flowctrl_msq_queue->end(), msg) == flowctrl_msq_queue->end()) {
-                // XBT_INFO("Message %p (%s) is not in flowctrl_waiting_messages, put it there (am VN %d)", msg,
-                //          msg_type_c_str(msg), vn);
+            if (find(flowctrl_msq_queue->begin(), flowctrl_msq_queue->end(), msg) == flowctrl_msq_queue->end())
                 flowctrl_msq_queue->push_back(msg);
-            } else {
-                flowctrl_msq_queue->clear();
-                node->initiator_waiting_flowctrl[vn].push_back(self);
-                XBT_INFO("Ran out of flow control because of message %p (%s) (I'm VN %d), go to sleep", msg,
-                         msg_type_c_str(msg), vn);
-                s4u::this_actor::suspend();
-                // XBT_INFO("Someone woke me up");
-            }
-            tx_queue->put(msg, 0, true);
-            // XBT_INFO("Put message %p (%s) back in queue", msg, msg_type_c_str(msg));
+
             continue;
         }
-
-        node->flowctrl_waiting_messages[vn].clear();
 
         switch (msg->type) {
         case S4BXI_PTL_PUT:

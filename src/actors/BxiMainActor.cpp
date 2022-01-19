@@ -131,7 +131,9 @@ int BxiMainActor::PtlInit(void)
     // Yes, this sleep is ugly, but it's the simplest way to make sure the Initiator are done setting up the queues
     s4u::this_actor::sleep_for(1e-9);
 
-    tx_queue = node->tx_queues[service_mode ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST];
+    vn       = service_mode ? S4BXI_VN_SERVICE_REQUEST : S4BXI_VN_COMPUTE_REQUEST;
+    tx_queue = node->tx_queues[vn];
+
     return PTL_OK;
 }
 
@@ -399,11 +401,13 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     auto request = new BxiPutRequest(m, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                      service_mode, local_offset, remote_offset, ack_req, hdr);
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_PUT, length, request);
+    // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
+    // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
-    node->resume_waiting_tx_actors();
+    // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
     S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
@@ -423,11 +427,13 @@ int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_GET, 64, request);
     //                                                                       ^^^^
     //                 I Don't know what the actual size of a get request on the network is
+    // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
+    // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
-    node->resume_waiting_tx_actors();
+    // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
     S4BXI_WRITELOG()
 
     return PTL_OK;
@@ -444,11 +450,13 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
     auto request = new BxiAtomicRequest(m, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                         service_mode, loffs, roffs, ack_req, hdr, op, datatype);
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_ATOMIC, length, request);
+    // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
+    // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
-    node->resume_waiting_tx_actors();
+    // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
     S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
@@ -470,11 +478,13 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
         new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                   service_mode, put_loffs, roffs, hdr, op, datatype, m_get, get_loffs);
     auto msg = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
+    // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
+    // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
-    node->resume_waiting_tx_actors();
+    // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
     S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
@@ -496,10 +506,12 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
         new BxiFetchAtomicRequest(m_put, length, matching, match_bits, target_proc.phys.pid, pt_index, user_ptr,
                                   service_mode, put_loffs, roffs, hdr, op, datatype, m_get, get_loffs);
     auto msg = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
+    // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     m_put->ni->cq->acquire();
+    // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
-    node->resume_waiting_tx_actors();
+    // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
 

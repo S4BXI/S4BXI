@@ -107,7 +107,6 @@ void BxiNicE2E::operator()()
                 ->put_init(new BxiMsg(*msg), 0)
                 ->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)
                 ->detach();
-            node->resume_waiting_tx_actors();
 
             BxiMsg::unref(msg);
             current_msg = nullptr;

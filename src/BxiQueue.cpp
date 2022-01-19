@@ -71,6 +71,13 @@ bool BxiQueue::ready()
     return !waiting->would_block();
 }
 
+int BxiQueue::size() {
+    if (mailbox)
+        return mailbox->size();
+
+    return to_process.size();
+}
+
 void BxiQueue::clear()
 {
     // We can't do much in the "mailbox" case : we're not allowed to do blocking `get`s in on_exit functions,

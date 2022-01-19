@@ -45,6 +45,7 @@ class BxiQueue {
     void put(BxiMsg* msg, const uint64_t& size = 0, bool async = false);
     BxiMsg* get();
     bool ready();
+    int size();
     void clear();
 };
 

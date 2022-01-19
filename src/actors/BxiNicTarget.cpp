@@ -84,9 +84,6 @@ void BxiNicTarget::operator()()
             break;
         }
 
-        // This is kind of a bad heuristic: resume all TX actor each time we get a message
-        node->resume_waiting_tx_actors();
-
         BxiMsg::unref(msg);
     }
 }

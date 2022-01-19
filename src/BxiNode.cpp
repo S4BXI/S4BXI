@@ -74,38 +74,71 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     eq->mailbox->put_init(ev, 0)->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)->detach();
 }
 
-bool BxiNode::check_process_flowctrl(const BxiMsg* msg)
+bool BxiNode::check_flowctrl(const BxiMsg* msg)
 {
-    int max_inflight_to_process = S4BXI_GLOBAL_CONFIG(max_inflight_to_process);
-    if (!max_inflight_to_process)
+    if (e2e_off || msg->type == S4BXI_E2E_ACK || msg->retry_count)
         return true;
 
     bxi_vn vn = msg->get_vn();
-    shared_ptr<int> flow_control_count;
-    ptl_pid_t req_src        = msg->parent_request->md->ni->pid;
-    ptl_pid_t req_target     = msg->parent_request->target_pid;
-    bool is_request_vn       = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
-    flowctrl_process_id f_id = {.src_pid = is_request_vn ? req_src : req_target,
-                                .dst_pid = is_request_vn ? req_target : req_src,
-                                .dst_nid = msg->target};
+    shared_ptr<int> flow_control_count_node;
+    shared_ptr<int> flow_control_count_process;
 
-    auto it = flowctrl_process_counts[vn].find(f_id);
+    // Check node-level flow-control
+    int max_inflight_to_target = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
+    if (max_inflight_to_target) {
+        auto it = flowctrl_node_counts[vn].find(msg->target);
 
-    if (it == flowctrl_process_counts[vn].end()) {
-        XBT_DEBUG("Making semaphore %u:%u -> %u:%u with max capacity of %d (process-level)", nid,
-                  msg->parent_request->md->ni->pid, msg->target, msg->parent_request->target_pid,
-                  max_inflight_to_process);
-        flow_control_count = make_shared<int>(max_inflight_to_process);
-        flowctrl_process_counts[vn].emplace(f_id, flow_control_count);
-    } else {
-        flow_control_count = it->second;
+        if (it == flowctrl_node_counts[vn].end()) {
+            XBT_INFO("Making semaphore %u -> %u with max capacity of %d (node-level)", nid, msg->target,
+                     max_inflight_to_target);
+            flow_control_count_node = make_shared<int>(max_inflight_to_target);
+            flowctrl_node_counts[vn].emplace(msg->target, flow_control_count_node);
+        } else {
+            flow_control_count_node = it->second;
+        }
+
+        if (*flow_control_count_node < 0)
+            ptl_panic("Node flow control has less than 0 credits");
+        if (*flow_control_count_node == 0)
+            return false;
     }
 
-    if (*flow_control_count < 0)
-        ptl_panic("Process flow control has less than 0 credits");
-    if (*flow_control_count == 0)
-        return false;
-    *flow_control_count -= 1;
+    // Check process-level flow-control
+    int max_inflight_to_process = S4BXI_GLOBAL_CONFIG(max_inflight_to_process);
+    if (max_inflight_to_process) {
+        ptl_pid_t req_src        = msg->parent_request->md->ni->pid;
+        ptl_pid_t req_target     = msg->parent_request->target_pid;
+        bool is_request_vn       = vn == S4BXI_VN_COMPUTE_REQUEST || vn == S4BXI_VN_SERVICE_REQUEST;
+        flowctrl_process_id f_id = {.src_pid = is_request_vn ? req_src : req_target,
+                                    .dst_pid = is_request_vn ? req_target : req_src,
+                                    .dst_nid = msg->target};
+
+        auto it = flowctrl_process_counts[vn].find(f_id);
+
+        if (it == flowctrl_process_counts[vn].end()) {
+            XBT_DEBUG("Making semaphore %u:%u -> %u:%u with max capacity of %d (process-level)", nid,
+                      msg->parent_request->md->ni->pid, msg->target, msg->parent_request->target_pid,
+                      max_inflight_to_process);
+            flow_control_count_process = make_shared<int>(max_inflight_to_process);
+            flowctrl_process_counts[vn].emplace(f_id, flow_control_count_process);
+        } else {
+            flow_control_count_process = it->second;
+        }
+
+        if (*flow_control_count_process < 0)
+            ptl_panic("Process flow control has less than 0 credits");
+        if (*flow_control_count_process == 0)
+            return false;
+    }
+
+    // If we have enough flow control, consume the entries
+    if (max_inflight_to_target) {
+        *flow_control_count_node -= 1;
+    }
+    if (max_inflight_to_process) {
+        *flow_control_count_process -= 1;
+    }
+
     return true;
 }
 
@@ -115,27 +148,6 @@ void BxiNode::acquire_e2e_entry(const BxiMsg* msg)
         return;
 
     e2e_entries->acquire();
-
-    int max_inflight_to_target = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
-
-    bxi_vn vn = msg->get_vn();
-
-    if (max_inflight_to_target) {
-        s4u::SemaphorePtr flow_control_sem;
-
-        auto it = flowctrl_sems_node[vn].find(msg->target);
-
-        if (it == flowctrl_sems_node[vn].end()) {
-            XBT_DEBUG("Making semaphore %u -> %u with max capacity of %d (node-level)", nid, msg->target,
-                      max_inflight_to_target);
-            flow_control_sem = s4u::Semaphore::create(max_inflight_to_target);
-            flowctrl_sems_node[vn].emplace(msg->target, flow_control_sem);
-        } else {
-            flow_control_sem = it->second;
-        }
-
-        flow_control_sem->acquire();
-    }
 }
 
 void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_pid, ptl_pid_t dst_pid)
@@ -145,41 +157,46 @@ void BxiNode::release_e2e_entry(ptl_nid_t target_nid, bxi_vn vn, ptl_pid_t src_p
 
     e2e_entries->release();
 
-    int max_inflight = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
-    if (S4BXI_GLOBAL_CONFIG(max_inflight_to_target)) {
-        auto it = flowctrl_sems_node[vn].find(target_nid);
+    int max_inflight_to_target = S4BXI_GLOBAL_CONFIG(max_inflight_to_target);
+    if (max_inflight_to_target) {
+        auto it = flowctrl_node_counts[vn].find(target_nid);
 
-        if (it == flowctrl_sems_node[vn].end())
-            ptl_panic_fmt("Trying to release a flow control entry in a non-existing semaphore (node-level): %u -> %u",
+        if (it == flowctrl_node_counts[vn].end())
+            ptl_panic_fmt("Trying to release a flow control entry in a non-existing counter (node-level): %u -> %u",
                           nid, target_nid);
 
-        auto sem = it->second;
-        sem->release();
+        auto count = it->second;
+        *count += 1;
 
-        xbt_assert(sem->get_capacity() <= max_inflight,
-                   "Semaphore %u -> %u has more capacity than max inflight (%u > %u)", nid, target_nid,
-                   sem->get_capacity(), max_inflight);
+        xbt_assert(*count <= max_inflight_to_target, "Counter %u -> %u has more capacity than max inflight (%u > %u)",
+                   nid, target_nid, *count, max_inflight_to_target);
     }
 
-    if (!S4BXI_GLOBAL_CONFIG(max_inflight_to_process))
-        return;
+    int max_inflight_to_process = S4BXI_GLOBAL_CONFIG(max_inflight_to_process);
+    if (max_inflight_to_process) {
+        auto it = flowctrl_process_counts[vn].find({.src_pid = src_pid, .dst_pid = dst_pid, .dst_nid = target_nid});
 
-    auto it = flowctrl_process_counts[vn].find({.src_pid = src_pid, .dst_pid = dst_pid, .dst_nid = target_nid});
+        if (it == flowctrl_process_counts[vn].end())
+            ptl_panic_fmt(
+                "Trying to release a flow control entry in a non-existing counter (process-level): %u:%u -> %u:%u", nid,
+                src_pid, target_nid, dst_pid);
 
-    if (it == flowctrl_process_counts[vn].end())
-        ptl_panic_fmt(
-            "Trying to release a flow control entry in a non-existing semaphore (process-level): %u:%u -> %u:%u", nid,
-            src_pid, target_nid, dst_pid);
+        auto count = it->second;
+        *count += 1;
 
-    auto sem = it->second;
-    *sem += 1;
+        xbt_assert(*count <= max_inflight_to_process,
+                   "Counter %u:%u -> %u:%u has more capacity than max inflight (%u > %u)", nid, src_pid, target_nid,
+                   dst_pid, *count, max_inflight_to_process);
+    }
+
+    if (max_inflight_to_process || max_inflight_to_target)
+        resume_waiting_tx_actors(vn);
 }
 
-void BxiNode::resume_waiting_tx_actors()
+void BxiNode::resume_waiting_tx_actors(bxi_vn vn)
 {
-    for (int i = 0; i < 4; ++i) {
-        for (auto it : initiator_waiting_flowctrl[i])
-            it->resume();
-        initiator_waiting_flowctrl[i].clear();
+    while (!flowctrl_waiting_messages[vn].empty()) {
+        tx_queues[vn]->put(flowctrl_waiting_messages[vn].front(), 0, true);
+        flowctrl_waiting_messages[vn].pop_front();
     }
 }

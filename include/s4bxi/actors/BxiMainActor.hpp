@@ -35,6 +35,7 @@ struct cmp_str {
 
 class BxiMainActor : public BxiActor {
     static simgrid::s4u::BarrierPtr _barrier;
+    bxi_vn vn;
 
   protected:
     bool service_mode;
