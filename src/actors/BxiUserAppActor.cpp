@@ -408,8 +408,8 @@ int s4bxi_default_main(int argc, char* argv[])
     /* Load the platform description and then deploy the application */
     if (platf_lib) { // If we have a dll fetch the symbol, otherwise load the XML
         cpp_platform_callback sym;
-        if (!(sym = (cpp_platform_callback)dlsym(platf_lib, "make_platform")))
-            S4BXI_ABORT("dlsym %s error: %s", "make_platform", dlerror());
+        if (!(sym = (cpp_platform_callback)dlsym(platf_lib, "load_platform")))
+            S4BXI_ABORT("dlsym %s error: %s", "load_platform", dlerror());
         sym();
         if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
             dlclose(platf_lib);
