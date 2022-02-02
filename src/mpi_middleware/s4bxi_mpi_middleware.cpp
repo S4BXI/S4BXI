@@ -285,13 +285,10 @@ int S4BXI_MPI_Type_contiguous(const char* __file, int __line, int count, MPI_Dat
     MPI_Datatype type_out_bull;
     MPI_Datatype type_out_smpi;
 
-    int bull = ((Type_contiguous_func)(main_actor->bull_mpi_ops->Type_contiguous))(count, old_type, &type_out_bull);
-    int smpi = ((Type_contiguous_func)(smpi_mpi_ops->Type_contiguous))(count, old_type, &type_out_smpi);
+    int bull = ((Type_contiguous_func)(main_actor->bull_mpi_ops->Type_contiguous))(count, type_in_bull, &type_out_bull);
+    int smpi = ((Type_contiguous_func)(smpi_mpi_ops->Type_contiguous))(count, type_in_smpi, &type_out_smpi);
 
-    auto s4bxi_type_out  = new BxiMpiDatatype;
-    s4bxi_type_out->bull = type_out_bull;
-    s4bxi_type_out->smpi = type_out_smpi;
-    *newtype             = (MPI_Datatype)s4bxi_type_out;
+    *newtype = (MPI_Datatype)(new BxiMpiDatatype(type_out_bull, type_out_smpi));
 
     return bull > smpi ? bull : smpi;
 }

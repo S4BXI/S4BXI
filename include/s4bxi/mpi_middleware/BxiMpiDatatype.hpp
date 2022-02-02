@@ -25,6 +25,7 @@ class BxiMpiDatatype {
     MPI_Datatype bull;
     MPI_Datatype smpi;
 
+    BxiMpiDatatype(MPI_Datatype bull, MPI_Datatype smpi) : bull(bull), smpi(smpi) {}
     static MPI_Datatype implem_datatype(MPI_Datatype original);
     static MPI_Datatype bull_datatype(MPI_Datatype original);
     static MPI_Datatype smpi_datatype(MPI_Datatype original);

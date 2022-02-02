@@ -26,7 +26,7 @@ MPI_Datatype BxiMpiDatatype::implem_datatype(MPI_Datatype original)
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
 #define MPI_TYPE_TRANSLATION(type)                                                                                     \
-    if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type || original == MPI_##type)         \
+    if (original == MPI_##type || original == main_actor->bull_mpi_ops->TYPE_##type)                                   \
         return main_actor->use_smpi_implem ? MPI_##type : main_actor->bull_mpi_ops->TYPE_##type;
 
     MPI_TYPE_TRANSLATION(CHAR)
