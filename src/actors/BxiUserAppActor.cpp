@@ -469,7 +469,7 @@ int s4bxi_default_main(int argc, char* argv[])
                 continue;
             }
         }
-    } // /Limit scope
+    }
     int rank_counts = 0;
     for (auto actor : simgrid_engine->get_all_actors()) {
         if (actor->get_name() == "user_app") {

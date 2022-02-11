@@ -504,7 +504,7 @@ void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_
         BxiME::maybe_auto_unlink(me);
         // ... But by doing this the "auto unlink" event is issued before
         // the "put" event, I don't know if it matters or not (I'm not
-        // event sure of how the real world NIC does this)
+        // even sure of how the real world NIC does this)
 
         // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
         if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
