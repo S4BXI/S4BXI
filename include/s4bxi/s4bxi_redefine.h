@@ -32,6 +32,12 @@ int s4bxi_gettimeofday(struct timeval* tv);
 
 unsigned int s4bxi_sleep(unsigned int seconds);
 
+// This is awful but Graph500 is being dumb
+# ifndef __useconds_t_defined
+typedef unsigned int useconds_t;
+#  define __useconds_t_defined
+# endif
+
 int s4bxi_usleep(useconds_t usec);
 
 int s4bxi_nanosleep(const struct timespec* req, struct timespec* rem);
