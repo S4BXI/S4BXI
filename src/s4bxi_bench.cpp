@@ -24,6 +24,8 @@ S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bench, "Logging specific to benchmarking");
 #ifdef BUILD_MPI_MIDDLEWARE
 #include <smpi/smpi.h>
 
+BxiLog __bxi_log;
+
 void s4bxi_execute(double duration)
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
@@ -32,15 +34,27 @@ void s4bxi_execute(double duration)
     smpi_execute(duration);
     S4BXI_WRITELOG()
 }
-
 void s4bxi_bench_begin()
 {
+    ptl_nid_t nid       = GET_CURRENT_MAIN_ACTOR->getNid();
+    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+    if (__bxi_log_level) {
+        __bxi_log.start     = simgrid::s4u::Engine::get_clock();
+        __bxi_log.type      = S4BXILOG_COMPUTE;
+        __bxi_log.initiator = nid;
+        __bxi_log.target    = nid;
+    }
     smpi_bench_begin();
 }
 
 void s4bxi_bench_end()
 {
     smpi_bench_end();
+    int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+    if (__bxi_log_level) {
+        __bxi_log.end = simgrid::s4u::Engine::get_clock();
+        BxiEngine::get_instance()->log(__bxi_log);
+    }
 }
 
 // Otherwise fall back to copy/pasting something very similar
