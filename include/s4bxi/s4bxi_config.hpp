@@ -69,6 +69,8 @@ struct s4bxi_config {
     bool no_dlclose;
     /** @brief Use PugiXML instead of SimGrid's parser for deployments */
     bool use_pugixml;
+    /** @brief Benchmark the simulator itself and display a summary at the end of the simulation */
+    bool benchmark_simulation;
 };
 
 #endif // S4BXI_s4bxi_config_HPP

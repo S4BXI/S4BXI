@@ -39,6 +39,8 @@ class BxiEngine {
     unsigned long logCount = 0;
     std::ofstream logFile;
     std::string simulation_rand_id = "0000000000";
+    double total_cpu_time = 0;
+    double total_time = 0;
 
     BxiEngine();
 
@@ -74,6 +76,9 @@ class BxiEngine {
     int get_main_actor_count();
     BxiMainActor* get_actor_from_rank(int rank);
     BxiMainActor* get_actor_from_slug_and_localrank(const std::string& slug, int localrank);
+    void increment_total_cpu_time(double time);
+    void start_user_app();
+    void stop_user_app();
 };
 
 #endif // S4BXI_BxiEngine_HPP

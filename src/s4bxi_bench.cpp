@@ -57,11 +57,12 @@ void s4bxi_bench_end()
     }
 }
 
-// Otherwise fall back to copy/pasting something very similar
-#else
+#else // Otherwise fall back to copy/pasting something very similar
 
 #include "simgrid/s4u/Exec.hpp"
 #include <xbt.h>
+
+xbt_os_timer_t total_cpu_timer = xbt_os_timer_new();
 
 using namespace simgrid;
 
@@ -92,6 +93,9 @@ void s4bxi_bench_begin()
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     xbt_os_threadtimer_start(main_actor->timer);
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
 }
 
 void s4bxi_bench_end()
@@ -107,9 +111,16 @@ void s4bxi_bench_end()
     xbt_os_timer_t timer = main_actor->timer;
     xbt_os_threadtimer_stop(timer);
 
+    double elapsed = xbt_os_timer_elapsed(timer);
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
+
     // Maybe we need to artificially speed up or slow down our computation based on our statistical analysis.
     // Simulate the benchmarked computation unless disabled via command-line argument
-    s4bxi_execute(xbt_os_timer_elapsed(timer));
+    s4bxi_execute(elapsed);
 }
 
 #endif

@@ -38,6 +38,8 @@ using namespace simgrid;
 
 BxiEngine* BxiEngine::instance = nullptr;
 
+xbt_os_timer_t total_timer = xbt_os_timer_new();
+
 #define LOG_STRING_CONFIG(x) XBT_DEBUG("%s: %s", #x, config->x.c_str())
 #define LOG_CONFIG(x)        XBT_DEBUG("%s: %s", #x, to_string(config->x).c_str())
 
@@ -67,6 +69,7 @@ BxiEngine::BxiEngine()
     config->max_inflight_to_process   = get_int_s4bxi_param("MAX_INFLIGHT_TO_PROCESS", 0);
     config->no_dlclose                = get_bool_s4bxi_param("NO_DLCLOSE", false);
     config->use_pugixml               = get_bool_s4bxi_param("USE_PUGIXML", false);
+    config->benchmark_simulation      = get_bool_s4bxi_param("BENCHMARK_SIMULATION", false);
     const string s                    = get_string_s4bxi_param("SHARED_MALLOC", "none");
     if (s == "local")
         config->shared_malloc = 1;
@@ -100,6 +103,14 @@ BxiEngine::BxiEngine()
 
 void BxiEngine::end_simulation()
 {
+    fflush(stdout);
+
+    if (config->benchmark_simulation) {
+        fprintf(stderr, "Total simulation time (in wall clock time) : %f seconds\n", total_time);
+        fprintf(stderr, "Total time spent benchmarking CPU          : %f seconds\n", total_cpu_time);
+        fprintf(stderr, "                 modeling network and stuff: %f seconds\n", total_time - total_cpu_time);
+    }
+
     if (config->log_level)
         logFile.close();
 
@@ -197,6 +208,23 @@ BxiMainActor* BxiEngine::get_actor_from_slug_and_localrank(const string& slug, i
             return actorIt.second;
 
     return nullptr;
+}
+
+void BxiEngine::increment_total_cpu_time(double time)
+{
+    total_cpu_time += time;
+}
+
+void BxiEngine::start_user_app()
+{
+    total_timer = xbt_os_timer_new();
+    xbt_os_cputimer_start(total_timer);
+}
+
+void BxiEngine::stop_user_app()
+{
+    xbt_os_cputimer_stop(total_timer);
+    total_time = xbt_os_timer_elapsed(total_timer);
 }
 
 int BxiEngine::get_main_actor_count()

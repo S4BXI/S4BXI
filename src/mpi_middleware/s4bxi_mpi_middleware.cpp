@@ -33,6 +33,8 @@ MPI_Datatype* type_array;
 
 std::unique_ptr<struct s4bxi_mpi_ops> smpi_mpi_ops = nullptr;
 
+xbt_os_timer_t total_cpu_timer = xbt_os_timer_new();
+
 // "Constants"
 void* S4BXI_MPI_IN_PLACE()
 {
@@ -128,18 +130,35 @@ MPI_Op implem_op(MPI_Op original)
     typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
     rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
     {                                                                                                                  \
+        if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {                                                               \
+            xbt_os_cputimer_stop(total_cpu_timer);                                                                     \
+            BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));                \
+        }                                                                                                              \
         LOG_CALL(name, __file, __line);                                                                                \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
-        return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
+        rtype out =                                                                                                    \
+            ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;       \
+        if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))                                                                 \
+            xbt_os_cputimer_start(total_cpu_timer);                                                                    \
+                                                                                                                       \
+        return out;                                                                                                    \
     }
 
 #define S4BXI_MPI_BULL_IMPLEM(rtype, name, argsval, ...)                                                               \
     typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
     rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
     {                                                                                                                  \
+        if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {                                                               \
+            xbt_os_cputimer_stop(total_cpu_timer);                                                                     \
+            BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));                \
+        }                                                                                                              \
         LOG_CALL(name, __file, __line);                                                                                \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
-        return ((name##_func)(main_actor->bull_mpi_ops)->name)argsval;                                                 \
+        rtype out                = ((name##_func)(main_actor->bull_mpi_ops)->name)argsval;                             \
+        if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))                                                                 \
+            xbt_os_cputimer_start(total_cpu_timer);                                                                    \
+                                                                                                                       \
+        return out;                                                                                                    \
     }
 
 #define S4BXI_MPI_UNSUPPORTED(rtype, name, ...)                                                                        \
@@ -154,18 +173,31 @@ MPI_Op implem_op(MPI_Op original)
     typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
     rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
     {                                                                                                                  \
+        if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {                                                               \
+            xbt_os_cputimer_stop(total_cpu_timer);                                                                     \
+            BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));                \
+        }                                                                                                              \
         LOG_CALL(name, __file, __line);                                                                                \
         BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
         int size;                                                                                                      \
         S4BXI_MPI_Comm_size(__file, __line, comm, &size);                                                              \
         MPI_Datatype sendtypes_arr[size];                                                                              \
         MPI_Datatype recvtypes_arr[size];                                                                              \
-        return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
+        rtype out =                                                                                                    \
+            ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;       \
+        if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))                                                                 \
+            xbt_os_cputimer_start(total_cpu_timer);                                                                    \
+                                                                                                                       \
+        return out;                                                                                                    \
     }
 
 typedef int (*Init_func)(int* argc, char*** argv);
 int S4BXI_MPI_Init(const char* __file, int __line, int* argc, char*** argv)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Init, __file, __line);
 
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
@@ -173,12 +205,19 @@ int S4BXI_MPI_Init(const char* __file, int __line, int* argc, char*** argv)
     int smpi = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
     int bull = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
 
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
+
     return bull > smpi ? bull : smpi;
 }
 
 typedef int (*Finalize_func)();
 int S4BXI_MPI_Finalize(const char* __file, int __line)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Finalize, __file, __line);
 
     s4bxi_barrier();
@@ -186,6 +225,9 @@ int S4BXI_MPI_Finalize(const char* __file, int __line)
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)();
     int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
 
     return bull > smpi ? bull : smpi;
 }
@@ -222,6 +264,10 @@ S4BXI_MPI_UNSUPPORTED(int, Keyval_free, int* keyval)
 typedef int (*Type_free_func)(MPI_Datatype* datatype);
 int S4BXI_MPI_Type_free(const char* __file, int __line, MPI_Datatype* datatype)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Type_free, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     // We should probably check that the comm is not a predefined one, but I feel that it's the user app problem if
@@ -230,6 +276,9 @@ int S4BXI_MPI_Type_free(const char* __file, int __line, MPI_Datatype* datatype)
     int bull        = ((Type_free_func)(main_actor->bull_mpi_ops->Type_free))(&s4bxi_type->bull);
     int smpi        = ((Type_free_func)(smpi_mpi_ops->Type_free))(&s4bxi_type->smpi);
     delete s4bxi_type;
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
 
     return bull > smpi ? bull : smpi;
 }
@@ -245,11 +294,18 @@ S4BXI_MPI_UNSUPPORTED(int, Type_ub, MPI_Datatype datatype, MPI_Aint* disp)
 typedef int (*Type_commit_func)(MPI_Datatype* datatype);
 int S4BXI_MPI_Type_commit(const char* __file, int __line, MPI_Datatype* datatype)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Type_commit, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     auto s4bxi_type          = (BxiMpiDatatype*)(*datatype);
     int bull                 = ((Type_commit_func)(main_actor->bull_mpi_ops->Type_commit))(&s4bxi_type->bull);
     int smpi                 = ((Type_commit_func)(smpi_mpi_ops->Type_commit))(&s4bxi_type->smpi);
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
 
     return bull > smpi ? bull : smpi;
 }
@@ -278,6 +334,10 @@ S4BXI_MPI_UNSUPPORTED(int, Type_vector, int count, int blocklen, int stride, MPI
 typedef int (*Type_contiguous_func)(int count, MPI_Datatype old_type, MPI_Datatype* newtype);
 int S4BXI_MPI_Type_contiguous(const char* __file, int __line, int count, MPI_Datatype old_type, MPI_Datatype* newtype)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Type_contiguous, __file, __line);
     BxiMainActor* main_actor  = GET_CURRENT_MAIN_ACTOR;
     MPI_Datatype type_in_bull = BxiMpiDatatype::bull_datatype(old_type);
@@ -289,6 +349,9 @@ int S4BXI_MPI_Type_contiguous(const char* __file, int __line, int count, MPI_Dat
     int smpi = ((Type_contiguous_func)(smpi_mpi_ops->Type_contiguous))(count, type_in_smpi, &type_out_smpi);
 
     *newtype = (MPI_Datatype)(new BxiMpiDatatype(type_out_bull, type_out_smpi));
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
 
     return bull > smpi ? bull : smpi;
 }
@@ -354,6 +417,10 @@ S4BXI_MPI_UNSUPPORTED(int, Comm_create_group, MPI_Comm comm, MPI_Group group, in
 typedef int (*Comm_free_func)(MPI_Comm* comm);
 int S4BXI_MPI_Comm_free(const char* __file, int __line, MPI_Comm* comm)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Comm_free, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     // We should probably check that the comm is not WORLD or SELF, but I feel that it's the user app problem if someone
@@ -363,12 +430,19 @@ int S4BXI_MPI_Comm_free(const char* __file, int __line, MPI_Comm* comm)
     int smpi        = ((Comm_free_func)(smpi_mpi_ops->Comm_free))(&s4bxi_comm->smpi);
     delete s4bxi_comm;
 
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
+
     return bull > smpi ? bull : smpi;
 }
 S4BXI_MPI_UNSUPPORTED(int, Comm_disconnect, MPI_Comm* comm)
 typedef int (*Comm_split_func)(MPI_Comm comm, int color, int key, MPI_Comm* comm_out);
 int S4BXI_MPI_Comm_split(const char* __file, int __line, MPI_Comm comm, int color, int key, MPI_Comm* comm_out)
 {
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation)) {
+        xbt_os_cputimer_stop(total_cpu_timer);
+        BxiEngine::get_instance()->increment_total_cpu_time(xbt_os_timer_elapsed(total_cpu_timer));
+    }
     LOG_CALL(Comm_split, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     MPI_Comm comm_in_bull    = BxiMpiComm::bull_comm(comm);
@@ -383,6 +457,9 @@ int S4BXI_MPI_Comm_split(const char* __file, int __line, MPI_Comm comm, int colo
     s4bxi_comm_out->bull = comm_out_bull;
     s4bxi_comm_out->smpi = comm_out_smpi;
     *comm_out            = (MPI_Comm)s4bxi_comm_out;
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        xbt_os_cputimer_start(total_cpu_timer);
 
     return bull > smpi ? bull : smpi;
 }

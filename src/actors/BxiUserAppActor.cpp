@@ -73,6 +73,8 @@ void* smpi_lib;
 
 map<string, uint32_t, less<>> local_ranks;
 
+BxiEngine* bxiEngine;
+
 static void s4bxi_copy_file(const string& src, const string& target, off_t fdin_size)
 {
     int fdin = open(src.c_str(), O_RDONLY);
@@ -290,11 +292,17 @@ void BxiUserAppActor::operator()()
     if (prop)
         s4u::this_actor::sleep_for(atof(prop));
 
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        bxiEngine->start_user_app();
+
     s4bxi_bench_begin();
 
     entry_point(argc, argv);
 
     s4bxi_bench_end();
+
+    if (S4BXI_GLOBAL_CONFIG(benchmark_simulation))
+        bxiEngine->stop_user_app();
 
     for (char* s : args2str)
         xbt_free(s);
@@ -381,7 +389,8 @@ int s4bxi_default_main(int argc, char* argv[])
     for (int i = 0; i < simulation_rand_id.length(); i++)
         simulation_rand_id[i] = random_characters[random_int(0, 51)];
 
-    BxiEngine::get_instance()->set_simulation_rand_id(simulation_rand_id);
+    bxiEngine = BxiEngine::get_instance();
+    bxiEngine->set_simulation_rand_id(simulation_rand_id);
 
     s4bxi_init_privatization_dlopen(executable);
 
@@ -505,7 +514,7 @@ int s4bxi_default_main(int argc, char* argv[])
     dlclose(smpi_lib);
 #endif
 
-    BxiEngine::get_instance()->end_simulation();
+    bxiEngine->end_simulation();
 
     delete simgrid_engine;
 
