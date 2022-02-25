@@ -98,7 +98,7 @@ if(BUILD_MPI_MIDDLEWARE)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-find_package(SimGrid 3.29 REQUIRED)
+find_package(SimGrid 3.30 REQUIRED)
 
 include_directories(${SimGrid_INCLUDE_DIR})
 
