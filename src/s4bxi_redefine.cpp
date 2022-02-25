@@ -231,3 +231,7 @@ void s4bxi_exit(int code) __THROW
 
     s4u::this_actor::exit();
 }
+
+pid_t s4bxi_getpid(void) {
+    return s4u::this_actor::get_pid();
+}

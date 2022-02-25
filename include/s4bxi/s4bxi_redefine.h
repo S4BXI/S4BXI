@@ -64,6 +64,8 @@ int s4bxi_getopt(int argc, char* const* argv, const char* options);
 
 void s4bxi_exit(int code) __THROW;
 
+pid_t s4bxi_getpid(void);
+
 #ifndef COMPILING_SIMULATOR
 
 #define gettimeofday(x, y)              s4bxi_gettimeofday(x)
@@ -79,6 +81,7 @@ void s4bxi_exit(int code) __THROW;
 #define getopt_long_only(x, y, z, w, v) s4bxi_getopt_long_only(x, y, z, w, v)
 #define getopt_long(x, y, z, w, v)      s4bxi_getopt_long(x, y, z, w, v)
 #define getopt(x, y, z)                 s4bxi_getopt(x, y, z)
+#define getpid()                        s4bxi_getpid()
 // I don't understand why this is required, but it is, don't ask questions
 extern void exit(int __status) __THROW __attribute__((__noreturn__));
 #define exit(x) s4bxi_exit(x)
