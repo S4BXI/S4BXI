@@ -1,6 +1,6 @@
 /*
  * Author: Julien EMMANUEL
- * Copyright (C) 2019-2021 Bull S.A.S
+ * Copyright (C) 2019-2022 Bull S.A.S
  * All rights reserved
  *
  * This program is free software; you can redistribute it and/or
