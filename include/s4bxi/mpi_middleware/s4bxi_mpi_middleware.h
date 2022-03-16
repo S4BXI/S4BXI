@@ -41,6 +41,8 @@ MPI_Request S4BXI_MPI_REQUEST_NULL();
 
 void set_mpi_middleware_ops(void* bull_libhandle, void* smpi_libhandle);
 
+int s4bxi_is_mpi_request_null(MPI_Request r);
+
 #define S4BXI_MPI_CALL(rtype, name, ...) rtype S4BXI_##name(const char* __file, int __line, ##__VA_ARGS__)
 
 S4BXI_MPI_CALL(int, MPI_Init, int* argc, char*** argv);
