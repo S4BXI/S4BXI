@@ -38,7 +38,8 @@ void s4bxi_bench_begin()
 {
     ptl_nid_t nid       = GET_CURRENT_MAIN_ACTOR->getNid();
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
-    if (__bxi_log_level) {
+    bool __bxi_must_log = __bxi_log_level && S4BXI_GLOBAL_CONFIG(log_computation);
+    if (__bxi_must_log) {
         __bxi_log.start     = simgrid::s4u::Engine::get_clock();
         __bxi_log.type      = S4BXILOG_COMPUTE;
         __bxi_log.initiator = nid;
@@ -51,7 +52,8 @@ void s4bxi_bench_end()
 {
     smpi_bench_end();
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
-    if (__bxi_log_level) {
+    bool __bxi_must_log = __bxi_log_level && S4BXI_GLOBAL_CONFIG(log_computation);
+    if (__bxi_must_log) {
         __bxi_log.end = simgrid::s4u::Engine::get_clock();
         BxiEngine::get_instance()->log(__bxi_log);
     }

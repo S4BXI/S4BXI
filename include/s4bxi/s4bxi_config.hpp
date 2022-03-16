@@ -37,6 +37,8 @@ struct s4bxi_config {
     bool e2e_off;
     /** @brief Output folder for CSV logging */
     std::string log_folder;
+    /** @brief Log computational phases, which can generate huge logs */
+    bool log_computation;
     /** @brief Set to 0 to diable logging (computed based on log_folder) */
     int log_level;
     /** @brief Shared libraries to privatize and re-link to user code at runtime */

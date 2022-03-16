@@ -45,7 +45,8 @@
 #define S4BXI_STARTLOG(log_type, log_initiator, log_target)                                                            \
     BxiLog __bxi_log;                                                                                                  \
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);                                                              \
-    if (__bxi_log_level) {                                                                                             \
+    bool __bxi_must_log = __bxi_log_level && (log_type != S4BXILOG_COMPUTE || S4BXI_GLOBAL_CONFIG(log_computation));   \
+    if (__bxi_must_log) {                                                                                              \
         __bxi_log.start     = simgrid::s4u::Engine::get_clock();                                                       \
         __bxi_log.type      = log_type;                                                                                \
         __bxi_log.initiator = log_initiator;                                                                           \
@@ -53,7 +54,7 @@
     }
 
 #define S4BXI_WRITELOG()                                                                                               \
-    if (__bxi_log_level) {                                                                                             \
+    if (__bxi_must_log) {                                                                                              \
         __bxi_log.end = simgrid::s4u::Engine::get_clock();                                                             \
         BxiEngine::get_instance()->log(__bxi_log);                                                                     \
     }

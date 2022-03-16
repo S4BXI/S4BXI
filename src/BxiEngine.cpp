@@ -52,6 +52,7 @@ BxiEngine::BxiEngine()
     config->model_pci_commands        = config->model_pci && get_bool_s4bxi_param("MODEL_PCI_COMMANDS", true);
     config->e2e_off                   = get_bool_s4bxi_param("E2E_OFF", false);
     config->log_folder                = get_string_s4bxi_param("LOG_FOLDER", "/dev/null");
+    config->log_computation           = get_bool_s4bxi_param("LOG_COMPUTATION", true);
     config->log_level                 = config->log_folder == "/dev/null" ? 0 : 1;
     config->privatize_libs            = get_string_s4bxi_param("PRIVATIZE_LIBS", "");
     config->keep_temps                = get_bool_s4bxi_param("KEEP_TEMPS", false);
