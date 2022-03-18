@@ -352,6 +352,11 @@ int s4bxi_default_main(int argc, char* argv[])
 #endif
 
     s4bxi_actor_ext_plugin_init();
+
+#ifdef BUILD_MPI_MIDDLEWARE
+    smpi_init_options();
+#endif
+
     auto simgrid_engine = new s4u::Engine(&argc, argv);
     xbt_assert(argc > 4, "Usage: %s platform_file deployment_file user_app_path user_app_name\n", argv[0]);
 
@@ -384,10 +389,6 @@ int s4bxi_default_main(int argc, char* argv[])
     BxiEngine::get_instance()->set_simulation_rand_id(simulation_rand_id);
 
     s4bxi_init_privatization_dlopen(executable);
-
-#ifdef BUILD_MPI_MIDDLEWARE
-    smpi_init_options();
-#endif
 
     if (platf_lib) {
         cpp_config_callback sym;
