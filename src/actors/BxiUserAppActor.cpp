@@ -70,7 +70,8 @@ string executable;
 string simulation_rand_id = "0000000000";
 xbt_os_timer_t self_bench_timer;
 int initialized_processes = 0;
-double init_time, application_time;
+double init_time;
+double application_time;
 
 void* smpi_lib;
 
