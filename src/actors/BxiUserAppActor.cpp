@@ -68,6 +68,9 @@ off_t fdin_size;
 string user_app_name;
 string executable;
 string simulation_rand_id = "0000000000";
+xbt_os_timer_t self_bench_timer;
+int initialized_processes = 0;
+double init_time, application_time;
 
 void* smpi_lib;
 
@@ -284,6 +287,12 @@ void BxiUserAppActor::operator()()
     args4argv->push_back(nullptr);
     char** argv = args4argv->data();
 
+    if (++initialized_processes == BxiEngine::get_instance()->get_main_actor_count() - 1) {
+        xbt_os_threadtimer_stop(self_bench_timer);
+        init_time = xbt_os_timer_elapsed(self_bench_timer);
+        xbt_os_threadtimer_start(self_bench_timer);
+    }
+
     s4bxi_barrier();
 
     const char* prop = self->get_property("delay_start");
@@ -346,6 +355,9 @@ void app_signal_handler(int nSignum, siginfo_t* siginfo, void* vcontext)
 
 int s4bxi_default_main(int argc, char* argv[])
 {
+    self_bench_timer = xbt_os_timer_new();
+    xbt_os_threadtimer_start(self_bench_timer);
+
 #ifdef BUILD_MPI_MIDDLEWARE
     if (!(smpi_lib = dlopen("libsimgrid.so", RTLD_LAZY | RTLD_LOCAL | WANT_RTLD_DEEPBIND)))
         S4BXI_ABORT("dlopen %s error: %s", "libsimgrid.so", dlerror());
@@ -497,6 +509,11 @@ int s4bxi_default_main(int argc, char* argv[])
 
     /* Run the simulation */
     simgrid_engine->run();
+
+    xbt_os_threadtimer_stop(self_bench_timer);
+    application_time = xbt_os_timer_elapsed(self_bench_timer);
+
+    XBT_INFO("Spent %fs initializing and %fs in user application", init_time, application_time);
 
     // Remove our signal (reset the default one)
     signal(SIGSEGV, SIG_DFL);
