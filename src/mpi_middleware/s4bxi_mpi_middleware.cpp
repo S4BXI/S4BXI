@@ -23,6 +23,7 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiComm.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiDatatype.hpp"
+#include "s4bxi/s4bxi_bench.hpp"
 #include <smpi_actor.hpp>
 #include <unordered_set>
 
@@ -618,23 +619,21 @@ S4BXI_MPI_ONE_IMPLEM(int, Sendrecv_replace,
 typedef int (*Test_func)(MPI_Request* request, int* flag, MPI_Status* status);
 int S4BXI_MPI_Test(const char* __file, int __line, MPI_Request* request, int* flag, MPI_Status* status)
 {
+    s4bxi_bench_end();
     LOG_CALL(Test, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    // if (is_smpi_request(*request)) {
-    //     XBT_INFO("Req %p is SMPI, test", *request);
-    // } else {
-    //     XBT_INFO("Req %p is OMPI, test", *request);
-    // }
-
     MPI_Request req_backup = nullptr;
-    if (is_smpi_request(*request))
+    bool smpi              = false;
+    if (is_smpi_request(*request)) {
+        smpi       = true;
         req_backup = *request; // Backup request now because MPI_Test might wreck it
+    }
+    s4bxi_bench_begin();
 
-    int out =
-        ((Test_func)(is_smpi_request(*request) ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Test)(request, flag, status);
+    int out = ((Test_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Test)(request, flag, status);
 
-    if (*flag && req_backup) // If the request was deallocated and it's an SMPI one
+    if (*flag && smpi) // If the request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup);
 
     return out;
@@ -644,16 +643,23 @@ typedef int (*Testany_func)(int count, MPI_Request requests[], int* index, int* 
 int S4BXI_MPI_Testany(const char* __file, int __line, int count, MPI_Request requests[], int* index, int* flag,
                       MPI_Status* status)
 {
+    s4bxi_bench_end();
     LOG_CALL(Testany, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
     MPI_Request req_backup[count];
 
-    for (int i = 0; i < count; ++i) // Backup requests now because MPI_Testany might wreck them
+    bool smpi = false;
+    for (int i = 0; i < count; ++i) { // Backup requests now because MPI_Testany might wreck them
         req_backup[i] = is_smpi_request(requests[i]) ? requests[i] : nullptr;
+        if (req_backup[i])
+            smpi = true;
+    }
 
-    int out = ((Testany_func)(is_smpi_request(requests[0]) ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testany)(
-        count, requests, index, flag, status);
+    s4bxi_bench_begin();
+
+    int out =
+        ((Testany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testany)(count, requests, index, flag, status);
 
     if (*flag && req_backup[*index]) // If a request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup[*index]);
@@ -664,16 +670,23 @@ int S4BXI_MPI_Testany(const char* __file, int __line, int count, MPI_Request req
 typedef int (*Testall_func)(int count, MPI_Request* requests, int* flag, MPI_Status* statuses);
 int S4BXI_MPI_Testall(const char* __file, int __line, int count, MPI_Request* requests, int* flag, MPI_Status* statuses)
 {
+    s4bxi_bench_end();
     LOG_CALL(Testall, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
     MPI_Request req_backup[count];
 
-    for (int i = 0; i < count; ++i) // Backup requests now because MPI_Testall might wreck them
+    bool smpi = false;
+    for (int i = 0; i < count; ++i) { // Backup requests now because MPI_Testall might wreck them
         req_backup[i] = is_smpi_request(requests[i]) ? requests[i] : nullptr;
+        if (req_backup[i])
+            smpi = true;
+    }
 
-    int out = ((Testall_func)(is_smpi_request(requests[0]) ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testall)(
-        count, requests, flag, statuses);
+    s4bxi_bench_begin();
+
+    int out =
+        ((Testall_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testall)(count, requests, flag, statuses);
 
     for (int i = 0; i < count; ++i)
         if (!requests[i] && req_backup[i]) // request is deallocated (i.e. == NULL) but it didn't use to be NULL
@@ -689,14 +702,9 @@ S4BXI_MPI_ONE_IMPLEM(int, Test_cancelled, (status, flag), const MPI_Status* stat
 typedef int (*Wait_func)(MPI_Request* request, MPI_Status* status);
 int S4BXI_MPI_Wait(const char* __file, int __line, MPI_Request* request, MPI_Status* status)
 {
+    s4bxi_bench_end();
     LOG_CALL(Wait, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    // if (is_smpi_request(*request)) {
-    //     XBT_INFO("Req %p is SMPI, wait", *request);
-    // } else {
-    //     XBT_INFO("Req %p is OMPI, wait", *request);
-    // }
 
     bool smpi = false;
     if (is_smpi_request(*request)) {
@@ -704,6 +712,7 @@ int S4BXI_MPI_Wait(const char* __file, int __line, MPI_Request* request, MPI_Sta
         if (*request) // Don't try to remove MPI_REQUEST_NULL
             smpi_requests.erase(*request);
     }
+    s4bxi_bench_begin();
 
     return ((Wait_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Wait)(request, status);
 }
@@ -712,11 +721,13 @@ int S4BXI_MPI_Wait(const char* __file, int __line, MPI_Request* request, MPI_Sta
 typedef int (*Waitany_func)(int count, MPI_Request requests[], int* index, MPI_Status* status);
 int S4BXI_MPI_Waitany(const char* __file, int __line, int count, MPI_Request requests[], int* index, MPI_Status* status)
 {
+    s4bxi_bench_end();
     LOG_CALL(Waitany, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    bool smpi                = is_smpi_request(requests[0]);
+    s4bxi_bench_begin();
 
-    return ((Waitany_func)(is_smpi_request(requests[0]) ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitany)(
-        count, requests, index, status);
+    return ((Waitany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitany)(count, requests, index, status);
 }
 
 // This one technically doesn't do the right thing, but I don't see how we could do better
@@ -746,16 +757,13 @@ S4BXI_MPI_UNSUPPORTED(MPI_Fint, Request_c2f, MPI_Request request)
 typedef int (*Cancel_func)(MPI_Request* request);
 int S4BXI_MPI_Cancel(const char* __file, int __line, MPI_Request* request)
 {
+    s4bxi_bench_end();
     LOG_CALL(Cancel, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+    bool smpi                = is_smpi_request(*request);
+    s4bxi_bench_begin();
 
-    // if (is_smpi_request(*request)) {
-    //     XBT_INFO("Req %p is SMPI, cancel; also : %p", *request, main_actor->bull_mpi_ops->REQUEST_NULL);
-    // } else {
-    //     XBT_INFO("Req %p is OMPI, cancel; also : %p", *request, main_actor->bull_mpi_ops->REQUEST_NULL);
-    // }
-
-    return ((Cancel_func)(is_smpi_request(*request) ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Cancel)(request);
+    return ((Cancel_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Cancel)(request);
 }
 
 S4BXI_MPI_ONE_IMPLEM(int, Bcast,
