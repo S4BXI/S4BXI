@@ -29,6 +29,7 @@ class BxiUserAppActor : public BxiMainActor {
   public:
     uint32_t my_rank;
     uint32_t my_local_rank;
+    double last_model_change = 0;
 
     explicit BxiUserAppActor(const std::vector<std::string>& args);
 

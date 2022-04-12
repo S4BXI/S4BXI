@@ -217,6 +217,20 @@ void s4bxi_use_smpi_implem(int v)
     GET_CURRENT_MAIN_ACTOR->use_smpi_implem = (bool)v;
 }
 
+void s4bxi_use_smpi_implem_log(int v, const char* comment)
+{
+    s4bxi_bench_end();
+
+    auto actor = (BxiUserAppActor*)GET_CURRENT_MAIN_ACTOR;
+    int rank   = actor->my_rank;
+    double now = s4u::Engine::get_clock();
+    fprintf(stderr, "#~#, %d, %d, %f, %f, %s\n", rank, v, now, now - actor->last_model_change, comment);
+    actor->last_model_change = now;
+    s4bxi_use_smpi_implem(v);
+
+    s4bxi_bench_begin();
+}
+
 const char* s4bxi_simulation_id_c_str()
 {
     return BxiEngine::get_instance()->get_simulation_rand_id().c_str();
