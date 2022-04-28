@@ -154,6 +154,25 @@ MPI_Op implem_op(MPI_Op original)
         return ((name##_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;    \
     }
 
+#define S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(rtype, name, argsval, ...)                                                  \
+    typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
+    rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
+    {                                                                                                                  \
+        LOG_CALL(name, __file, __line);                                                                                \
+        BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;                                                             \
+        bool smpi                = false;                                                                              \
+        if (main_actor->use_smpi_implem)                                                                               \
+            smpi = true;                                                                                               \
+                                                                                                                       \
+        rtype out = ((name##_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;                      \
+        s4bxi_bench_end();                                                                                             \
+        if (smpi)                                                                                                      \
+            smpi_requests.emplace(*request);                                                                           \
+        s4bxi_bench_begin();                                                                                           \
+                                                                                                                       \
+        return out;                                                                                                    \
+    }
+
 #define S4BXI_MPI_BULL_IMPLEM(rtype, name, argsval, ...)                                                               \
     typedef rtype (*name##_func)(__VA_ARGS__);                                                                         \
     rtype S4BXI_MPI_##name(const char* __file, int __line, ##__VA_ARGS__)                                              \
@@ -190,9 +209,8 @@ int S4BXI_MPI_Init(const char* __file, int __line, int* argc, char*** argv)
     LOG_CALL(Init, __file, __line);
 
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int smpi = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
-    int bull = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
+    int smpi                 = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
+    int bull                 = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
 
     return bull > smpi ? bull : smpi;
 }
@@ -420,190 +438,74 @@ S4BXI_MPI_ONE_IMPLEM(int, Recv,
                      (buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm),
                       status),
                      void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm, MPI_Status* status)
-
-typedef int (*Recv_init_func)(void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm,
-                              MPI_Request* request);
-int S4BXI_MPI_Recv_init(const char* __file, int __line, void* buf, int count, MPI_Datatype datatype, int src, int tag,
-                        MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Recv_init, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Recv_init_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Recv_init)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-typedef int (*Irecv_func)(void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm,
-                          MPI_Request* request);
-int S4BXI_MPI_Irecv(const char* __file, int __line, void* buf, int count, MPI_Datatype datatype, int src, int tag,
-                    MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Irecv, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Irecv_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Irecv)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Recv_init,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm,
+                                   MPI_Request* request);
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Irecv,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), src, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   void* buf, int count, MPI_Datatype datatype, int src, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Send,
                      (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm)),
                      const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
-typedef int (*Send_init_func)(const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
-                              MPI_Request* request);
-int S4BXI_MPI_Send_init(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dst,
-                        int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Send_init, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Send_init_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Send_init)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Isend_func)(const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
-                          MPI_Request* request);
-int S4BXI_MPI_Isend(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dst, int tag,
-                    MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Isend, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Isend_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Isend)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Send_init,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Isend,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dst, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 S4BXI_MPI_ONE_IMPLEM(int, Ssend,
                      (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)),
                      const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
-
-typedef int (*Ssend_init_func)(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                               MPI_Request* request);
-int S4BXI_MPI_Ssend_init(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dest,
-                         int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ssend_init, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ssend_init_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ssend_init)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Issend_func)(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                           MPI_Request* request);
-int S4BXI_MPI_Issend(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dest,
-                     int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Issend, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Issend_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Issend)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ssend_init,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Issend,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 
 S4BXI_MPI_ONE_IMPLEM(int, Bsend,
                      (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)),
                      const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 
-typedef int (*Bsend_init_func)(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                               MPI_Request* request);
-int S4BXI_MPI_Bsend_init(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dest,
-                         int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Bsend_init, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Bsend_init,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 
-    int out = ((Bsend_init_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Bsend_init)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ibsend_func)(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                           MPI_Request* request);
-int S4BXI_MPI_Ibsend(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dest,
-                     int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ibsend, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ibsend_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ibsend)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ibsend,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 
 S4BXI_MPI_ONE_IMPLEM(int, Rsend,
                      (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm)),
                      const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 
-typedef int (*Rsend_init_func)(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                               MPI_Request* request);
-int S4BXI_MPI_Rsend_init(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dest,
-                         int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Rsend_init, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Rsend_init,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 
-    int out = ((Rsend_init_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Rsend_init)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Irsend_func)(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
-                           MPI_Request* request);
-int S4BXI_MPI_Irsend(const char* __file, int __line, const void* buf, int count, MPI_Datatype datatype, int dest,
-                     int tag, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Irsend, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Irsend_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Irsend)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Irsend,
+                                   (buf, count, BxiMpiDatatype::implem_datatype(datatype), dest, tag,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm,
+                                   MPI_Request* request)
 
 S4BXI_MPI_ONE_IMPLEM(int, Sendrecv,
                      (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), dst, sendtag, recvbuf, recvcount,
@@ -633,8 +535,10 @@ int S4BXI_MPI_Test(const char* __file, int __line, MPI_Request* request, int* fl
 
     int out = ((Test_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Test)(request, flag, status);
 
+    s4bxi_bench_end();
     if (*flag && smpi) // If the request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup);
+    s4bxi_bench_begin();
 
     return out;
 }
@@ -661,8 +565,10 @@ int S4BXI_MPI_Testany(const char* __file, int __line, int count, MPI_Request req
     int out =
         ((Testany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testany)(count, requests, index, flag, status);
 
+    s4bxi_bench_end();
     if (*flag && req_backup[*index]) // If a request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup[*index]);
+    s4bxi_bench_begin();
 
     return out;
 }
@@ -688,9 +594,11 @@ int S4BXI_MPI_Testall(const char* __file, int __line, int count, MPI_Request* re
     int out =
         ((Testall_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testall)(count, requests, flag, statuses);
 
+    s4bxi_bench_end();
     for (int i = 0; i < count; ++i)
         if (!requests[i] && req_backup[i]) // request is deallocated (i.e. == NULL) but it didn't use to be NULL
             smpi_requests.erase(req_backup[i]);
+    s4bxi_bench_begin();
 
     return out;
 }
@@ -727,20 +635,25 @@ int S4BXI_MPI_Waitany(const char* __file, int __line, int count, MPI_Request req
     bool smpi                = is_smpi_request(requests[0]);
     s4bxi_bench_begin();
 
-    return ((Waitany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitany)(count, requests, index, status);
+    int out = ((Waitany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitany)(count, requests, index, status);
+
+    return out;
 }
 
 // This one technically doesn't do the right thing, but I don't see how we could do better
 typedef int (*Waitall_func)(int count, MPI_Request requests[], MPI_Status status[]);
 int S4BXI_MPI_Waitall(const char* __file, int __line, int count, MPI_Request requests[], MPI_Status status[])
 {
+    s4bxi_bench_end();
     LOG_CALL(Waitall, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
+    bool smpi = is_smpi_request(requests[0]);
     for (int i = 0; i < count; ++i) {
         if (requests[i])
             smpi_requests.erase(requests[i]);
     }
+    s4bxi_bench_begin();
 
     return ((Waitall_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitall)(
         count, requests, status);
@@ -771,299 +684,94 @@ S4BXI_MPI_ONE_IMPLEM(int, Bcast,
                      void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
 S4BXI_MPI_ONE_IMPLEM(int, Barrier, (BxiMpiComm::implem_comm(comm)), MPI_Comm comm)
 
-typedef int (*Ibarrier_func)(MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ibarrier(const char* __file, int __line, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ibarrier, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ibarrier, (BxiMpiComm::implem_comm(comm), request), MPI_Comm comm,
+                                   MPI_Request* request)
 
-    int out = ((Ibarrier_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ibarrier)(
-        BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ibcast_func)(void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ibcast(const char* __file, int __line, void* buf, int count, MPI_Datatype datatype, int root,
-                     MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ibcast, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ibcast_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ibcast)(
-        buf, count, BxiMpiDatatype::implem_datatype(datatype), root, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(
+    int, Ibcast, (buf, count, BxiMpiDatatype::implem_datatype(datatype), root, BxiMpiComm::implem_comm(comm), request),
+    void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request* request)
 typedef int (*Igather_func)(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
                             MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Igather(const char* __file, int __line, const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                      void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm,
-                      MPI_Request* request)
-{
-    LOG_CALL(Igather, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Igather_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Igather)(
-        sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
-        BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Igatherv_func)(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
-                             const int* recvcounts, const int* displs, MPI_Datatype recvtype, int root, MPI_Comm comm,
-                             MPI_Request* request);
-int S4BXI_MPI_Igatherv(const char* __file, int __line, const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                       void* recvbuf, const int* recvcounts, const int* displs, MPI_Datatype recvtype, int root,
-                       MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Igatherv, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Igatherv_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Igatherv)(
-        sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, displs,
-        BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iallgather_func)(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                               MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Iallgather(const char* __file, int __line, const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                         void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Iallgather, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iallgather_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iallgather)(
-        sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
-        BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iallgatherv_func)(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
-                                const int* recvcounts, const int* displs, MPI_Datatype recvtype, MPI_Comm comm,
-                                MPI_Request* request);
-int S4BXI_MPI_Iallgatherv(const char* __file, int __line, const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                          void* recvbuf, const int* recvcounts, const int* displs, MPI_Datatype recvtype, MPI_Comm comm,
-                          MPI_Request* request)
-{
-    LOG_CALL(Iallgatherv, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iallgatherv_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iallgatherv)(
-        sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, displs,
-        BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iscatter_func)(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                             MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Iscatter(const char* __file, int __line, const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                       void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm,
-                       MPI_Request* request)
-{
-    LOG_CALL(Iscatter, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iscatter_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iscatter)(
-        sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
-        BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iscatterv_func)(const void* sendbuf, const int* sendcounts, const int* displs, MPI_Datatype sendtype,
-                              void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm,
-                              MPI_Request* request);
-int S4BXI_MPI_Iscatterv(const char* __file, int __line, const void* sendbuf, const int* sendcounts, const int* displs,
-                        MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, int root,
-                        MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Iscatterv, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iscatterv_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iscatterv)(
-        sendbuf, sendcounts, displs, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
-        BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ireduce_func)(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
-                            MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ireduce(const char* __file, int __line, const void* sendbuf, void* recvbuf, int count,
-                      MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ireduce, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ireduce_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ireduce)(
-        sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op), root,
-        BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iallreduce_func)(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
-                               MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Iallreduce(const char* __file, int __line, const void* sendbuf, void* recvbuf, int count,
-                         MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Iallreduce, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iallreduce_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iallreduce)(
-        sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
-        BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iscan_func)(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
-                          MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Iscan(const char* __file, int __line, const void* sendbuf, void* recvbuf, int count,
-                    MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Iscan, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iscan_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iscan)(
-        sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
-        BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Iexscan_func)(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
-                            MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Iexscan(const char* __file, int __line, const void* sendbuf, void* recvbuf, int count,
-                      MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Iexscan, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Iexscan_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Iexscan)(
-        sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
-        BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ireduce_scatter_func)(const void* sendbuf, void* recvbuf, const int* recvcounts, MPI_Datatype datatype,
-                                    MPI_Op op, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ireduce_scatter(const char* __file, int __line, const void* sendbuf, void* recvbuf, const int* recvcounts,
-                              MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ireduce_scatter, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ireduce_scatter_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)
-                   ->Ireduce_scatter)(sendbuf, recvbuf, recvcounts, BxiMpiDatatype::implem_datatype(datatype),
-                                      implem_op(op), BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ireduce_scatter_block_func)(const void* sendbuf, void* recvbuf, int recvcount, MPI_Datatype datatype,
-                                          MPI_Op op, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ireduce_scatter_block(const char* __file, int __line, const void* sendbuf, void* recvbuf, int recvcount,
-                                    MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ireduce_scatter_block, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ireduce_scatter_block_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)
-                   ->Ireduce_scatter_block)(sendbuf, recvbuf, recvcount, BxiMpiDatatype::implem_datatype(datatype),
-                                            implem_op(op), BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ialltoall_func)(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount,
-                              MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ialltoall(const char* __file, int __line, const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                        void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ialltoall, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ialltoall_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ialltoall)(
-        sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
-        BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
-typedef int (*Ialltoallv_func)(const void* sendbuf, const int* sendcounts, const int* senddisps, MPI_Datatype sendtype,
-                               void* recvbuf, const int* recvcounts, const int* recvdisps, MPI_Datatype recvtype,
-                               MPI_Comm comm, MPI_Request* request);
-int S4BXI_MPI_Ialltoallv(const char* __file, int __line, const void* sendbuf, const int* sendcounts,
-                         const int* senddisps, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
-                         const int* recvdisps, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
-{
-    LOG_CALL(Ialltoallv, __file, __line);
-    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-
-    int out = ((Ialltoallv_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ialltoallv)(
-        sendbuf, sendcounts, senddisps, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts, recvdisps,
-        BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request);
-
-    if (main_actor->use_smpi_implem)
-        smpi_requests.emplace(*request);
-
-    return out;
-}
-
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Igather,
+                                   (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                                    BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm),
+                                    request),
+                                   const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
+                                   int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Igatherv,
+                                   (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts,
+                                    displs, BxiMpiDatatype::implem_datatype(recvtype), root,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
+                                   const int* recvcounts, const int* displs, MPI_Datatype recvtype, int root,
+                                   MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iallgather,
+                                   (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                                    BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
+                                   int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iallgatherv,
+                                   (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcounts,
+                                    displs, BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm),
+                                    request),
+                                   const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
+                                   const int* recvcounts, const int* displs, MPI_Datatype recvtype, MPI_Comm comm,
+                                   MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iscatter,
+                                   (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                                    BxiMpiDatatype::implem_datatype(recvtype), root, BxiMpiComm::implem_comm(comm),
+                                    request),
+                                   const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
+                                   int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iscatterv,
+                                   (sendbuf, sendcounts, displs, BxiMpiDatatype::implem_datatype(sendtype), recvbuf,
+                                    recvcount, BxiMpiDatatype::implem_datatype(recvtype), root,
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, const int* sendcounts, const int* displs, MPI_Datatype sendtype,
+                                   void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm,
+                                   MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ireduce,
+                                   (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                                    root, BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
+                                   int root, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iallreduce,
+                                   (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
+                                   MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iscan,
+                                   (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
+                                   MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Iexscan,
+                                   (sendbuf, recvbuf, count, BxiMpiDatatype::implem_datatype(datatype), implem_op(op),
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
+                                   MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ireduce_scatter,
+                                   (sendbuf, recvbuf, recvcounts, BxiMpiDatatype::implem_datatype(datatype),
+                                    implem_op(op), BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, void* recvbuf, const int* recvcounts, MPI_Datatype datatype,
+                                   MPI_Op op, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ireduce_scatter_block,
+                                   (sendbuf, recvbuf, recvcount, BxiMpiDatatype::implem_datatype(datatype),
+                                    implem_op(op), BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, void* recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op,
+                                   MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ialltoall,
+                                   (sendbuf, sendcount, BxiMpiDatatype::implem_datatype(sendtype), recvbuf, recvcount,
+                                    BxiMpiDatatype::implem_datatype(recvtype), BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf,
+                                   int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
+S4BXI_MPI_ONE_IMPLEM_STORE_REQUEST(int, Ialltoallv,
+                                   (sendbuf, sendcounts, senddisps, BxiMpiDatatype::implem_datatype(sendtype), recvbuf,
+                                    recvcounts, recvdisps, BxiMpiDatatype::implem_datatype(recvtype),
+                                    BxiMpiComm::implem_comm(comm), request),
+                                   const void* sendbuf, const int* sendcounts, const int* senddisps,
+                                   MPI_Datatype sendtype, void* recvbuf, const int* recvcounts, const int* recvdisps,
+                                   MPI_Datatype recvtype, MPI_Comm comm, MPI_Request* request)
 typedef int (*Ialltoallw_func)(const void* sendbuf, const int* sendcounts, const int* senddisps,
                                const MPI_Datatype* sendtypes, void* recvbuf, const int* recvcounts,
                                const int* recvdisps, const MPI_Datatype* recvtypes, MPI_Comm comm,
@@ -1078,13 +786,18 @@ int S4BXI_MPI_Ialltoallw(const char* __file, int __line, const void* sendbuf, co
     S4BXI_MPI_Comm_size(__file, __line, comm, &size);
     MPI_Datatype sendtypes_arr[size];
     MPI_Datatype recvtypes_arr[size];
+    bool smpi = false;
+    if (main_actor->use_smpi_implem)
+        smpi = true;
 
-    int out = ((Ialltoallw_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ialltoallw)(
+    int out = ((Ialltoallw_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Ialltoallw)(
         sendbuf, sendcounts, senddisps, implem_datatypes(sendtypes, size, sendtypes_arr), recvbuf, recvcounts,
         recvdisps, implem_datatypes(recvtypes, size, recvtypes_arr), BxiMpiComm::implem_comm(comm), request);
 
-    if (main_actor->use_smpi_implem)
+    s4bxi_bench_end();
+    if (smpi)
         smpi_requests.emplace(*request);
+    s4bxi_bench_begin();
 
     return out;
 }
