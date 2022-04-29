@@ -57,7 +57,7 @@ endif()
 
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_language(C)
@@ -98,7 +98,7 @@ if(BUILD_MPI_MIDDLEWARE)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-find_package(SimGrid 3.30 REQUIRED)
+find_package(SimGrid 3.31 REQUIRED)
 
 include_directories(${SimGrid_INCLUDE_DIR})
 
