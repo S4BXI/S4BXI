@@ -23,6 +23,7 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiComm.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiDatatype.hpp"
+#include "s4bxi/mpi_middleware/BxiMpiRequest.hpp"
 #include "s4bxi/s4bxi_bench.h"
 #include <smpi_actor.hpp>
 #include <unordered_set>
@@ -34,8 +35,6 @@ using namespace std;
 MPI_Datatype* type_array;
 
 unique_ptr<struct s4bxi_mpi_ops> smpi_mpi_ops = nullptr;
-
-unordered_set<MPI_Request> smpi_requests;
 
 // "Constants"
 void* S4BXI_MPI_IN_PLACE()
@@ -93,8 +92,10 @@ static bool is_smpi_request(const MPI_Request& r)
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
     if (r == main_actor->bull_mpi_ops->REQUEST_NULL) // Bull's MPI_REQUEST_NULL
         return false;
+    if (r == NULL) // SMPI's MPI_REQUEST_NULL
+        return true;
 
-    return smpi_requests.find(r) != smpi_requests.end();
+    return ((BxiMpiRequest*)r)->is_smpi;
 }
 
 MPI_Datatype* implem_datatypes(const MPI_Datatype* original, int size, MPI_Datatype* out)
@@ -166,8 +167,8 @@ MPI_Op implem_op(MPI_Op original)
                                                                                                                        \
         rtype out = ((name##_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;                      \
         s4bxi_bench_end();                                                                                             \
-        if (smpi)                                                                                                      \
-            smpi_requests.emplace(*request);                                                                           \
+        BxiMpiRequest* bxiReq = new BxiMpiRequest(*request, smpi);                                                     \
+        *request              = (MPI_Request)bxiReq;                                                                   \
         s4bxi_bench_begin();                                                                                           \
                                                                                                                        \
         return out;                                                                                                    \
@@ -525,19 +526,18 @@ int S4BXI_MPI_Test(const char* __file, int __line, MPI_Request* request, int* fl
     LOG_CALL(Test, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    MPI_Request req_backup = nullptr;
-    bool smpi              = false;
+    bool smpi = false;
     if (is_smpi_request(*request)) {
-        smpi       = true;
-        req_backup = *request; // Backup request now because MPI_Test might wreck it
+        smpi = true;
     }
     s4bxi_bench_begin();
+    BxiMpiRequest* bxiReq = (BxiMpiRequest*)*request;
 
-    int out = ((Test_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Test)(request, flag, status);
+    int out = ((Test_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Test)(&(bxiReq->req), flag, status);
 
     s4bxi_bench_end();
-    if (*flag && smpi) // If the request was deallocated and it's an SMPI one
-        smpi_requests.erase(req_backup);
+    if (*flag) // If the request was deallocated
+        delete bxiReq;
     s4bxi_bench_begin();
 
     return out;
@@ -551,23 +551,25 @@ int S4BXI_MPI_Testany(const char* __file, int __line, int count, MPI_Request req
     LOG_CALL(Testany, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    MPI_Request req_backup[count];
+    BxiMpiRequest* bxiReqs[count];
+    MPI_Request mpiReqs[count];
 
     bool smpi = false;
-    for (int i = 0; i < count; ++i) { // Backup requests now because MPI_Testany might wreck them
-        req_backup[i] = is_smpi_request(requests[i]) ? requests[i] : nullptr;
-        if (req_backup[i])
-            smpi = true;
+    if (count && is_smpi_request(requests[0]))
+        smpi = true;
+    for (int i = 0; i < count; ++i) {
+        bxiReqs[i] = (BxiMpiRequest*)requests[i];
+        mpiReqs[i] = bxiReqs[i]->req;
     }
 
     s4bxi_bench_begin();
 
     int out =
-        ((Testany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testany)(count, requests, index, flag, status);
+        ((Testany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testany)(count, mpiReqs, index, flag, status);
 
     s4bxi_bench_end();
-    if (*flag && req_backup[*index]) // If a request was deallocated and it's an SMPI one
-        smpi_requests.erase(req_backup[*index]);
+    if (*flag) // If a request was deallocated and it's an SMPI one
+        delete bxiReqs[*index];
     s4bxi_bench_begin();
 
     return out;
@@ -580,24 +582,25 @@ int S4BXI_MPI_Testall(const char* __file, int __line, int count, MPI_Request* re
     LOG_CALL(Testall, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    MPI_Request req_backup[count];
+    BxiMpiRequest* bxiReqs[count];
+    MPI_Request mpiReqs[count];
 
     bool smpi = false;
-    for (int i = 0; i < count; ++i) { // Backup requests now because MPI_Testall might wreck them
-        req_backup[i] = is_smpi_request(requests[i]) ? requests[i] : nullptr;
-        if (req_backup[i])
-            smpi = true;
+    if (count && is_smpi_request(requests[0]))
+        smpi = true;
+    for (int i = 0; i < count; ++i) {
+        bxiReqs[i] = (BxiMpiRequest*)requests[i];
+        mpiReqs[i] = bxiReqs[i]->req;
     }
 
     s4bxi_bench_begin();
 
-    int out =
-        ((Testall_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testall)(count, requests, flag, statuses);
+    int out = ((Testall_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testall)(count, mpiReqs, flag, statuses);
 
     s4bxi_bench_end();
     for (int i = 0; i < count; ++i)
-        if (!requests[i] && req_backup[i]) // request is deallocated (i.e. == NULL) but it didn't use to be NULL
-            smpi_requests.erase(req_backup[i]);
+        if (!mpiReqs[i] && bxiReqs[i]) // request is deallocated (i.e. == NULL) but it didn't use to be NULL
+            delete bxiReqs[i];
     s4bxi_bench_begin();
 
     return out;
@@ -614,15 +617,19 @@ int S4BXI_MPI_Wait(const char* __file, int __line, MPI_Request* request, MPI_Sta
     LOG_CALL(Wait, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
-    bool smpi = false;
+    BxiMpiRequest* bxiReq = (BxiMpiRequest*)*request;
+    bool smpi             = false;
     if (is_smpi_request(*request)) {
         smpi = true;
-        if (*request) // Don't try to remove MPI_REQUEST_NULL
-            smpi_requests.erase(*request);
     }
     s4bxi_bench_begin();
 
-    return ((Wait_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Wait)(request, status);
+    int out = ((Wait_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Wait)(&(bxiReq->req), status);
+
+    if (!s4bxi_is_mpi_request_null((MPI_Request)bxiReq)) // Don't try to delete MPI_REQUEST_NULL
+        delete bxiReq;
+
+    return out;
 }
 
 // TODO: clean smpi_requests
@@ -632,10 +639,19 @@ int S4BXI_MPI_Waitany(const char* __file, int __line, int count, MPI_Request req
     s4bxi_bench_end();
     LOG_CALL(Waitany, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    bool smpi                = is_smpi_request(requests[0]);
+    BxiMpiRequest* bxiReqs[count];
+    MPI_Request mpiReqs[count];
+
+    bool smpi = false;
+    if (count && is_smpi_request(requests[0]))
+        smpi = true;
+    for (int i = 0; i < count; ++i) {
+        bxiReqs[i] = (BxiMpiRequest*)requests[i];
+        mpiReqs[i] = bxiReqs[i]->req;
+    }
     s4bxi_bench_begin();
 
-    int out = ((Waitany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitany)(count, requests, index, status);
+    int out = ((Waitany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitany)(count, mpiReqs, index, status);
 
     return out;
 }
@@ -648,15 +664,25 @@ int S4BXI_MPI_Waitall(const char* __file, int __line, int count, MPI_Request req
     LOG_CALL(Waitall, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
 
+    BxiMpiRequest* bxiReqs[count];
+    MPI_Request mpiReqs[count];
+
     bool smpi = is_smpi_request(requests[0]);
     for (int i = 0; i < count; ++i) {
-        if (requests[i])
-            smpi_requests.erase(requests[i]);
+        bxiReqs[i] = (BxiMpiRequest*)requests[i];
+        mpiReqs[i] = bxiReqs[i]->req;
     }
     s4bxi_bench_begin();
 
-    return ((Waitall_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitall)(
-        count, requests, status);
+    int out = ((Waitall_func)(main_actor->use_smpi_implem ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Waitall)(
+        count, mpiReqs, status);
+
+    s4bxi_bench_end();
+    for (int i = 0; i < count; ++i)
+        delete bxiReqs[i];
+    s4bxi_bench_begin();
+
+    return out;
 }
 S4BXI_MPI_ONE_IMPLEM(int, Waitsome, (incount, requests, outcount, indices, status), int incount, MPI_Request requests[],
                      int* outcount, int* indices, MPI_Status status[])
@@ -673,10 +699,11 @@ int S4BXI_MPI_Cancel(const char* __file, int __line, MPI_Request* request)
     s4bxi_bench_end();
     LOG_CALL(Cancel, __file, __line);
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    bool smpi                = is_smpi_request(*request);
+    BxiMpiRequest* bxiReq    = (BxiMpiRequest*)*request;
+    bool smpi                = is_smpi_request((MPI_Request)bxiReq);
     s4bxi_bench_begin();
 
-    return ((Cancel_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Cancel)(request);
+    return ((Cancel_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Cancel)(&(bxiReq->req));
 }
 
 S4BXI_MPI_ONE_IMPLEM(int, Bcast,
@@ -795,8 +822,8 @@ int S4BXI_MPI_Ialltoallw(const char* __file, int __line, const void* sendbuf, co
         recvdisps, implem_datatypes(recvtypes, size, recvtypes_arr), BxiMpiComm::implem_comm(comm), request);
 
     s4bxi_bench_end();
-    if (smpi)
-        smpi_requests.emplace(*request);
+    BxiMpiRequest* bxiReq = new BxiMpiRequest(*request, smpi);
+    *request              = (MPI_Request)bxiReq;
     s4bxi_bench_begin();
 
     return out;
