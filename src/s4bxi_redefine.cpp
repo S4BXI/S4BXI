@@ -17,9 +17,10 @@
 #include <simgrid/s4u.hpp>
 #include <cmath>
 #include <cstdio>
+#include "s4bxi/actors/BxiMainActor.hpp"
 #include "s4bxi/s4bxi_redefine.h"
 #include "s4bxi/s4bxi_xbt_log.h"
-#include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/s4bxi_bench.h"
 #include "s4bxi/s4bxi_util.hpp"
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_redefine, "Messages generated in redefined functions");

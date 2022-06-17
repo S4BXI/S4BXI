@@ -23,7 +23,7 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiComm.hpp"
 #include "s4bxi/mpi_middleware/BxiMpiDatatype.hpp"
-#include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/s4bxi_bench.h"
 #include <smpi_actor.hpp>
 #include <unordered_set>
 

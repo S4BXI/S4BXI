@@ -18,7 +18,7 @@
 #include "s4bxi/actors/BxiMainActor.hpp"
 #include "portals4.h"
 #include "s4bxi/s4bxi_util.hpp"
-#include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/s4bxi_bench.h"
 
 #define INSTANT_PORTALS_CALL(call)                                                                                     \
     do {                                                                                                               \

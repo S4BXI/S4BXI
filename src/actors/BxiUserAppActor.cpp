@@ -29,7 +29,7 @@
 #include <csignal>
 #include <map>
 #include "s4bxi/s4bxi_xbt_log.h"
-#include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/s4bxi_bench.h"
 #include "s4bxi/plugins/BxiActorExt.hpp"
 #include "pugixml.hpp"
 

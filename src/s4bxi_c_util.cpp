@@ -20,7 +20,7 @@
 #include "s4bxi/s4bxi_util.hpp"
 #include "s4bxi/s4bxi_c_util.h"
 #include "portals4.h"
-#include "s4bxi/s4bxi_bench.hpp"
+#include "s4bxi/s4bxi_bench.h"
 #include "s4bxi/s4bxi_xbt_log.h"
 #include <unistd.h>
 

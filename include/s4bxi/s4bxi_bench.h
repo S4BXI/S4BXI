@@ -14,13 +14,11 @@
  * Lesser General Public License for more details.
  */
 
-#ifndef S4BXI_S4BXI_BENCH_HPP
-#define S4BXI_S4BXI_BENCH_HPP
-
-#include "s4bxi/actors/BxiMainActor.hpp"
+#ifndef S4BXI_S4BXI_BENCH_H
+#define S4BXI_S4BXI_BENCH_H
 
 void s4bxi_execute(double duration);
 void s4bxi_bench_begin();
 void s4bxi_bench_end();
 
-#endif // S4BXI_S4BXI_BENCH_HPP
+#endif // S4BXI_S4BXI_BENCH_H
