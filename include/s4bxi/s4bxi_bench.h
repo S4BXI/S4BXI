@@ -17,8 +17,16 @@
 #ifndef S4BXI_S4BXI_BENCH_H
 #define S4BXI_S4BXI_BENCH_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void s4bxi_execute(double duration);
 void s4bxi_bench_begin();
 void s4bxi_bench_end();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // S4BXI_S4BXI_BENCH_H
