@@ -35,6 +35,8 @@ typedef MPI_Win_errhandler_function MPI_Win_errhandler_fn;
 extern "C" {
 #endif
 
+void s4bxi_log_pending_requests();
+
 // "Constants"
 void* S4BXI_MPI_IN_PLACE();
 MPI_Request S4BXI_MPI_REQUEST_NULL();

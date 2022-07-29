@@ -37,6 +37,11 @@ unique_ptr<struct s4bxi_mpi_ops> smpi_mpi_ops = nullptr;
 
 unordered_set<MPI_Request> smpi_requests;
 
+void s4bxi_log_pending_requests()
+{
+    s4bxi_fprintf(stderr, ">>> Pending requests in middleware: %d\n", smpi_requests.size());
+}
+
 // "Constants"
 void* S4BXI_MPI_IN_PLACE()
 {
@@ -166,8 +171,10 @@ MPI_Op implem_op(MPI_Op original)
                                                                                                                        \
         rtype out = ((name##_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->name)argsval;                      \
         s4bxi_bench_end();                                                                                             \
-        if (smpi)                                                                                                      \
+        if (smpi) {                                                                                                    \
             smpi_requests.emplace(*request);                                                                           \
+            s4bxi_log_pending_requests();                                                                              \
+        }                                                                                                              \
         s4bxi_bench_begin();                                                                                           \
                                                                                                                        \
         return out;                                                                                                    \
@@ -536,8 +543,10 @@ int S4BXI_MPI_Test(const char* __file, int __line, MPI_Request* request, int* fl
     int out = ((Test_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Test)(request, flag, status);
 
     s4bxi_bench_end();
-    if (*flag && smpi) // If the request was deallocated and it's an SMPI one
+    if (*flag && smpi) { // If the request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup);
+        s4bxi_log_pending_requests();
+    }
     s4bxi_bench_begin();
 
     return out;
@@ -566,8 +575,10 @@ int S4BXI_MPI_Testany(const char* __file, int __line, int count, MPI_Request req
         ((Testany_func)(smpi ? smpi_mpi_ops : main_actor->bull_mpi_ops)->Testany)(count, requests, index, flag, status);
 
     s4bxi_bench_end();
-    if (*flag && req_backup[*index]) // If a request was deallocated and it's an SMPI one
+    if (*flag && req_backup[*index]) { // If a request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup[*index]);
+        s4bxi_log_pending_requests();
+    }
     s4bxi_bench_begin();
 
     return out;
@@ -596,8 +607,10 @@ int S4BXI_MPI_Testall(const char* __file, int __line, int count, MPI_Request* re
 
     s4bxi_bench_end();
     for (int i = 0; i < count; ++i)
-        if (!requests[i] && req_backup[i]) // request is deallocated (i.e. == NULL) but it didn't use to be NULL
+        if (!requests[i] && req_backup[i]) { // request is deallocated (i.e. == NULL) but it didn't use to be NULL
             smpi_requests.erase(req_backup[i]);
+            s4bxi_log_pending_requests();
+        }
     s4bxi_bench_begin();
 
     return out;
@@ -617,8 +630,10 @@ int S4BXI_MPI_Wait(const char* __file, int __line, MPI_Request* request, MPI_Sta
     bool smpi = false;
     if (is_smpi_request(*request)) {
         smpi = true;
-        if (*request) // Don't try to remove MPI_REQUEST_NULL
+        if (*request) { // Don't try to remove MPI_REQUEST_NULL
             smpi_requests.erase(*request);
+            s4bxi_log_pending_requests();
+        }
     }
     s4bxi_bench_begin();
 
@@ -650,8 +665,10 @@ int S4BXI_MPI_Waitall(const char* __file, int __line, int count, MPI_Request req
 
     bool smpi = is_smpi_request(requests[0]);
     for (int i = 0; i < count; ++i) {
-        if (requests[i])
+        if (requests[i]) {
             smpi_requests.erase(requests[i]);
+            s4bxi_log_pending_requests();
+        }
     }
     s4bxi_bench_begin();
 
@@ -795,8 +812,10 @@ int S4BXI_MPI_Ialltoallw(const char* __file, int __line, const void* sendbuf, co
         recvdisps, implem_datatypes(recvtypes, size, recvtypes_arr), BxiMpiComm::implem_comm(comm), request);
 
     s4bxi_bench_end();
-    if (smpi)
+    if (smpi) {
         smpi_requests.emplace(*request);
+        s4bxi_log_pending_requests();
+    }
     s4bxi_bench_begin();
 
     return out;
