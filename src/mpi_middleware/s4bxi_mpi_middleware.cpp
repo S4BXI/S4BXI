@@ -173,7 +173,6 @@ MPI_Op implem_op(MPI_Op original)
         s4bxi_bench_end();                                                                                             \
         if (smpi) {                                                                                                    \
             smpi_requests.emplace(*request);                                                                           \
-            s4bxi_log_pending_requests();                                                                              \
         }                                                                                                              \
         s4bxi_bench_begin();                                                                                           \
                                                                                                                        \
@@ -545,7 +544,6 @@ int S4BXI_MPI_Test(const char* __file, int __line, MPI_Request* request, int* fl
     s4bxi_bench_end();
     if (*flag && smpi) { // If the request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup);
-        s4bxi_log_pending_requests();
     }
     s4bxi_bench_begin();
 
@@ -577,7 +575,6 @@ int S4BXI_MPI_Testany(const char* __file, int __line, int count, MPI_Request req
     s4bxi_bench_end();
     if (*flag && req_backup[*index]) { // If a request was deallocated and it's an SMPI one
         smpi_requests.erase(req_backup[*index]);
-        s4bxi_log_pending_requests();
     }
     s4bxi_bench_begin();
 
@@ -609,7 +606,6 @@ int S4BXI_MPI_Testall(const char* __file, int __line, int count, MPI_Request* re
     for (int i = 0; i < count; ++i)
         if (!requests[i] && req_backup[i]) { // request is deallocated (i.e. == NULL) but it didn't use to be NULL
             smpi_requests.erase(req_backup[i]);
-            s4bxi_log_pending_requests();
         }
     s4bxi_bench_begin();
 
@@ -632,7 +628,6 @@ int S4BXI_MPI_Wait(const char* __file, int __line, MPI_Request* request, MPI_Sta
         smpi = true;
         if (*request) { // Don't try to remove MPI_REQUEST_NULL
             smpi_requests.erase(*request);
-            s4bxi_log_pending_requests();
         }
     }
     s4bxi_bench_begin();
@@ -667,7 +662,6 @@ int S4BXI_MPI_Waitall(const char* __file, int __line, int count, MPI_Request req
     for (int i = 0; i < count; ++i) {
         if (requests[i]) {
             smpi_requests.erase(requests[i]);
-            s4bxi_log_pending_requests();
         }
     }
     s4bxi_bench_begin();
@@ -814,7 +808,6 @@ int S4BXI_MPI_Ialltoallw(const char* __file, int __line, const void* sendbuf, co
     s4bxi_bench_end();
     if (smpi) {
         smpi_requests.emplace(*request);
-        s4bxi_log_pending_requests();
     }
     s4bxi_bench_begin();
 
