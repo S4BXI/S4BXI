@@ -235,3 +235,7 @@ const char* s4bxi_simulation_id_c_str()
 {
     return BxiEngine::get_instance()->get_simulation_rand_id().c_str();
 }
+
+void s4bxi_yield() {
+    s4u::this_actor::yield();
+}

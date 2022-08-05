@@ -35,6 +35,7 @@ void s4bxi_set_loglevel(int l);
 void s4bxi_use_smpi_implem(int v);
 void s4bxi_use_smpi_implem_log(int v, const char* comment);
 const char* s4bxi_simulation_id_c_str();
+void s4bxi_yield();
 
 extern int _s4bxi_should_allow_polling;
 
