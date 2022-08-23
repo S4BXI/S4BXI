@@ -297,9 +297,6 @@ int BxiMainActor::PtlEQFree(ptl_handle_eq_t eq_handle)
 
 int BxiMainActor::PtlEQGet(ptl_handle_eq_t eq_handle, ptl_event_t* event)
 {
-    //    s4u::this_actor::sleep_for(1e-8);
-    //    return ((BxiEQ*)eq_handle)->get(event);
-
     if (!is_polling) {
         s4u::this_actor::sleep_for(1e-8);
         return ((BxiEQ*)eq_handle)->get(event);
@@ -308,7 +305,7 @@ int BxiMainActor::PtlEQGet(ptl_handle_eq_t eq_handle, ptl_event_t* event)
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(1e-8 + (poll_count > 20 ? ((poll_count - 20) * 1e-8) : 0));
+    s4u::this_actor::sleep_for(5e-8 + (poll_count > 5 ? ((poll_count - 5) * 5e-8) : 0));
     auto ret = ((BxiEQ*)eq_handle)->get(event);
 
     if (ret == PTL_OK) {
