@@ -68,7 +68,7 @@ class BxiMainActor : public BxiActor {
     std::map<char*, void*, cmp_str> keyval_store;
 
     xbt_os_timer_t timer;
-    unsigned int is_polling = 0;
+    unsigned int is_polling = -1;
     int optind              = 0;
     uint8_t sampling();
     void set_sampling(uint8_t s);

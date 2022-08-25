@@ -297,7 +297,7 @@ int BxiMainActor::PtlEQFree(ptl_handle_eq_t eq_handle)
 
 int BxiMainActor::PtlEQGet(ptl_handle_eq_t eq_handle, ptl_event_t* event)
 {
-    if (!is_polling) {
+    if (is_polling == -1) {
         s4u::this_actor::sleep_for(1e-8);
         return ((BxiEQ*)eq_handle)->get(event);
     }
@@ -518,7 +518,7 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
 int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t si, ptl_ack_req_t a, ptl_process_t p,
                            ptl_index_t id, ptl_match_bits_t m, ptl_size_t siz, void* v, ptl_hdr_data_t d)
 {
-    if (!is_polling) {
+    if (is_polling == -1) {
         s4u::this_actor::sleep_for(1e-8);
 
         if (((BxiMD*)md_handle)->ni->cq->would_block())
@@ -544,7 +544,7 @@ int BxiMainActor::PtlGetNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
                            ptl_match_bits_t m, ptl_size_t siz, void* v)
 {
 
-    if (!is_polling) {
+    if (is_polling == -1) {
         s4u::this_actor::sleep_for(1e-8);
 
         if (((BxiMD*)md_handle)->ni->cq->would_block())
