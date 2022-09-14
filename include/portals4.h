@@ -342,6 +342,13 @@ typedef void *ptl_addr_t;
 #endif
 typedef struct ptl_activate_hook *ptl_activate_hook_t;
 
+/*
+ * special handles, sec 3.3.2
+ */
+#define PTL_CT_NONE NULL
+#define PTL_EQ_NONE NULL
+#define PTL_INVALID_HANDLE NULL
+
 typedef unsigned int ptl_pt_index_t;
 typedef unsigned int ptl_ni_fail_t;
 typedef enum ptl_sr_index ptl_sr_index_t;
