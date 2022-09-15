@@ -400,8 +400,20 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_PUT, length, request);
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
+    int inline_size = request->matching ? 8 : 16;
+    int PIO_size    = request->matching ? 408 : 416;
+
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
+    msg->is_PIO = !msg->retry_count // PIO doesn't make sense for retransmissions
+        && S4BXI_CONFIG_AND(node, model_pci) 
+        && request->payload_size > inline_size 
+        && request->payload_size <= PIO_size
+        && HAS_PTL_OPTION(&m->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
+    if (msg->is_PIO) { 
+        // Payload part of PIO command
+        node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+    }
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
@@ -449,8 +461,20 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_ATOMIC, length, request);
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
+    int inline_size = request->matching ? 8 : 16;
+    int PIO_size    = request->matching ? 408 : 416;
+
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
+    msg->is_PIO = !msg->retry_count // PIO doesn't make sense for retransmissions
+        && S4BXI_CONFIG_AND(node, model_pci) 
+        && request->payload_size > inline_size 
+        && request->payload_size <= PIO_size
+        && HAS_PTL_OPTION(&m->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
+    if (msg->is_PIO) { 
+        // Payload part of PIO command
+        node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+    }
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
@@ -477,8 +501,21 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
     auto msg = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
+    int inline_size = request->matching ? 8 : 16;
+    int PIO_size    = request->matching ? 408 : 416;
+
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
+    msg->is_PIO = !msg->retry_count // PIO doesn't make sense for retransmissions
+        && S4BXI_CONFIG_AND(node, model_pci) 
+        && request->payload_size > inline_size 
+        && request->payload_size <= PIO_size
+        && HAS_PTL_OPTION(&m_put->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
+    if (msg->is_PIO) { 
+        // Payload part of PIO command
+        node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+    }
+
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));

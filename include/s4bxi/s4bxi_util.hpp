@@ -29,7 +29,7 @@
 #define PCI_CPU_TO_NIC true
 #define PCI_NIC_TO_CPU false
 
-#define CQ_INITIAL_CAPACITY 16
+#define CQ_INITIAL_CAPACITY 89
 #define MAX_E2E_ENTRIES     8192
 
 #define TRUTHY_CHAR(prop) (strcmp((prop), "TRUE") == 0 || strcmp((prop), "true") == 0 || strcmp((prop), "1") == 0)

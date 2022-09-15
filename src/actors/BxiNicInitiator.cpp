@@ -101,16 +101,9 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     if (__bxi_log_level)
         msg->bxi_log->start = s4u::Engine::get_clock();
 
-    if (!msg->retry_count // PIO doesn't make sense for retransmissions
-        && S4BXI_CONFIG_AND(node, model_pci) && req->payload_size > inline_size && req->payload_size <= PIO_size) {
-        // Second part of PIO command (end of payload)
-
-        comm->detach();
-        node->pci_transfer(req->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
-
-    } else if (S4BXI_CONFIG_AND(node, model_pci) &&
-               (msg->retry_count // Retransmissions are always DMA (even small ones)
-                || msg->simulated_size > inline_size)) {
+    if (!msg->is_PIO && S4BXI_CONFIG_AND(node, model_pci) &&
+             (msg->retry_count && msg->simulated_size > 64 // Retransmissions are always DMA (except small ones)
+              || msg->simulated_size > inline_size)) {
         // Ask for the memory we need to send (DMA case)
 
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
