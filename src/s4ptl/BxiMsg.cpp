@@ -29,6 +29,7 @@ BxiMsg::BxiMsg(ptl_nid_t initiator, ptl_nid_t target, bxi_msg_type type, ptl_siz
     , retry_count(0)
     , parent_request(parent_request)
     , ref_count(1)
+    , is_PIO(false)
 {
     ++parent_request->msg_ref_count;
 }
@@ -43,6 +44,7 @@ BxiMsg::BxiMsg(const BxiMsg& msg)
     , parent_request(msg.parent_request)
     , ref_count(1)
     , bxi_log(nullptr)
+    , is_PIO(false)
 {
     ++parent_request->msg_ref_count;
 }
