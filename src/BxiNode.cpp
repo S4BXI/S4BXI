@@ -35,7 +35,12 @@ void BxiNode::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
     S4BXI_WRITELOG()
 }
 
-s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
+void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
+{
+    pci_transfer_init(size, direction, type)->detach();
+}
+
+s4u::CommPtr BxiNode::pci_transfer_init(ptl_size_t size, bool direction, bxi_log_type type)
 {
     s4u::Host* source = direction == PCI_CPU_TO_NIC ? main_host : nic_host;
     s4u::Host* dest   = direction == PCI_NIC_TO_CPU ? main_host : nic_host;
@@ -57,7 +62,8 @@ s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_lo
     // }
 
     // Technically `detach` works too but if I do that Augustin wants to physically harm me so I guess I won't
-    comm->start();
+    // Edit: do not do anything to this comm for now
+    // comm->start();
 
     return comm;
 }

@@ -144,6 +144,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     BxiME* me        = nullptr;
     int ni_fail_type = match_entry(msg, &me);
 
+    simgrid::s4u::CommPtr c = nullptr;
+
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
@@ -165,6 +167,12 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         need_ack              = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
         ack_type              = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
+        // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
+        if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+            c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+            c->start();
+        }
+
         put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
     } else if (req->ack_req != PTL_NO_ACK_REQ) {
         need_ack = true;
@@ -173,6 +181,9 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
     if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
+
+    if (c)
+        c->wait();
 }
 
 /**
@@ -242,6 +253,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     BxiME* me        = nullptr;
     int ni_fail_type = match_entry(msg, &me);
 
+    simgrid::s4u::CommPtr c = nullptr;
+
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
@@ -265,11 +278,20 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         need_ack = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
         ack_type = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
+        // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
+        if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+            c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+            c->start();
+        }
+
         put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
     }
 
     if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
+
+    if (c)
+        c->wait();
 }
 
 /**
@@ -347,9 +369,12 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
 
     req->process_state = S4BXI_REQ_ANSWERED;
 
+    simgrid::s4u::CommPtr c = nullptr;
+
     // Simulate the PCI transfer to write data to memory
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-        node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
+        c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+        c->start();
     }
 
     if (!S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {
@@ -373,6 +398,9 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
     reply_evt->mlength       = req->mlength;
     reply_evt->remote_offset = req->target_remote_offset;
     node->issue_event((BxiEQ*)md->md.eq_handle, reply_evt);
+
+    if (c)
+        c->wait();
 }
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)
@@ -505,11 +533,6 @@ void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_
         // ... But by doing this the "auto unlink" event is issued before
         // the "put" event, I don't know if it matters or not (I'm not
         // even sure of how the real world NIC does this)
-
-        // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-        if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-            node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PAYLOAD_WRITE);
-        }
 
         node->issue_event(eq, event);
     } else {
