@@ -45,6 +45,7 @@ class BxiMainActor : public BxiActor {
 
     void issue_portals_command(int simulated_size);
     void issue_portals_command();
+    bool is_PIO(BxiMsg* msg);
 
   public:
     // Amaury says there's no need to initialise with nullptrs,

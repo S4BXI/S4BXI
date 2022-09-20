@@ -104,6 +104,18 @@ void BxiMainActor::set_sampling(uint8_t s)
     is_sampling = s;
 }
 
+bool BxiMainActor::is_PIO(BxiMsg* msg)
+{
+    BxiPutRequest* request = (BxiPutRequest*)msg->parent_request;
+    int inline_size        = request->matching ? 8 : 16;
+    int PIO_size           = request->matching ? 408 : 416;
+
+    return !msg->retry_count // PIO doesn't make sense for retransmissions
+           && S4BXI_CONFIG_AND(node, model_pci) && request->payload_size > inline_size &&
+           request->payload_size <= PIO_size &&
+           HAS_PTL_OPTION(&request->md->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
+}
+
 void BxiMainActor::setup_barrier()
 {
     // If we don't yield a lot for some reason actors start to wait on the Barrier before it's properly constructed. In
@@ -401,16 +413,11 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     int inline_size = request->matching ? 8 : 16;
-    int PIO_size    = request->matching ? 408 : 416;
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
-    msg->is_PIO = !msg->retry_count // PIO doesn't make sense for retransmissions
-        && S4BXI_CONFIG_AND(node, model_pci) 
-        && request->payload_size > inline_size 
-        && request->payload_size <= PIO_size
-        && HAS_PTL_OPTION(&m->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
-    if (msg->is_PIO) { 
+    msg->is_PIO = is_PIO(msg);
+    if (msg->is_PIO) {
         // Payload part of PIO command
         node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
     }
@@ -462,16 +469,11 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     int inline_size = request->matching ? 8 : 16;
-    int PIO_size    = request->matching ? 408 : 416;
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
-    msg->is_PIO = !msg->retry_count // PIO doesn't make sense for retransmissions
-        && S4BXI_CONFIG_AND(node, model_pci) 
-        && request->payload_size > inline_size 
-        && request->payload_size <= PIO_size
-        && HAS_PTL_OPTION(&m->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
-    if (msg->is_PIO) { 
+    msg->is_PIO = is_PIO(msg);
+    if (msg->is_PIO) {
         // Payload part of PIO command
         node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
     }
@@ -502,16 +504,11 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     int inline_size = request->matching ? 8 : 16;
-    int PIO_size    = request->matching ? 408 : 416;
 
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
-    msg->is_PIO = !msg->retry_count // PIO doesn't make sense for retransmissions
-        && S4BXI_CONFIG_AND(node, model_pci) 
-        && request->payload_size > inline_size 
-        && request->payload_size <= PIO_size
-        && HAS_PTL_OPTION(&m_put->md, PTL_MD_VOLATILE); // In BXI PIO mode is only enabled for volatile MDs
-    if (msg->is_PIO) { 
+    msg->is_PIO = is_PIO(msg);
+    if (msg->is_PIO) {
         // Payload part of PIO command
         node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
     }
