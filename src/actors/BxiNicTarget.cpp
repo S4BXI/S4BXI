@@ -458,7 +458,7 @@ void BxiNicTarget::handle_bxi_ack(BxiMsg* msg)
 
     // If we have a PUT request, check that the send event was issued at some point
     // (If not, it means we have a put that's not buffered, and we didn't ask for a portals ACK)
-    if (msg->parent_request->type == S4BXI_PUT_REQUEST) {
+    if (msg->parent_request->type == S4BXI_PUT_REQUEST || msg->parent_request->type == S4BXI_ATOMIC_REQUEST) {
         auto req = (BxiPutRequest*)msg->parent_request;
         if (req->ack_req == PTL_NO_ACK_REQ)
             req->maybe_issue_send();
