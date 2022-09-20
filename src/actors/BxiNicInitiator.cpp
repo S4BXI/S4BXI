@@ -110,7 +110,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
 
     } else if (S4BXI_CONFIG_AND(node, model_pci) &&
                (msg->retry_count // Retransmissions are always DMA (even small ones)
-                || msg->simulated_size > PIO_size)) {
+                || msg->simulated_size > inline_size)) {
         // Ask for the memory we need to send (DMA case)
 
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
