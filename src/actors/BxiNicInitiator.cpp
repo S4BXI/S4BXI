@@ -102,8 +102,8 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         msg->bxi_log->start = s4u::Engine::get_clock();
 
     if (!msg->is_PIO && S4BXI_CONFIG_AND(node, model_pci) &&
-             (msg->retry_count && msg->simulated_size > 64 // Retransmissions are always DMA (except small ones)
-              || msg->simulated_size > inline_size)) {
+        (msg->retry_count && msg->simulated_size > 64 // Retransmissions are always DMA (except small ones)
+         || (!msg->retry_count && msg->simulated_size > inline_size))) {
         // Ask for the memory we need to send (DMA case)
 
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
