@@ -58,7 +58,7 @@ BxiEngine::BxiEngine()
     config->keep_temps                = get_bool_s4bxi_param("KEEP_TEMPS", false);
     config->max_memcpy                = get_long_s4bxi_param("MAX_MEMCPY", -1);
     config->cpu_factor                = get_double_s4bxi_param("CPU_FACTOR", 1.0F);
-    config->cpu_threshold             = get_double_s4bxi_param("CPU_THRESHOLD", 1e-7);
+    config->cpu_threshold             = get_double_s4bxi_param("CPU_THRESHOLD", 1e-9);
     config->cpu_accumulate            = get_bool_s4bxi_param("CPU_ACCUMULATE", false);
     config->quick_acks                = get_bool_s4bxi_param("QUICK_ACKS", false);
     config->auto_shared_malloc_thresh = get_double_s4bxi_param("SHARED_MALLOC_THRESH", 1.0);

@@ -23,6 +23,8 @@
 #include "BxiActor.hpp"
 #include "../s4ptl.hpp"
 
+constexpr double ONE_PCI_PACKET_TRANSFER = 400e-9 /* PCI latency */ + 32.508e-9 /* Bandwidth for 512B */;
+
 class BxiNicActor : public BxiActor {
   protected:
     bxi_vn vn;

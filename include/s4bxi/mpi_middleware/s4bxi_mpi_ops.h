@@ -414,7 +414,7 @@ struct s4bxi_mpi_ops {
 
 struct s4bxi_mpi_ops {}; // Needs to be defined for MainActors to compile
 
-#endif
+#endif // BUILD_MPI_MIDDLEWARE
 
 #ifdef __cplusplus
 }

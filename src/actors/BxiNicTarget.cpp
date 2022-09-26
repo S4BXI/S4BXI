@@ -171,6 +171,10 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
             c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
             c->start();
+            // Wait for last PCI packet write (very approximate heuristic)
+            double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
+                                                          : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+            s4u::this_actor::sleep_for(wait_time);
         }
 
         put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
@@ -282,6 +286,10 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
             c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
             c->start();
+            // Wait for last PCI packet write (very approximate heuristic)
+            double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
+                                                          : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+            s4u::this_actor::sleep_for(wait_time);
         }
 
         put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
@@ -375,6 +383,10 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
         c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
         c->start();
+        // Wait for last PCI packet write (very approximate heuristic)
+        double wait_time =
+            msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+        s4u::this_actor::sleep_for(wait_time);
     }
 
     if (!S4BXI_CONFIG_OR(md->ni->node, e2e_off)) {

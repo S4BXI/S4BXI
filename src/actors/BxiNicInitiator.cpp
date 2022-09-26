@@ -110,6 +110,11 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         // and I don't know if they weigh 64B or something else. (chunk size is 128, 256,
         // 512 or 1024B)
         node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
+        // Wait for first packet (very approximate heuristic)
+        double wait_time = msg->simulated_size >= 512
+            ? ONE_PCI_PACKET_TRANSFER
+            : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+        s4u::this_actor::sleep_for(wait_time);
         comm->detach();
         node->pci_transfer(req->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
     } else {
@@ -145,9 +150,14 @@ void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
     if (__bxi_log_level)
         msg->bxi_log->start = s4u::Engine::get_clock();
 
-    if (S4BXI_CONFIG_AND(node, model_pci) &&
-        msg->simulated_size) { // Ask for the memory we need to send (Get is always DMA)
+    if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+        // Ask for the memory we need to send (Get is always DMA)
         node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
+        // Wait for first packet (very approximate heuristic)
+        double wait_time = msg->simulated_size >= 512
+            ? ONE_PCI_PACKET_TRANSFER
+            : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+        s4u::this_actor::sleep_for(wait_time);
         comm->detach();
         node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
     } else {
