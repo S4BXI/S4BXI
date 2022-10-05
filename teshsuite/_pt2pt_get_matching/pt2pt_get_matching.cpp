@@ -23,7 +23,7 @@
 #include <string>
 
 #define RUNS_NUMBER    11
-#define MESSAGE_NUMBER 1000
+#define MESSAGE_NUMBER 100
 
 void ptlerr(std::string str, int rc)
 {
@@ -76,7 +76,7 @@ int client(char* target)
                 if (rc == PTL_OK) {
                     ++got_reply;
                     if (ev.type != PTL_EVENT_REPLY)
-                        fprintf(stderr, "Wrong event type if server, got %u instead of %u (PTL_EVENT_REPLY)\n", ev.type,
+                        fprintf(stderr, "Wrong event type in client, got %u instead of %u (PTL_EVENT_REPLY)\n", ev.type,
                                 PTL_EVENT_REPLY);
                 } else
                     break;
@@ -162,7 +162,7 @@ int server()
             }
 
             if (ev.type != PTL_EVENT_GET)
-                fprintf(stderr, "Wrong event type if server, got %u instead of %u (PTL_EVENT_GET)\n", ev.type,
+                fprintf(stderr, "Wrong event type in server, got %u instead of %u (PTL_EVENT_GET)\n", ev.type,
                         PTL_EVENT_GET);
         }
     }

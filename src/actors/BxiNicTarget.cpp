@@ -144,7 +144,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     BxiME* me        = nullptr;
     int ni_fail_type = match_entry(msg, &me);
 
-    simgrid::s4u::CommPtr c = nullptr;
+    BxiLog __bxi_log;
+    bool need_ev_processing = false;
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -169,15 +170,23 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
         // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
         if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-            c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-            c->start();
+            int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+            if (__bxi_log_level) {
+                __bxi_log.start     = simgrid::s4u::Engine::get_clock();
+                __bxi_log.type      = S4BXILOG_PCI_PAYLOAD_WRITE;
+                __bxi_log.initiator = node->nid;
+                __bxi_log.target    = node->nid;
+            }
+            s4u::Actor::create("_pci_payload_write_actor", s4u::Host::current(), [&]() {
+                node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+            });
             // Wait for last PCI packet write (very approximate heuristic)
             double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
-                                                          : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+                                                          : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
             s4u::this_actor::sleep_for(wait_time);
         }
 
-        put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
+        need_ev_processing = true;
     } else if (req->ack_req != PTL_NO_ACK_REQ) {
         need_ack = true;
         ack_type = S4BXI_PTL_ACK;
@@ -185,9 +194,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
     if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
-
-    if (c)
-        c->wait();
+    if (need_ev_processing)
+        put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
 }
 
 /**
@@ -257,7 +265,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     BxiME* me        = nullptr;
     int ni_fail_type = match_entry(msg, &me);
 
-    simgrid::s4u::CommPtr c = nullptr;
+    BxiLog __bxi_log;
+    bool need_ev_processing = false;
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -284,22 +293,30 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
         // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
         if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-            c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-            c->start();
+            int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+            if (__bxi_log_level) {
+                __bxi_log.start     = simgrid::s4u::Engine::get_clock();
+                __bxi_log.type      = S4BXILOG_PCI_PAYLOAD_WRITE;
+                __bxi_log.initiator = node->nid;
+                __bxi_log.target    = node->nid;
+            }
+
+            s4u::Actor::create("_pci_payload_write_actor", s4u::Host::current(), [&]() {
+                node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+            });
             // Wait for last PCI packet write (very approximate heuristic)
             double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
-                                                          : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+                                                          : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
             s4u::this_actor::sleep_for(wait_time);
         }
 
-        put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
+        need_ev_processing = true;
     }
 
     if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
-
-    if (c)
-        c->wait();
+    if (need_ev_processing)
+        put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
 }
 
 /**
@@ -377,15 +394,25 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
 
     req->process_state = S4BXI_REQ_ANSWERED;
 
-    simgrid::s4u::CommPtr c = nullptr;
+    BxiLog __bxi_log;
+    bool need_ev_processing = false;
 
     // Simulate the PCI transfer to write data to memory
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-        c = node->pci_transfer_init(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-        c->start();
+        int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+        if (__bxi_log_level) {
+            __bxi_log.start     = simgrid::s4u::Engine::get_clock();
+            __bxi_log.type      = S4BXILOG_PCI_PAYLOAD_WRITE;
+            __bxi_log.initiator = node->nid;
+            __bxi_log.target    = node->nid;
+        }
+
+        s4u::Actor::create("_pci_payload_write_actor", s4u::Host::current(), [&]() {
+            node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+        });
         // Wait for last PCI packet write (very approximate heuristic)
-        double wait_time =
-            msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER : (400e-9 + ((double)msg->simulated_size) / 15.75e9);
+        double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
+                                                      : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
         s4u::this_actor::sleep_for(wait_time);
     }
 
@@ -410,9 +437,6 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
     reply_evt->mlength       = req->mlength;
     reply_evt->remote_offset = req->target_remote_offset;
     node->issue_event((BxiEQ*)md->md.eq_handle, reply_evt);
-
-    if (c)
-        c->wait();
 }
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)

@@ -309,15 +309,16 @@ int BxiMainActor::PtlEQFree(ptl_handle_eq_t eq_handle)
 
 int BxiMainActor::PtlEQGet(ptl_handle_eq_t eq_handle, ptl_event_t* event)
 {
+    double cpu_thresh = S4BXI_GLOBAL_CONFIG(cpu_threshold);
     if (is_polling == -1) {
-        s4u::this_actor::sleep_for(1e-8);
+        s4u::this_actor::sleep_for(cpu_thresh);
         return ((BxiEQ*)eq_handle)->get(event);
     }
 
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(5e-8 + (poll_count > 5 ? ((poll_count - 5) * 5e-8) : 0));
+    s4u::this_actor::sleep_for(cpu_thresh + (poll_count > 5 ? ((poll_count - 5) * cpu_thresh) : 0));
     auto ret = ((BxiEQ*)eq_handle)->get(event);
 
     if (ret == PTL_OK) {
@@ -414,13 +415,13 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
 
     int inline_size = request->matching ? 8 : 16;
 
-    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);
     if (msg->is_PIO) {
         // Payload part of PIO command
-        node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+        node->pci_transfer(request->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PIO_PAYLOAD);
     }
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
@@ -445,8 +446,8 @@ int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     //                 I Don't know what the actual size of a get request on the network is
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
-    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
@@ -470,13 +471,13 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
 
     int inline_size = request->matching ? 8 : 16;
 
-    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);
     if (msg->is_PIO) {
         // Payload part of PIO command
-        node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+        node->pci_transfer(request->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PIO_PAYLOAD);
     }
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
@@ -505,14 +506,14 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
 
     int inline_size = request->matching ? 8 : 16;
 
-    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     m_put->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);
     if (msg->is_PIO) {
         // Payload part of PIO command
-        node->pci_transfer(request->payload_size - inline_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PIO_PAYLOAD);
+        node->pci_transfer(request->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PIO_PAYLOAD);
     }
 
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
@@ -540,9 +541,11 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     m_put->ni->cq->acquire();
+    S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
     // s4bxi_fprintf(stderr, "    ---- Wake up initiators for message %p (%s)\n", msg, msg_type_c_str(msg));
+    S4BXI_WRITELOG()
 
     // PIO / DMA logic is handled entirely by BxiNicInitiator
 
@@ -552,8 +555,9 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
 int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t si, ptl_ack_req_t a, ptl_process_t p,
                            ptl_index_t id, ptl_match_bits_t m, ptl_size_t siz, void* v, ptl_hdr_data_t d)
 {
+    double cpu_thresh = S4BXI_GLOBAL_CONFIG(cpu_threshold);
     if (is_polling == -1) {
-        s4u::this_actor::sleep_for(1e-8);
+        s4u::this_actor::sleep_for(cpu_thresh);
 
         if (((BxiMD*)md_handle)->ni->cq->would_block())
             return PTL_TRY_AGAIN;
@@ -564,7 +568,7 @@ int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(1e-8 + (poll_count > 20 ? ((poll_count - 20) * 1e-8) : 0));
+    s4u::this_actor::sleep_for(cpu_thresh + (poll_count > 5 ? ((poll_count - 5) * cpu_thresh) : 0));
 
     if (((BxiMD*)md_handle)->ni->cq->would_block())
         return PTL_TRY_AGAIN;
@@ -577,9 +581,10 @@ int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
 int BxiMainActor::PtlGetNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t si, ptl_process_t p, ptl_pt_index_t i,
                            ptl_match_bits_t m, ptl_size_t siz, void* v)
 {
+    double cpu_thresh = S4BXI_GLOBAL_CONFIG(cpu_threshold);
 
     if (is_polling == -1) {
-        s4u::this_actor::sleep_for(1e-8);
+        s4u::this_actor::sleep_for(cpu_thresh);
 
         if (((BxiMD*)md_handle)->ni->cq->would_block())
             return PTL_TRY_AGAIN;
@@ -590,7 +595,7 @@ int BxiMainActor::PtlGetNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(1e-8 + (poll_count > 20 ? ((poll_count - 20) * 1e-8) : 0));
+    s4u::this_actor::sleep_for(cpu_thresh + (poll_count > 5 ? ((poll_count - 5) * cpu_thresh) : 0));
 
     if (((BxiMD*)md_handle)->ni->cq->would_block())
         return PTL_TRY_AGAIN;

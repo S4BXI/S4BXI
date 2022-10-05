@@ -27,7 +27,7 @@ class BxiActorExt {
     BxiMainActor* main_actor = nullptr;
 };
 
-simgrid::xbt::Extension<simgrid::s4u::Actor, BxiActorExt> BxiActorExt::EXTENSION_ID;
+xbt::Extension<simgrid::s4u::Actor, BxiActorExt> BxiActorExt::EXTENSION_ID;
 
 /**
  * @brief Initializes the BxiActorExt plugin

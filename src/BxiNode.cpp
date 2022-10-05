@@ -73,11 +73,12 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     if (eq == PTL_EQ_NONE)
         return;
 
-    if (S4BXI_CONFIG_AND(this, model_pci_commands)) {
-        pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
-    }
-
-    eq->mailbox->put_init(ev, 0)->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)->detach();
+    // There is literally no other way to make this transfer asynchronous while still being able to log it
+    // s4u::Actor::create("_pci_event_actor", s4u::Host::current(), [&]() {
+        if (S4BXI_CONFIG_AND(this, model_pci_commands))
+            pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
+        eq->mailbox->put_init(ev, 0)->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)->detach();
+    // });
 }
 
 bool BxiNode::check_flowctrl(const BxiMsg* msg)

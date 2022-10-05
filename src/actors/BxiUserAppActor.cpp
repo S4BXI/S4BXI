@@ -414,8 +414,9 @@ int s4bxi_default_main(int argc, char* argv[])
 
 #ifdef BUILD_MPI_MIDDLEWARE
     simgrid_engine->set_config("smpi/coll-selector:ompi");
-    XBT_INFO((string("set smpi/host-speed:") + to_string(round(S4BXI_GLOBAL_CONFIG(cpu_factor) * 10000.0F)) +
-                               string("Mf")).c_str());
+    XBT_INFO(
+        (string("set smpi/host-speed:") + to_string(round(S4BXI_GLOBAL_CONFIG(cpu_factor) * 10000.0F)) + string("Mf"))
+            .c_str());
     simgrid_engine->set_config("smpi/host-speed:" + to_string(round(S4BXI_GLOBAL_CONFIG(cpu_factor) * 10000.0F)) +
                                "Mf");
     simgrid_engine->set_config("smpi/cpu-threshold:" + to_string(round(S4BXI_GLOBAL_CONFIG(cpu_threshold))));
