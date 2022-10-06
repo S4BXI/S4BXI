@@ -147,6 +147,8 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     BxiLog __bxi_log;
     bool need_ev_processing = false;
 
+    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
+
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
@@ -265,6 +267,8 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 
     BxiLog __bxi_log;
     bool need_ev_processing = false;
+
+    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -392,6 +396,8 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
 
     BxiLog __bxi_log;
     bool need_ev_processing = false;
+
+    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     // Simulate the PCI transfer to write data to memory
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
