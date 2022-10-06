@@ -177,9 +177,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
                 __bxi_log.initiator = node->nid;
                 __bxi_log.target    = node->nid;
             }
-            s4u::Actor::create("_pci_payload_write_actor", s4u::Host::current(), [&]() {
-                node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-            });
+            node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
             // Wait for last PCI packet write (very approximate heuristic)
             double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                           : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
@@ -301,9 +299,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
                 __bxi_log.target    = node->nid;
             }
 
-            s4u::Actor::create("_pci_payload_write_actor", s4u::Host::current(), [&]() {
-                node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-            });
+            node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
             // Wait for last PCI packet write (very approximate heuristic)
             double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                           : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
@@ -407,9 +403,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
             __bxi_log.target    = node->nid;
         }
 
-        s4u::Actor::create("_pci_payload_write_actor", s4u::Host::current(), [&]() {
-            node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-        });
+        node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
         // Wait for last PCI packet write (very approximate heuristic)
         double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                       : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);

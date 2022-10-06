@@ -107,9 +107,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         // 512 or 1024B)
         node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
         // S4BXI_STARTLOG(S4BXILOG_PCI_DMA_PAYLOAD, node->nid, node->nid)
-        s4u::Actor::create("_pci_dma_payload_actor", s4u::Host::current(), [&]() {
-            node->pci_transfer(req->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
-        });
+        node->pci_transfer_async(req->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
         // Wait for first packet (very approximate heuristic)
         double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                       : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
@@ -153,9 +151,7 @@ void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
         // Ask for the memory we need to send (Get is always DMA)
         node->pci_transfer(64, PCI_NIC_TO_CPU, S4BXILOG_PCI_DMA_REQUEST);
-        s4u::Actor::create("_pci_dma_payload_actor", s4u::Host::current(), [&]() {
-            node->pci_transfer(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
-        });
+        node->pci_transfer_async(msg->simulated_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_DMA_PAYLOAD);
         // Wait for first packet (very approximate heuristic)
         double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                       : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);

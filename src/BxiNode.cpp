@@ -37,7 +37,17 @@ void BxiNode::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
 
 void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
 {
-    pci_transfer_init(size, direction, type)->detach();
+    auto comm = pci_transfer_init(size, direction, type);
+    if (S4BXI_GLOBAL_CONFIG(log_level)) {
+        ptl_nid_t nid_copy = nid;
+        s4u::Actor::create("_pci_transfer_async_actor", s4u::Host::current(), [comm, type, nid_copy]() {
+            S4BXI_STARTLOG(type, nid_copy, nid_copy)
+            comm->wait();
+            S4BXI_WRITELOG()
+        });
+    } else {
+        comm->detach();
+    }
 }
 
 s4u::CommPtr BxiNode::pci_transfer_init(ptl_size_t size, bool direction, bxi_log_type type)
@@ -73,12 +83,9 @@ void BxiNode::issue_event(BxiEQ* eq, ptl_event_t* ev)
     if (eq == PTL_EQ_NONE)
         return;
 
-    // There is literally no other way to make this transfer asynchronous while still being able to log it
-    // s4u::Actor::create("_pci_event_actor", s4u::Host::current(), [&]() {
-        if (S4BXI_CONFIG_AND(this, model_pci_commands))
-            pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
-        eq->mailbox->put_init(ev, 0)->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)->detach();
-    // });
+    if (S4BXI_CONFIG_AND(this, model_pci_commands))
+        pci_transfer(EVENT_SIZE, PCI_NIC_TO_CPU, S4BXILOG_PCI_EVENT);
+    eq->mailbox->put_init(ev, 0)->set_copy_data_callback(&s4u::Comm::copy_pointer_callback)->detach();
 }
 
 bool BxiNode::check_flowctrl(const BxiMsg* msg)
