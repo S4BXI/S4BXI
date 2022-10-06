@@ -52,7 +52,7 @@ s4u::CommPtr BxiNode::pci_transfer_init(ptl_size_t size, bool direction, bxi_log
     // see https://framagit.org/simgrid/simgrid/-/issues/60
     // (Thanks Martin for your help on this)
     s4u::CommPtr comm = s4u::Comm::sendto_init(source, dest);
-    comm->set_remaining(size);
+    comm->set_payload_size(size);
 
     // This is broken because SimGrid's signals don't do what I was expecting. Disable it completely until I make a
     // proper plugin for logging this type of things
