@@ -87,7 +87,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     auto req = (BxiPutRequest*)msg->parent_request;
     req->md->ni->cq->release();
 
-    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a command
+    // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a command
 
     int inline_size = req->matching ? 8 : 16;
     int PIO_size    = req->matching ? 408 : 416;
@@ -105,7 +105,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         (msg->retry_count && msg->simulated_size > 64 // Retransmissions are always DMA (except small ones)
          || (!msg->retry_count && msg->simulated_size > inline_size))) {
         // Ask for the memory we need to send (DMA case)
-        s4u::this_actor::execute(300);
+        s4u::this_actor::execute(100);
 
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
         // and I don't know if they weigh 64B or something else. (chunk size is 128, 256,
@@ -133,7 +133,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     // I don't know if it is an issue or not. Actually that could be better
     // to process more messages in parallel with few actors ?
     if (msg->simulated_size <= 64) {
-        s4u::this_actor::execute(400);
+        s4u::this_actor::execute(550);
         req->maybe_issue_send();
     }
 
