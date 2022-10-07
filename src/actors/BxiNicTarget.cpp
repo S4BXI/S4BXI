@@ -133,6 +133,8 @@ void BxiNicTarget::send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type
  */
 void BxiNicTarget::handle_put_request(BxiMsg* msg)
 {
+    s4u::CommPtr dma = nullptr;
+
     auto req = (BxiPutRequest*)msg->parent_request;
 
     if (req->process_state > S4BXI_REQ_CREATED)
@@ -147,7 +149,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     BxiLog __bxi_log;
     bool need_ev_processing = false;
 
-    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
+    // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -179,7 +181,7 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
                 __bxi_log.initiator = node->nid;
                 __bxi_log.target    = node->nid;
             }
-            node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+            dma = node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
             // Wait for last PCI packet write (very approximate heuristic)
             double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                           : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
@@ -196,6 +198,9 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         send_ack(msg, ack_type, ni_fail_type);
     if (need_ev_processing)
         put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
+
+    if (dma)
+        dma->wait();
 }
 
 /**
@@ -251,6 +256,8 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
  */
 void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
 {
+    s4u::CommPtr dma = nullptr;
+
     auto req = (BxiAtomicRequest*)msg->parent_request;
 
     if (req->process_state > S4BXI_REQ_CREATED)
@@ -268,7 +275,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     BxiLog __bxi_log;
     bool need_ev_processing = false;
 
-    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
+    // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     if (me) {
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
@@ -303,7 +310,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
                 __bxi_log.target    = node->nid;
             }
 
-            node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+            dma = node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
             // Wait for last PCI packet write (very approximate heuristic)
             double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                           : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
@@ -317,6 +324,9 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         send_ack(msg, ack_type, ni_fail_type);
     if (need_ev_processing)
         put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
+
+    if (dma)
+        dma->wait();
 }
 
 /**
@@ -383,6 +393,8 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 
 void BxiNicTarget::handle_response(BxiMsg* msg)
 {
+    s4u::CommPtr dma = nullptr;
+
     BxiRequest* req = msg->parent_request;
     shared_ptr<BxiMD> md =
         req->type == S4BXI_FETCH_ATOMIC_REQUEST ? ((BxiFetchAtomicRequest*)msg->parent_request)->get_md : req->md;
@@ -397,7 +409,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
     BxiLog __bxi_log;
     bool need_ev_processing = false;
 
-    s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
+    // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     // Simulate the PCI transfer to write data to memory
     if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
@@ -409,7 +421,7 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
             __bxi_log.target    = node->nid;
         }
 
-        node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+        dma = node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
         // Wait for last PCI packet write (very approximate heuristic)
         double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
                                                       : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
@@ -437,6 +449,9 @@ void BxiNicTarget::handle_response(BxiMsg* msg)
     reply_evt->mlength       = req->mlength;
     reply_evt->remote_offset = req->target_remote_offset;
     node->issue_event((BxiEQ*)md->md.eq_handle, reply_evt);
+
+    if (dma)
+        dma->wait();
 }
 
 void BxiNicTarget::handle_ptl_ack(BxiMsg* msg)

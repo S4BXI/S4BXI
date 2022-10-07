@@ -76,7 +76,7 @@ class BxiNode {
     unsigned long e2e_gave_up = 0;
 
     void pci_transfer(ptl_size_t size, bool direction, bxi_log_type type);
-    void pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type);
+    simgrid::s4u::CommPtr pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type, bool detach = false);
     simgrid::s4u::CommPtr pci_transfer_init(ptl_size_t size, bool direction, bxi_log_type type);
     void issue_event(BxiEQ* eq, ptl_event_t* ev);
     bool check_flowctrl(const BxiMsg* msg);

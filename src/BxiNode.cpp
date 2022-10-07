@@ -35,7 +35,7 @@ void BxiNode::pci_transfer(ptl_size_t size, bool direction, bxi_log_type type)
     S4BXI_WRITELOG()
 }
 
-void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type)
+simgrid::s4u::CommPtr BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type type, bool detach)
 {
     auto comm = pci_transfer_init(size, direction, type);
     if (S4BXI_GLOBAL_CONFIG(log_level)) {
@@ -46,8 +46,10 @@ void BxiNode::pci_transfer_async(ptl_size_t size, bool direction, bxi_log_type t
             S4BXI_WRITELOG()
         });
     } else {
-        comm->detach();
+        detach ? comm->detach() : comm->start();
     }
+
+    return comm;
 }
 
 s4u::CommPtr BxiNode::pci_transfer_init(ptl_size_t size, bool direction, bxi_log_type type)
