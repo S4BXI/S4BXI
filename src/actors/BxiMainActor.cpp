@@ -107,8 +107,8 @@ void BxiMainActor::set_sampling(uint8_t s)
 bool BxiMainActor::is_PIO(BxiMsg* msg)
 {
     BxiPutRequest* request = (BxiPutRequest*)msg->parent_request;
-    int inline_size        = request->matching ? 8 : 16;
-    int PIO_size           = request->matching ? 408 : 416;
+    int inline_size        = INLINE_SIZE(request);
+    int PIO_size           = PIO_SIZE(request);
 
     return !msg->retry_count // PIO doesn't make sense for retransmissions
            && S4BXI_CONFIG_AND(node, model_pci) && request->payload_size > inline_size &&
@@ -413,7 +413,7 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_PUT, length, request);
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
-    int inline_size = request->matching ? 8 : 16;
+    int inline_size = INLINE_SIZE(request);
 
     m->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);
@@ -469,7 +469,7 @@ int BxiMainActor::PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t loffs, ptl_siz
     auto msg     = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_ATOMIC, length, request);
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
-    int inline_size = request->matching ? 8 : 16;
+    int inline_size = INLINE_SIZE(request);
 
     m->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);
@@ -504,7 +504,7 @@ int BxiMainActor::PtlFetchAtomic(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, 
     auto msg = new BxiMsg(node->nid, target_proc.phys.nid, S4BXI_PTL_FETCH_ATOMIC, length, request);
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
-    int inline_size = request->matching ? 8 : 16;
+    int inline_size = INLINE_SIZE(request);
 
     m_put->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);

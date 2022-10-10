@@ -24,6 +24,13 @@
 #include "../BxiNode.hpp"
 #include "../s4bxi_util.hpp"
 
+constexpr int INLINE_BASE_SIZE = 8;
+constexpr int MATCH_BITS_SIZE  = 8;
+constexpr int PIO_BASE_SIZE    = 408;
+
+#define INLINE_SIZE(req) ((req)->matching ? INLINE_BASE_SIZE : (INLINE_BASE_SIZE + MATCH_BITS_SIZE))
+#define PIO_SIZE(req)    ((req)->matching ? PIO_BASE_SIZE : (PIO_BASE_SIZE + MATCH_BITS_SIZE))
+
 class BxiActor {
   protected:
     std::string slug;

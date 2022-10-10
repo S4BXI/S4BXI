@@ -89,8 +89,8 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
 
     // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a command
 
-    int inline_size = req->matching ? 8 : 16;
-    int PIO_size    = req->matching ? 408 : 416;
+    int inline_size = INLINE_SIZE(req);
+    int PIO_size    = PIO_SIZE(req);
 
     int _bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (_bxi_log_level) {
