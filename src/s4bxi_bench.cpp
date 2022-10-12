@@ -35,6 +35,7 @@ void s4bxi_execute(double duration)
     smpi_execute(duration);
     S4BXI_WRITELOG()
 }
+
 void s4bxi_bench_begin()
 {
     ptl_nid_t nid       = GET_CURRENT_MAIN_ACTOR->getNid();

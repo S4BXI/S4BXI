@@ -90,6 +90,9 @@ BxiEngine::BxiEngine()
     LOG_CONFIG(keep_temps);
     LOG_CONFIG(max_memcpy);
     LOG_CONFIG(cpu_factor);
+    LOG_CONFIG(cpu_threshold);
+    LOG_CONFIG(cpu_accumulate);
+    LOG_CONFIG(active_polling_delay);
     LOG_CONFIG(quick_acks);
     LOG_CONFIG(auto_shared_malloc_thresh);
     LOG_STRING_CONFIG(shared_malloc_hugepage);
