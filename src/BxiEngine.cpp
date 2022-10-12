@@ -60,6 +60,7 @@ BxiEngine::BxiEngine()
     config->cpu_factor                = get_double_s4bxi_param("CPU_FACTOR", 1.0F);
     config->cpu_threshold             = get_double_s4bxi_param("CPU_THRESHOLD", 1e-9);
     config->cpu_accumulate            = get_bool_s4bxi_param("CPU_ACCUMULATE", false);
+    config->active_polling_delay      = get_double_s4bxi_param("ACTIVE_POLLING_DELAY", 1e-8);
     config->quick_acks                = get_bool_s4bxi_param("QUICK_ACKS", false);
     config->auto_shared_malloc_thresh = get_double_s4bxi_param("SHARED_MALLOC_THRESH", 1.0);
     config->shared_malloc_hugepage    = get_string_s4bxi_param("SHARED_MALLOC_HUGEPAGE", "");

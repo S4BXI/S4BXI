@@ -309,16 +309,16 @@ int BxiMainActor::PtlEQFree(ptl_handle_eq_t eq_handle)
 
 int BxiMainActor::PtlEQGet(ptl_handle_eq_t eq_handle, ptl_event_t* event)
 {
-    double cpu_thresh = S4BXI_GLOBAL_CONFIG(cpu_threshold);
+    double active_polling_delay = S4BXI_GLOBAL_CONFIG(active_polling_delay);
     if (is_polling == -1) {
-        s4u::this_actor::sleep_for(cpu_thresh);
+        s4u::this_actor::sleep_for(active_polling_delay);
         return ((BxiEQ*)eq_handle)->get(event);
     }
 
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(cpu_thresh + (poll_count > 5 ? ((poll_count - 5) * cpu_thresh) : 0));
+    s4u::this_actor::sleep_for(active_polling_delay + (poll_count > 5 ? ((poll_count - 5) * active_polling_delay) : 0));
     auto ret = ((BxiEQ*)eq_handle)->get(event);
 
     if (ret == PTL_OK) {
@@ -555,9 +555,9 @@ int BxiMainActor::PtlSwap(ptl_handle_md_t get_mdh, ptl_size_t get_loffs, ptl_han
 int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t si, ptl_ack_req_t a, ptl_process_t p,
                            ptl_index_t id, ptl_match_bits_t m, ptl_size_t siz, void* v, ptl_hdr_data_t d)
 {
-    double cpu_thresh = S4BXI_GLOBAL_CONFIG(cpu_threshold);
+    double active_polling_delay = S4BXI_GLOBAL_CONFIG(active_polling_delay);
     if (is_polling == -1) {
-        s4u::this_actor::sleep_for(cpu_thresh);
+        s4u::this_actor::sleep_for(active_polling_delay);
 
         if (((BxiMD*)md_handle)->ni->cq->would_block())
             return PTL_TRY_AGAIN;
@@ -568,7 +568,7 @@ int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(cpu_thresh + (poll_count > 5 ? ((poll_count - 5) * cpu_thresh) : 0));
+    s4u::this_actor::sleep_for(active_polling_delay + (poll_count > 5 ? ((poll_count - 5) * active_polling_delay) : 0));
 
     if (((BxiMD*)md_handle)->ni->cq->would_block())
         return PTL_TRY_AGAIN;
@@ -581,10 +581,10 @@ int BxiMainActor::PtlPutNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
 int BxiMainActor::PtlGetNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t si, ptl_process_t p, ptl_pt_index_t i,
                            ptl_match_bits_t m, ptl_size_t siz, void* v)
 {
-    double cpu_thresh = S4BXI_GLOBAL_CONFIG(cpu_threshold);
+    double active_polling_delay = S4BXI_GLOBAL_CONFIG(active_polling_delay);
 
     if (is_polling == -1) {
-        s4u::this_actor::sleep_for(cpu_thresh);
+        s4u::this_actor::sleep_for(active_polling_delay);
 
         if (((BxiMD*)md_handle)->ni->cq->would_block())
             return PTL_TRY_AGAIN;
@@ -595,7 +595,7 @@ int BxiMainActor::PtlGetNB(ptl_handle_md_t md_handle, ptl_size_t s, ptl_size_t s
     // If polling, try to do clever things to poll less
     ++poll_count;
 
-    s4u::this_actor::sleep_for(cpu_thresh + (poll_count > 5 ? ((poll_count - 5) * cpu_thresh) : 0));
+    s4u::this_actor::sleep_for(active_polling_delay + (poll_count > 5 ? ((poll_count - 5) * active_polling_delay) : 0));
 
     if (((BxiMD*)md_handle)->ni->cq->would_block())
         return PTL_TRY_AGAIN;
