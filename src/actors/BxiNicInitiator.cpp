@@ -105,7 +105,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
         (msg->retry_count && msg->simulated_size > 64 // Retransmissions are always DMA (except small ones)
          || (!msg->retry_count && msg->simulated_size > inline_size))) {
         // Ask for the memory we need to send (DMA case)
-        s4u::this_actor::execute(100);
+        // s4u::this_actor::execute(100);
 
         // Actually there are (msg->simulated_size / DMA chunk size) requests in real life,
         // and I don't know if they weigh 64B or something else. (chunk size is 128, 256,
@@ -153,7 +153,7 @@ void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
 {
     s4u::CommPtr dma = nullptr;
 
-    // s4u::this_actor::execute(400);
+    s4u::this_actor::execute(375);
 
     int _bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (_bxi_log_level) {
