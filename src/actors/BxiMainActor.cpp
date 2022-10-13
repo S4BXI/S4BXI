@@ -391,6 +391,16 @@ int BxiMainActor::PtlMEUnlink(ptl_handle_le_t me_handle)
 {
     issue_portals_command();
 
+    auto me  = (BxiME*)me_handle;
+    auto uhs = me->pt->unexpected_headers;
+
+    // This is kind of greedy, I think we should associate UHs and MEs earlier instead 
+    // of deciding if they match in a somewhat "lazy" way
+    if (me->list == PTL_OVERFLOW_LIST)
+        for (BxiMsg* uh : me->pt->unexpected_headers)
+            if (me->matches_request(uh->parent_request))
+                return PTL_IN_USE;
+
     BxiME::unlink(me_handle);
 
     return PTL_OK;
