@@ -182,6 +182,7 @@ class BxiME {
     void* user_ptr;
     ptl_size_t manage_local_offset = 0;
     ptl_list_t list;
+    simgrid::s4u::MutexPtr mut;
 
     BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr);
     BxiME(const BxiME& me);
@@ -194,7 +195,7 @@ class BxiME {
 
     static void append(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr, ptl_handle_me_t* me_handle);
     static void unlink(ptl_handle_me_t me_handle);
-    static void maybe_auto_unlink(BxiME* me);
+    static bool maybe_auto_unlink(BxiME* me);
 };
 
 // Next two classes are our representation of messages on the

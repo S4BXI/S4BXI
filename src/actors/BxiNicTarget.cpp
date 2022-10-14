@@ -148,10 +148,13 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
     BxiLog __bxi_log;
     bool need_ev_processing = false;
+    bool unlock_mut         = false;
 
     // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     if (me) {
+        unlock_mut = true;
+        me->mut->lock();
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
 
@@ -197,7 +200,10 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
     if (need_ev_processing)
-        put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
+        unlock_mut = !put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
+
+    if (unlock_mut)
+        me->mut->unlock();
 
     if (dma)
         dma->wait();
@@ -227,6 +233,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
     response->ni_fail_type = match_entry(msg, &me);
 
     if (me) {
+        me->mut->lock();
         req->process_state = S4BXI_REQ_RECEIVED;
         req->matched_me    = make_unique<BxiME>(*me);
         req->mlength       = me->get_mlength(req);
@@ -241,7 +248,8 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
             capped_memcpy((unsigned char*)req->md->md.start + req->local_offset, req->start, req->mlength);
 
         // GET event isn't here, it will be issued by the initiator actor when the response is sent on the BXI cable
-        BxiME::maybe_auto_unlink(me);
+        if (!BxiME::maybe_auto_unlink(me))
+            me->mut->unlock(); // If ME was auto unlinked mutex doesn't exist anymore so we don't release it
     } else {
         response->simulated_size = 0;
     }
@@ -273,11 +281,11 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     int ni_fail_type = match_entry(msg, &me);
 
     BxiLog __bxi_log;
-    bool need_ev_processing = false;
 
     // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     if (me) {
+        me->mut->lock();
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
 
@@ -317,13 +325,12 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
             s4u::this_actor::sleep_for(wait_time);
         }
 
-        need_ev_processing = true;
-    }
+        if (need_ack)
+            send_ack(msg, ack_type, ni_fail_type);
 
-    if (need_ack)
-        send_ack(msg, ack_type, ni_fail_type);
-    if (need_ev_processing)
-        put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC);
+        if (!put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC))
+            me->mut->unlock(); // If ME was auto unlinked mutex doesn't exist anymore so we don't release it
+    }
 
     if (dma)
         dma->wait();
@@ -355,6 +362,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     response->ni_fail_type = match_entry(msg, &me);
 
     if (me) {
+        me->mut->lock();
         req->process_state = S4BXI_REQ_RECEIVED;
 
         shared_ptr<BxiMD> md = req->md;
@@ -383,7 +391,8 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 
         // FETCH_ATOMIC event isn't here, it will be issued by the initiator
         // actor when the response is sent on the BXI cable
-        BxiME::maybe_auto_unlink(me);
+        if (!BxiME::maybe_auto_unlink(me))
+            me->mut->unlock(); // If ME was auto unlinked mutex doesn't exist anymore so we don't release it
     } else {
         response->simulated_size = 0;
     }
@@ -552,8 +561,9 @@ int BxiNicTarget::match_entry(BxiMsg* msg, BxiME** me)
     return PTL_NI_TARGET_INVALID;
 }
 
-void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_kind ev_kind)
+bool BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_kind ev_kind)
 {
+    bool out = false;
     auto req = (BxiPutRequest*)msg->parent_request;
 
     if (!HAS_PTL_OPTION(me->me, PTL_ME_EVENT_COMM_DISABLE) && !HAS_PTL_OPTION(me->me, PTL_ME_EVENT_SUCCESS_DISABLE) &&
@@ -580,15 +590,17 @@ void BxiNicTarget::put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_
         // the issue_event, we could have an invalid read when doing
         // `HAS_PTL_OPTION(...)` at the beginning of maybe_auto_unlink_me
         // (thanks valgrind for pointing this out)
-        BxiME::maybe_auto_unlink(me);
+        out = BxiME::maybe_auto_unlink(me);
         // ... But by doing this the "auto unlink" event is issued before
         // the "put" event, I don't know if it matters or not (I'm not
         // even sure of how the real world NIC does this)
 
         node->issue_event(eq, event);
     } else {
-        BxiME::maybe_auto_unlink(me);
+        out = BxiME::maybe_auto_unlink(me);
     }
+
+    return out;
 }
 
 /**

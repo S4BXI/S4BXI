@@ -48,7 +48,7 @@ class BxiNicTarget : public BxiNicActor {
                          size_t len);
     void capped_memcpy(void* dest, const void* src, size_t n);
     void send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type);
-    void put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_kind ev_kind);
+    bool put_like_req_ev_processing(BxiME* me, BxiMsg* msg, ptl_event_kind ev_kind);
 
   public:
     BxiNicTarget(const std::vector<std::string>& args);

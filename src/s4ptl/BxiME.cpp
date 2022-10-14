@@ -23,7 +23,7 @@ using namespace std;
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_me, "Messages specific to s4ptl ME implementation");
 
 BxiME::BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr)
-    : pt(pt), me(make_unique<ptl_me_t>(*me_t)), list(list), user_ptr(user_ptr)
+    : pt(pt), me(make_unique<ptl_me_t>(*me_t)), list(list), user_ptr(user_ptr), mut(simgrid::s4u::Mutex::create())
 {
 }
 
@@ -33,6 +33,7 @@ BxiME::BxiME(const BxiME& me)
     , list(me.list)
     , user_ptr(me.user_ptr)
     , manage_local_offset(me.manage_local_offset)
+    , mut(simgrid::s4u::Mutex::create())
 {
 }
 
@@ -86,6 +87,7 @@ void BxiME::append(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_
 void BxiME::unlink(ptl_handle_me_t me_handle)
 {
     auto me   = (BxiME*)me_handle;
+    me->mut->lock();
     auto list = me->get_list();
     list->erase(remove(list->begin(), list->end(), me));
     delete me;
@@ -150,7 +152,7 @@ ptl_size_t BxiME::get_mlength(const BxiRequest* req)
     return remaining_size < req->payload_size ? remaining_size : req->payload_size;
 }
 
-void BxiME::maybe_auto_unlink(BxiME* me)
+bool BxiME::maybe_auto_unlink(BxiME* me)
 {
     bool should_unlink = HAS_PTL_OPTION(me->me, PTL_ME_USE_ONCE) // Simple case: flag is set
                          || (HAS_PTL_OPTION(me->me, PTL_ME_MANAGE_LOCAL) &&
@@ -159,7 +161,7 @@ void BxiME::maybe_auto_unlink(BxiME* me)
     //                       MANAGE_LOCAL: unlink if we reached the end of the ME's memory
 
     if (!should_unlink)
-        return;
+        return false;
 
     auto eq       = me->pt->eq;
     auto user_ptr = me->user_ptr;
@@ -178,4 +180,6 @@ void BxiME::maybe_auto_unlink(BxiME* me)
         event->user_ptr     = user_ptr;
         pt->ni->node->issue_event(eq, event);
     }
+
+    return true;
 }
