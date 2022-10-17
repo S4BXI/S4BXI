@@ -87,7 +87,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     auto req = (BxiPutRequest*)msg->parent_request;
     req->md->ni->cq->release();
 
-    // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a command
+    // s4u::this_actor::sleep_for(300e-9); // Approximation of the time it takes the NIC to process a command
 
     int inline_size = INLINE_SIZE(req);
     int PIO_size    = PIO_SIZE(req);
@@ -133,7 +133,7 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
     // I don't know if it is an issue or not. Actually that could be better
     // to process more messages in parallel with few actors ?
     if (msg->simulated_size <= 64) {
-        s4u::this_actor::execute(550);
+        s4u::this_actor::execute(650);
         req->maybe_issue_send();
     }
 
@@ -153,7 +153,7 @@ void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
 {
     s4u::CommPtr dma = nullptr;
 
-    s4u::this_actor::execute(375);
+    // s4u::this_actor::execute(400);
 
     int _bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     if (_bxi_log_level) {

@@ -457,6 +457,7 @@ int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     m->ni->cq->acquire();
+    s4u::this_actor::sleep_for(200e-9);
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way
