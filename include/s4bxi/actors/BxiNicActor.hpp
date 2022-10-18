@@ -23,7 +23,7 @@
 #include "BxiActor.hpp"
 #include "../s4ptl.hpp"
 
-constexpr double PCI_LATENCY = 500e-9; // Hardcoding this is awful, but also it's not going to be vastly different on different platforms
+constexpr double PCI_LATENCY = 200e-9; // Hardcoding this is awful, but also it's not going to be vastly different on different platforms
 constexpr double ONE_PCI_PACKET_TRANSFER = PCI_LATENCY + 32.508e-9 /* Bandwidth for 512B */;
 
 class BxiNicActor : public BxiActor {
