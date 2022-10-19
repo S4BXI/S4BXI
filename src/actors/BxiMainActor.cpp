@@ -394,7 +394,7 @@ int BxiMainActor::PtlMEUnlink(ptl_handle_le_t me_handle)
     auto me  = (BxiME*)me_handle;
     auto uhs = me->pt->unexpected_headers;
 
-    // This is kind of greedy, I think we should associate UHs and MEs earlier instead 
+    // This is kind of greedy, I think we should associate UHs and MEs earlier instead
     // of deciding if they match in a somewhat "lazy" way
     if (me->list == PTL_OVERFLOW_LIST)
         for (BxiMsg* uh : me->pt->unexpected_headers)
@@ -427,9 +427,12 @@ int BxiMainActor::PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
 
     m->ni->cq->acquire();
     msg->is_PIO = is_PIO(msg);
-    if (msg->is_PIO) {
-        // Payload part of PIO command
-        node->pci_transfer(request->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PIO_PAYLOAD);
+    if (msg->is_PIO) { // Payload part of PIO command
+        // Model the transfer (congestion)
+        node->pci_transfer_async(request->payload_size - inline_size, PCI_CPU_TO_NIC, S4BXILOG_PCI_PIO_PAYLOAD, true);
+        // The blocking phase is very short in reality because our PCI latencies are a bit overestimated (to account for
+        // many phenomenons)
+        s4u::this_actor::sleep_for(200e-9);
     }
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
@@ -455,7 +458,6 @@ int BxiMainActor::PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset, ptl
     // s4bxi_fprintf(stderr, " <<< Created message %p (%s) >>>\n", msg, msg_type_c_str(msg));
 
     m->ni->cq->acquire();
-    // s4u::this_actor::sleep_for(200e-9);
     S4BXI_STARTLOG(S4BXILOG_PCI_COMMAND, node->nid, node->nid)
     // node->resume_waiting_tx_actors(vn);
     tx_queue->put(msg, 64); // Send header in a blocking way

@@ -66,8 +66,11 @@ void BxiNicInitiator::operator()()
         case S4BXI_PTL_GET:
             handle_get(msg);
             break;
-        case S4BXI_PTL_ACK: // The different behaviour for PTL vs BXI
-        case S4BXI_E2E_ACK: // is implemented in reliable_comm
+        case S4BXI_PTL_ACK:
+            reliable_comm(msg);
+            s4u::this_actor::sleep_for(200e-9);
+            break;
+        case S4BXI_E2E_ACK:
             reliable_comm(msg);
             break;
         case S4BXI_PTL_GET_RESPONSE:
@@ -117,35 +120,36 @@ void BxiNicInitiator::handle_put(BxiMsg* msg)
 
         if (_bxi_log_level)
             msg->bxi_log->start = s4u::Engine::get_clock();
-
-        comm->detach(); // Starts the comm
     } else {
         if (_bxi_log_level)
             msg->bxi_log->start = s4u::Engine::get_clock();
-        comm->start(); // Starts the comm
+    }
+
+    comm->detach(); // Starts the comm
+
+    if (dma) {
+        // Important note (because of the next "if"): this branch can't happen for messages <= 64 B unless it's a
+        // retransmission
+        dma->wait();
+        // double wait = (req->payload_size - inline_size) / 11.1e9 - 300e-9;
+        // if (wait > 1e-9)
+        //     s4u::this_actor::sleep_for(wait);
+    } else {
+        s4u::this_actor::sleep_for(200e-9);
     }
 
     // Buffered put
-    // Now in this case the initiator only has a *very* short blocking phase
-    // I don't know if it is an issue or not. Actually that could be better
-    // to process more messages in parallel with few actors ?
     if (msg->simulated_size <= 64) {
-        s4u::this_actor::sleep_for(200e-9);
-        req->maybe_issue_send();
+        req->maybe_issue_send(); // Important note: in case of a retransmission this does nothing
     }
-
-    s4u::this_actor::sleep_for(100e-9);
-
-    if (dma)
-        dma->wait();
-    else
-        comm->wait();
 }
 
 void BxiNicInitiator::handle_get(BxiMsg* msg)
 {
     ((BxiGetRequest*)msg->parent_request)->md->ni->cq->release();
     reliable_comm(msg);
+
+    s4u::this_actor::sleep_for(250e-9); // Blocking time, models the request's processing in the NIC
 }
 
 void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
@@ -172,18 +176,16 @@ void BxiNicInitiator::handle_response(BxiMsg* msg, bxi_log_type type)
 
         if (_bxi_log_level)
             msg->bxi_log->start = s4u::Engine::get_clock();
-
-        comm->detach(); // Starts the comm
     } else {
         if (_bxi_log_level)
             msg->bxi_log->start = s4u::Engine::get_clock();
-        comm->start(); // Starts the comm
     }
+    comm->detach(); // Starts the comm
 
     if (dma)
         dma->wait();
     else
-        comm->wait();
+        s4u::this_actor::sleep_for(300e-9);
 }
 
 void BxiNicInitiator::handle_get_response(BxiMsg* msg)
