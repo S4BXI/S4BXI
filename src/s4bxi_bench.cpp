@@ -18,8 +18,24 @@
 #include "s4bxi/s4bxi_bench.h"
 #include "s4bxi/s4bxi_xbt_log.h"
 #include "s4bxi/s4bxi_util.hpp"
+#include "simgrid/s4u/Exec.hpp"
+
+using namespace simgrid;
 
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(s4bxi_bench, "Logging specific to benchmarking");
+
+void s4bxi_force_execute(double duration)
+{
+    static double cpu_factor = S4BXI_GLOBAL_CONFIG(cpu_factor);
+
+    auto nid = GET_CURRENT_MAIN_ACTOR->getNid();
+    S4BXI_STARTLOG(S4BXILOG_COMPUTE, nid, nid)
+    s4u::this_actor::exec_init(duration * cpu_factor * s4u::Actor::self()->get_host()->get_speed())
+        ->set_name("computation")
+        ->start()
+        ->wait();
+    S4BXI_WRITELOG()
+}
 
 // If we have SMPI functions available, use them
 #ifdef BUILD_MPI_MIDDLEWARE
@@ -78,10 +94,7 @@ void s4bxi_bench_end()
 // Otherwise fall back to copy/pasting something very similar
 #else
 
-#include "simgrid/s4u/Exec.hpp"
 #include <xbt.h>
-
-using namespace simgrid;
 
 void s4bxi_execute(double duration)
 {

@@ -12,6 +12,7 @@ extern "C" {
 
 int s4bxi_fprintf(FILE* stream, const char* fmt, ...);
 int s4bxi_printf(const char* fmt, ...);
+void s4bxi_force_compute_s(double seconds);
 void s4bxi_compute(double flops);
 void s4bxi_compute_s(double seconds);
 uint32_t s4bxi_get_my_rank();

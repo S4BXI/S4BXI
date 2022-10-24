@@ -21,6 +21,9 @@
 extern "C" {
 #endif
 
+/* Execute but without checking CPU threshold */
+void s4bxi_force_execute(double duration);
+
 void s4bxi_execute(double duration);
 void s4bxi_bench_begin();
 void s4bxi_bench_end();

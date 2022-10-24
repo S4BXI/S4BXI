@@ -30,6 +30,13 @@ using namespace simgrid;
 
 int _s4bxi_should_allow_polling = 1;
 
+void s4bxi_force_compute_s(double seconds)
+{
+    s4bxi_bench_end();
+    s4bxi_force_execute(seconds);
+    s4bxi_bench_begin();
+}
+
 void s4bxi_compute(double flops)
 {
     auto main_actor = GET_CURRENT_MAIN_ACTOR;
