@@ -56,6 +56,7 @@ class BxiMainActor : public BxiActor {
     std::unique_ptr<struct s4bxi_mpi_ops> bull_mpi_ops;
 
     bool use_smpi_implem;
+    int8_t bench_number = 0;
 
     /**
      * This is actually horrible I think, we shouldn't need this attribute,

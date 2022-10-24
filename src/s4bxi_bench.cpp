@@ -38,6 +38,13 @@ void s4bxi_execute(double duration)
 
 void s4bxi_bench_begin()
 {
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+
+    main_actor->bench_number++;
+
+    if (main_actor->bench_number != 1)
+        return;
+
     ptl_nid_t nid       = GET_CURRENT_MAIN_ACTOR->getNid();
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     bool __bxi_must_log = __bxi_log_level && S4BXI_GLOBAL_CONFIG(log_computation);
@@ -52,6 +59,13 @@ void s4bxi_bench_begin()
 
 void s4bxi_bench_end()
 {
+    BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+
+    main_actor->bench_number--;
+
+    if (main_actor->bench_number != 0)
+        return;
+
     smpi_bench_end();
     int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
     bool __bxi_must_log = __bxi_log_level && S4BXI_GLOBAL_CONFIG(log_computation);
@@ -95,12 +109,24 @@ void s4bxi_execute(double duration)
 void s4bxi_bench_begin()
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+
+    main_actor->bench_number++;
+
+    if (main_actor->bench_number != 1)
+        return;
+
     xbt_os_threadtimer_start(main_actor->timer);
 }
 
 void s4bxi_bench_end()
 {
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
+
+    main_actor->bench_number--;
+
+    if (main_actor->bench_number != 0)
+        return;
+
     if (main_actor->sampling()) {
         XBT_CRITICAL("Cannot do recursive benchmarks.");
         XBT_CRITICAL("Are you trying to make a call to MPI within an S4BXI_SAMPLE_ block?");
