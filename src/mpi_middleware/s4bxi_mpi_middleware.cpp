@@ -214,8 +214,10 @@ int S4BXI_MPI_Init(const char* __file, int __line, int* argc, char*** argv)
 {
     LOG_CALL(Init, __file, __line);
 
+    smpi_bench_end();
+
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    int smpi                 = ((Init_func)smpi_mpi_ops->Init)(argc, argv);
+    int smpi                 = ((Init_func)smpi_mpi_ops->Init)(argc, argv); // This does smpi_bench_begin
     int bull                 = ((Init_func)main_actor->bull_mpi_ops->Init)(argc, argv);
 
     return bull > smpi ? bull : smpi;
@@ -229,7 +231,9 @@ int S4BXI_MPI_Finalize(const char* __file, int __line)
     s4bxi_barrier();
 
     BxiMainActor* main_actor = GET_CURRENT_MAIN_ACTOR;
-    int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)();
+    int smpi                 = ((Finalize_func)smpi_mpi_ops->Finalize)(); // This does smpi_bench_end
+    smpi_bench_begin();
+
     int bull                 = ((Finalize_func)main_actor->bull_mpi_ops->Finalize)();
 
     return bull > smpi ? bull : smpi;
@@ -243,7 +247,7 @@ S4BXI_MPI_UNSUPPORTED(int, Is_thread_main, int* flag)
 S4BXI_MPI_BULL_IMPLEM(int, Get_version, (version, subversion), int* version, int* subversion)
 S4BXI_MPI_UNSUPPORTED(int, Get_library_version, char* version, int* len)
 S4BXI_MPI_ONE_IMPLEM(int, Get_processor_name, (name, resultlen), char* name, int* resultlen)
-S4BXI_MPI_ONE_IMPLEM(int, Abort, (BxiMpiComm::implem_comm(comm), errorcode), MPI_Comm comm, int errorcode)
+S4BXI_MPI_UNSUPPORTED(int, Abort, /* (BxiMpiComm::implem_comm(comm), errorcode), */ MPI_Comm comm, int errorcode)
 S4BXI_MPI_UNSUPPORTED(int, Alloc_mem, MPI_Aint size, MPI_Info info, void* baseptr)
 S4BXI_MPI_UNSUPPORTED(int, Free_mem, void* base)
 S4BXI_MPI_ONE_IMPLEM(double, Wtime, ())
