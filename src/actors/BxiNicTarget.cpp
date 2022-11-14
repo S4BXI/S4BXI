@@ -611,7 +611,7 @@ void BxiNicTarget::capped_memcpy(void* dest, const void* src, size_t n)
     long max_memcpy = S4BXI_GLOBAL_CONFIG(max_memcpy);
     size_t to_copy  = max_memcpy == -1 ? n : (max_memcpy < n ? max_memcpy : n);
     xbt_assert(!to_copy || dest != nullptr && src != nullptr, "\n\nCan't copy user data from %p to %p\n", dest, src);
-    if (to_copy)
+    if (to_copy && dest && src) // Some of these checks are redundant with the assert but Sonar is crying
         memcpy(dest, src, to_copy);
 }
 
