@@ -37,19 +37,20 @@
     } while (0)
 
 // Some Portals calls might not yield to SimGrid, in this case don't stop benchmarking
-#define MAYBE_BENCH_PORTALS_CALL(call)                                                                                 \
-    do {                                                                                                               \
-        int res;                                                                                                       \
-        auto main_actor = GET_CURRENT_MAIN_ACTOR;                                                                      \
-        if (S4BXI_CONFIG_AND(main_actor->getNode(), model_pci_commands)) {                                             \
-            s4bxi_bench_end();                                                                                         \
-            res = (main_actor->call);                                                                                  \
-            s4bxi_bench_begin();                                                                                       \
-        } else {                                                                                                       \
-            res = call;                                                                                                \
-        }                                                                                                              \
-        return res;                                                                                                    \
-    } while (0)
+// #define MAYBE_BENCH_PORTALS_CALL(call)                                                                                 \
+//     do {                                                                                                               \
+//         int res;                                                                                                       \
+//         auto main_actor = GET_CURRENT_MAIN_ACTOR;                                                                      \
+//         if (S4BXI_CONFIG_AND(main_actor->getNode(), model_pci_commands)) {                                             \
+//             s4bxi_bench_end();                                                                                         \
+//             res = (main_actor->call);                                                                                  \
+//             s4bxi_bench_begin();                                                                                       \
+//         } else {                                                                                                       \
+//             res = call;                                                                                                \
+//         }                                                                                                              \
+//         return res;                                                                                                    \
+//     } while (0)
+#define MAYBE_BENCH_PORTALS_CALL(call) BENCH_PORTALS_CALL(call)
 
 int PtlInit(void)
 {
