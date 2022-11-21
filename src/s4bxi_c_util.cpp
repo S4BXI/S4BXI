@@ -194,7 +194,9 @@ void s4bxi_set_polling(int p)
 
 void s4bxi_barrier()
 {
+    s4bxi_bench_end();
     BxiMainActor::barrier();
+    s4bxi_bench_begin();
 }
 
 void s4bxi_keyval_store_pointer(char* key, void* value)

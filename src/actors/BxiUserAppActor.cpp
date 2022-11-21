@@ -295,7 +295,7 @@ void BxiUserAppActor::operator()()
         xbt_os_threadtimer_start(self_bench_timer);
     }
 
-    s4bxi_barrier();
+    BxiMainActor::barrier();
 
     const char* prop = self->get_property("delay_start");
     if (prop)
@@ -314,7 +314,7 @@ void BxiUserAppActor::operator()()
     if (!S4BXI_GLOBAL_CONFIG(no_dlclose))
         dlclose(handle);
 
-    s4bxi_barrier();
+    BxiMainActor::barrier();
 }
 
 template <typename T> class BxiActorFactory {
