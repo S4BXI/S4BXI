@@ -246,5 +246,7 @@ const char* s4bxi_simulation_id_c_str()
 }
 
 void s4bxi_yield() {
+    s4bxi_bench_end();
     s4u::this_actor::yield();
+    s4bxi_bench_begin();
 }
