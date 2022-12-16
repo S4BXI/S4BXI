@@ -182,7 +182,8 @@ class BxiME {
     void* user_ptr;
     ptl_size_t manage_local_offset = 0;
     ptl_list_t list;
-    simgrid::s4u::MutexPtr mut;
+    bool needs_unlink = false;
+    bool in_use = false;
 
     BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr);
     BxiME(const BxiME& me);

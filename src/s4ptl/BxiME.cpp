@@ -23,7 +23,7 @@ using namespace std;
 S4BXI_LOG_NEW_DEFAULT_CATEGORY(bxi_s4ptl_me, "Messages specific to s4ptl ME implementation");
 
 BxiME::BxiME(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_ptr)
-    : pt(pt), me(make_unique<ptl_me_t>(*me_t)), list(list), user_ptr(user_ptr), mut(simgrid::s4u::Mutex::create())
+    : pt(pt), me(make_unique<ptl_me_t>(*me_t)), list(list), user_ptr(user_ptr)
 {
 }
 
@@ -33,7 +33,8 @@ BxiME::BxiME(const BxiME& me)
     , list(me.list)
     , user_ptr(me.user_ptr)
     , manage_local_offset(me.manage_local_offset)
-    , mut(simgrid::s4u::Mutex::create())
+    , in_use(false)
+    , needs_unlink(false)
 {
 }
 
@@ -86,8 +87,14 @@ void BxiME::append(BxiPT* pt, const ptl_me_t* me_t, ptl_list_t list, void* user_
 
 void BxiME::unlink(ptl_handle_me_t me_handle)
 {
-    auto me   = (BxiME*)me_handle;
-    me->mut->lock();
+    auto me = (BxiME*)me_handle;
+
+    if (me->in_use) { // Someone is using the ME, mark it as "needs to be unlinked" only
+        me->needs_unlink = true;
+        return;
+    }
+
+    // No one is using the ME, destroy it
     auto list = me->get_list();
     list->erase(remove(list->begin(), list->end(), me));
     delete me;

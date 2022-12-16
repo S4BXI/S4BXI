@@ -133,8 +133,6 @@ void BxiNicTarget::send_ack(BxiMsg* msg, bxi_msg_type ack_type, int ni_fail_type
  */
 void BxiNicTarget::handle_put_request(BxiMsg* msg)
 {
-    s4u::CommPtr dma = nullptr;
-
     auto req = (BxiPutRequest*)msg->parent_request;
 
     if (req->process_state > S4BXI_REQ_CREATED)
@@ -147,14 +145,12 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
     int ni_fail_type = match_entry(msg, &me);
 
     BxiLog __bxi_log;
-    bool need_ev_processing = false;
-    bool unlock_mut         = false;
 
     // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
+    bool matched_me = !!me;
     if (me) {
-        unlock_mut = true;
-        me->mut->lock();
+        me->in_use = true;
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
 
@@ -175,23 +171,10 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
         need_ack              = need_portals_ack || !S4BXI_CONFIG_OR(md->ni->node, e2e_off);
         ack_type              = need_portals_ack ? S4BXI_PTL_ACK : S4BXI_E2E_ACK;
 
-        // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
-        if (S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
-            int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
-            if (__bxi_log_level) {
-                __bxi_log.start     = simgrid::s4u::Engine::get_clock();
-                __bxi_log.type      = S4BXILOG_PCI_PAYLOAD_WRITE;
-                __bxi_log.initiator = node->nid;
-                __bxi_log.target    = node->nid;
-            }
-            dma = node->pci_transfer_async(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
-            // Wait for last PCI packet write (very approximate heuristic)
-            double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
-                                                          : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
-            s4u::this_actor::sleep_for(wait_time);
-        }
+        me->in_use = false;
 
-        need_ev_processing = true;
+        if (!put_like_req_ev_processing(me, msg, PTL_EVENT_PUT) && me->needs_unlink)
+            BxiME::unlink(me);
     } else if (req->ack_req != PTL_NO_ACK_REQ) {
         need_ack = true;
         ack_type = S4BXI_PTL_ACK;
@@ -199,14 +182,23 @@ void BxiNicTarget::handle_put_request(BxiMsg* msg)
 
     if (need_ack)
         send_ack(msg, ack_type, ni_fail_type);
-    if (need_ev_processing)
-        unlock_mut = !put_like_req_ev_processing(me, msg, PTL_EVENT_PUT);
 
-    if (unlock_mut)
-        me->mut->unlock();
+    // Simulate the PCI transfer to write data to memory (thanks frs69wq for the idea)
+    if (matched_me && S4BXI_CONFIG_AND(node, model_pci) && msg->simulated_size) {
+        int __bxi_log_level = S4BXI_GLOBAL_CONFIG(log_level);
+        if (__bxi_log_level) {
+            __bxi_log.start     = simgrid::s4u::Engine::get_clock();
+            __bxi_log.type      = S4BXILOG_PCI_PAYLOAD_WRITE;
+            __bxi_log.initiator = node->nid;
+            __bxi_log.target    = node->nid;
+        }
 
-    if (dma)
-        dma->wait();
+        // Wait for last PCI packet write (very approximate heuristic)
+        double wait_time = msg->simulated_size >= 512 ? ONE_PCI_PACKET_TRANSFER
+                                                      : (PCI_LATENCY + ((double)msg->simulated_size) / 15.75e9);
+        s4u::this_actor::sleep_for(wait_time);
+        node->pci_transfer(msg->simulated_size, PCI_NIC_TO_CPU, S4BXILOG_PCI_PAYLOAD_WRITE);
+    }
 }
 
 /**
@@ -233,7 +225,7 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
     response->ni_fail_type = match_entry(msg, &me);
 
     if (me) {
-        me->mut->lock();
+        me->in_use         = true;
         req->process_state = S4BXI_REQ_RECEIVED;
         req->matched_me    = make_unique<BxiME>(*me);
         req->mlength       = me->get_mlength(req);
@@ -247,9 +239,10 @@ void BxiNicTarget::handle_get_request(BxiMsg* msg)
         if (S4BXI_CONFIG_AND(req->md->ni->node, use_real_memory) && me->me->length)
             capped_memcpy((unsigned char*)req->md->md.start + req->local_offset, req->start, req->mlength);
 
+        me->in_use = false;
         // GET event isn't here, it will be issued by the initiator actor when the response is sent on the BXI cable
-        if (!BxiME::maybe_auto_unlink(me))
-            me->mut->unlock(); // If ME was auto unlinked mutex doesn't exist anymore so we don't release it
+        if (!BxiME::maybe_auto_unlink(me) && me->needs_unlink)
+            BxiME::unlink(me);
     } else {
         response->simulated_size = 0;
     }
@@ -285,7 +278,7 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
     // s4u::this_actor::execute(300); // Approximation of the time it takes the NIC to process a message
 
     if (me) {
-        me->mut->lock();
+        me->in_use = true;
         if (me->list == PTL_OVERFLOW_LIST) // We won't need it if it matched on PRIORITY_LIST
             req->matched_me = make_unique<BxiME>(*me);
 
@@ -328,8 +321,9 @@ void BxiNicTarget::handle_atomic_request(BxiMsg* msg)
         if (need_ack)
             send_ack(msg, ack_type, ni_fail_type);
 
-        if (!put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC))
-            me->mut->unlock(); // If ME was auto unlinked mutex doesn't exist anymore so we don't release it
+        me->in_use = false;
+        if (!put_like_req_ev_processing(me, msg, PTL_EVENT_ATOMIC) && me->needs_unlink)
+            BxiME::unlink(me);
     }
 
     if (dma)
@@ -362,7 +356,7 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
     response->ni_fail_type = match_entry(msg, &me);
 
     if (me) {
-        me->mut->lock();
+        me->in_use         = true;
         req->process_state = S4BXI_REQ_RECEIVED;
 
         shared_ptr<BxiMD> md = req->md;
@@ -389,10 +383,11 @@ void BxiNicTarget::handle_fetch_atomic_request(BxiMsg* msg)
 
         response->simulated_size = req->mlength;
 
+        me->in_use = false;
         // FETCH_ATOMIC event isn't here, it will be issued by the initiator
         // actor when the response is sent on the BXI cable
-        if (!BxiME::maybe_auto_unlink(me))
-            me->mut->unlock(); // If ME was auto unlinked mutex doesn't exist anymore so we don't release it
+        if (!BxiME::maybe_auto_unlink(me) && me->needs_unlink)
+            BxiME::unlink(me);
     } else {
         response->simulated_size = 0;
     }
