@@ -1,5 +1,5 @@
 image:
-    name: simgrid/unstable
+    name: simgrid/stable:v3.36
     entrypoint: ['/bin/bash', '-c', 'ln -snf /bin/bash /bin/sh && /bin/bash -c $0' ]
 
 variables:
